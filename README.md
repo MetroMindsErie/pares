@@ -12,9 +12,7 @@ PA Real Estate Solutions is a web application that allows real estate agents to 
 ## Technologies Used
 
 - React.js for the frontend
-- Node.js and Express for the backend
 - Contentful for content management
-- MongoDB for the database
 
 ## Installation
 
