@@ -16,7 +16,7 @@ const SearchBar = () => {
     zipCode: '',
   });
 
-  const [locationMethod, setLocationMethod] = useState('map'); // 'map' or 'zipcode'
+  const [locationMethod, setLocationMethod] = useState('zipcode'); // 'map' or 'zipcode'
   const [showMap, setShowMap] = useState(false);
 
   const handleInputChange = (e) => {
@@ -42,7 +42,7 @@ const SearchBar = () => {
           <div className="flex-1">
             <label className="block text-gray-700 font-medium mb-2">Location Method</label>
             <div className="flex items-center space-x-4">
-              <label className="flex items-center">
+              {/* <label className="flex items-center">
                 <input
                   type="radio"
                   name="locationMethod"
@@ -52,7 +52,7 @@ const SearchBar = () => {
                   className="mr-2"
                 />
                 Use Map
-              </label>
+              </label> */}
               <label className="flex items-center">
                 <input
                   type="radio"
