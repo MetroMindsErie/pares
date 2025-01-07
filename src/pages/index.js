@@ -18,8 +18,8 @@ export default function Home({ heroContent, featuredListings }) {
       </header>
       <main>
         <SearchBar />
-        <Hero heroContent={heroContent} />
         <FeaturedListings featuredListings={featuredListings} />
+        <Hero heroContent={heroContent} />
         <About />
         <Contact />
       </main>
