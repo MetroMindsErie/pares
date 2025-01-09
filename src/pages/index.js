@@ -10,6 +10,8 @@ import client from "../../contentful";
 import 'leaflet/dist/leaflet.css';
 import '../styles/globals.css';  // or your custom tailwind.css
 
+import { useState } from "react";
+
 export default function Home({ heroContent, featuredListings }) {
   return (
     <div>
