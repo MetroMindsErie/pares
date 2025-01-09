@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import ReactGA from 'react-ga4';
 
 // Initialize Google Analytics with environment variable
-const GA_MEASUREMENT_ID = process.env.GA_MEASUREMENT_ID;
+const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
 if (!GA_MEASUREMENT_ID) {
   throw new Error('Require GA_MEASUREMENT_ID');
