@@ -19,13 +19,13 @@ const [showRegister, setShowRegister] = useState(false);
       <div className="flex justify-center space-x-4 my-8">
           <button
             onClick={toggleLogin}
-            className="bg-gradient-to-r from-blue-500 to-indigo-600 text-black p-3 rounded-full w-36 hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 ease-in-out"
+            className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-3 rounded-full w-36 hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 ease-in-out"
           >
             Login
           </button>
           <button
             onClick={toggleRegister}
-            className="bg-gradient-to-r from-green-400 to-teal-500 text-black p-3 rounded-full w-36 hover:from-green-500 hover:to-teal-600 transition-all duration-300 ease-in-out"
+            className="bg-gradient-to-r from-green-400 to-teal-500 text-white p-3 rounded-full w-36 hover:from-green-500 hover:to-teal-600 transition-all duration-300 ease-in-out"
           >
             Register
           </button>

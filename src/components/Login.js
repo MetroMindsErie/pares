@@ -62,14 +62,14 @@ const handleLogout = () => {
         placeholder="Username"
         value={username}
         onChange={(e) => setUsername(e.target.value)}
-        className="p-4 border-2 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="p-4 border-2 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
       />
       <input
         type="password"
         placeholder="Password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        className="p-4 border-2 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="p-4 border-2 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
       />
       <button
         type="submit"
