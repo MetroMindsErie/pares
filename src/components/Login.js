@@ -14,15 +14,14 @@ const Login = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ username, password }),
+        credentials: 'include', // Include cookies in the request
       });
-
+  
       if (!response.ok) {
         throw new Error('Login failed');
       }
-
-      const data = await response.json();
-      localStorage.setItem('authToken', data.token);  // Store the JWT token
-      console.log('User logged in:', data);
+  
+      console.log('User logged in');
       // Redirect to the home page or dashboard
     } catch (error) {
       setError(error.message);
@@ -31,27 +30,20 @@ const Login = () => {
 
   const token = localStorage.getItem('authToken');
 
-// if (token) {
-//   // Attach token to headers for API requests
-//   fetch('http://localhost:5000/protected-route', {
-//     method: 'GET',
-//     headers: {
-//       Authorization: `Bearer ${token}`,
-//     },
-//   })
-//   .then((response) => response.json())
-//   .then((data) => {
-//     console.log('Protected data:', data);
-//   })
-//   .catch((error) => console.error('Error:', error));
-// } else {
-//   console.log('No token found, user is not authenticated');
-// }
-
-const handleLogout = () => {
-    localStorage.removeItem('authToken');  // Remove the JWT token
-    // Redirect to login or homepage
+  const handleLogout = async () => {
+    try {
+      await fetch('http://localhost:5000/auth/logout', {
+        method: 'POST',
+        credentials: 'include', // Include cookies in the request
+      });
+      // Redirect to the login page or homepage
+      window.location.href = '/login'; // Adjust the path as needed
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
   };
+  
+  
   
 
   return (
