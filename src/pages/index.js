@@ -1,7 +1,7 @@
 "use client";
 import Navbar from "../components/Navbar";
 import Hero from "../components/Hero";
-import FeaturedListings from "@/components/FeaturedListings";
+import FeaturedListings from "../components/FeaturedListings";
 import About from "../components/About";
 import Contact from "../components/Contact";
 import Footer from "../components/Footer";
@@ -10,7 +10,6 @@ import client from "../../contentful";
 import 'leaflet/dist/leaflet.css';
 import '../styles/globals.css';  // or your custom tailwind.css
 
-import { useState } from "react";
 
 export default function Home({ heroContent, featuredListings }) {
   return (
