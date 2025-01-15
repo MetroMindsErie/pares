@@ -9,7 +9,11 @@ if (!GA_MEASUREMENT_ID) {
   throw new Error('Require GA_MEASUREMENT_ID');
 }
 
-ReactGA.initialize(GA_MEASUREMENT_ID);
+if (typeof ReactGA.initialize === 'function') {
+  ReactGA.initialize(GA_MEASUREMENT_ID);
+} else {
+  console.error('ReactGA.initialize is not a function');
+}
 
 function MyApp({ Component, pageProps }) {
   const router = useRouter();
