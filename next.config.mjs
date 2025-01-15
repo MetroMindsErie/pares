@@ -1,8 +1,10 @@
 /** @type {import('next').NextConfig} */
+import path from 'path';
 const nextConfig = {experimental: {
     turbo: false,
   }, webpack: (config) => {
-    config.resolve.modules.push(__dirname + '/node_modules');
+    const __dirname = path.dirname(new URL(import.meta.url).pathname);
+    config.resolve.modules.push(path.join(__dirname, 'node_modules'));
     return config;
   }, env: {
     TRESTLE_TOKEN_URL: process.env.TRESTLE_TOKEN_URL,
