@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import dynamic from 'next/dynamic'; // Import dynamic for conditional rendering
-import { fetchPropertyData } from '@/pages/api/api';
+// import { fetchPropertyData } from '@/pages/api/api';
 
 // Dynamically import the MapContainer and related components with SSR disabled
 const MapContainer = dynamic(() => import('react-leaflet').then((mod) => mod.MapContainer), { ssr: false });
