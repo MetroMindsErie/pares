@@ -57,7 +57,6 @@ export async function getServerSideProps({ params }) {
       }
     );
 
-    // Get property data
     const response = await axios.get(
       `https://api-trestle.corelogic.com/trestle/odata/Property?$filter=ListingKey eq '${params.id}'`,
       {
