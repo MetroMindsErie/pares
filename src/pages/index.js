@@ -11,7 +11,7 @@ import 'leaflet/dist/leaflet.css';
 import '../styles/globals.css';  // or your custom tailwind.css
 
 
-export default function Home({ heroContent, featuredListings }) {
+export default function Home({ featuredListings }) {
   return (
     <div>
       <header>
@@ -20,7 +20,7 @@ export default function Home({ heroContent, featuredListings }) {
       <main>
         <SearchBar />
         <FeaturedListings featuredListings={featuredListings} />
-        <Hero heroContent={heroContent} />
+        <Hero />
         <About />
         <Contact />
       </main>
@@ -33,12 +33,10 @@ export default function Home({ heroContent, featuredListings }) {
 
 export async function getStaticProps() {
   const heroRes = await client.getEntries({ content_type: 'agent' });
-  const listingsRes = await client.getEntries({ content_type: 'property' });
 
   return {
     props: {
-      heroContent: heroRes.items[0]?.fields || null,
-      featuredListings: listingsRes.items.map((item) => item.fields) || [],
+      heroContent: heroRes.items[0]?.fields || null
     },
     revalidate: 1, // ISR
   };
