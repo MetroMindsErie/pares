@@ -28,7 +28,7 @@
     "react-dom": "^19.0.0",
     "react-ga4": "^2.1.0",
     "react-leaflet": "^5.0.0",
-    "trestle_client": "^1.1.44"
+    "trestle_client": "^1.1.45"
     },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
