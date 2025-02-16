@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import ReactGA from 'react-ga4';
+import '../styles/globals.css';
+import '../styles/propertyTemplates.css';
 
 // Initialize Google Analytics with environment variable
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;

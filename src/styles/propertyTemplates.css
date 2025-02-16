@@ -4,86 +4,85 @@
     --sold-color: #F44336;
     --neutral-dark: #2D2D2D;
     --neutral-light: #F5F5F5;
-  }
-  
-  .property-card {
+}
+
+.property-card {
     font-family: 'Arial', sans-serif;
     max-width: 1200px;
     margin: 20px auto;
     padding: 25px;
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-  }
-  
-  .active {
+}
+
+.active {
     border-left: 6px solid var(--active-color);
     background: linear-gradient(to right, #f8fff8 0%, #ffffff 20%);
-  }
-  
-  .sold {
+}
+
+.sold {
     border-left: 6px solid var(--sold-color);
     background: linear-gradient(to right, #fff5f5 0%, #ffffff 20%);
-  }
-  
-  .property-header {
+}
+
+.property-header {
     display: grid;
     grid-template-columns: 2fr 1fr;
     margin-bottom: 25px;
-  }
-  
-  .status-badge {
+}
+
+.status-badge {
     padding: 8px 15px;
     border-radius: 20px;
     font-weight: bold;
     text-align: center;
-  }
-  
-  .active-badge {
+}
+
+.active-badge {
     background-color: var(--active-color);
     color: white;
-  }
-  
-  .sold-badge {
+}
+
+.sold-badge {
     background-color: var(--sold-color);
     color: white;
-  }
-  
-  .property-details-grid {
+}
+
+.property-details-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 25px;
     margin: 20px 0;
-  }
-  
-  .detail-group h3 {
+}
+
+.detail-group h3 {
     color: var(--neutral-dark);
     border-bottom: 2px solid #eee;
     padding-bottom: 10px;
-  }
-  
-  .financial-highlight {
+}
+
+.financial-highlight {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     background-color: var(--neutral-light);
     padding: 15px;
     border-radius: 8px;
     margin: 20px 0;
-  }
-  
-  .agent-section {
+}
+
+.agent-section {
     background-color: #f8f9fa;
     padding: 20px;
     border-radius: 8px;
     margin-top: 25px;
-  }
-  
-  @media (max-width: 768px) {
+}
+
+@media (max-width: 768px) {
     .property-header {
-      grid-template-columns: 1fr;
+        grid-template-columns: 1fr;
     }
     
     .financial-highlight {
-      grid-template-columns: 1fr;
+        grid-template-columns: 1fr;
     }
-  }
-  
+}

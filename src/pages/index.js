@@ -47,10 +47,10 @@ export default function Home({ featuredListings, heroContent }) {
 export async function getStaticProps() {
   try {
     // For example, use a service file /services/contentfulService.js here
-    const heroContent = await import('../services/contentfulService')
-      .then((mod) => mod.getHeroContent());
-    const featuredListings = await import('../services/contentfulService')
-      .then((mod) => mod.getFeaturedListings());
+    // const heroContent = await import('../services/contentfulService')
+    //   .then((mod) => mod.getHeroContent());
+    // const featuredListings = await import('../services/contentfulService')
+    //   .then((mod) => mod.getFeaturedListings());
     return {
       props: {
         heroContent: heroContent || null,
