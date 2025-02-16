@@ -188,7 +188,7 @@ const FeaturedListings = ({ featuredListings, searchResults }) => {
           {listings.length > 0 ? (
             listings.map((listing) => (
               <Link key={listing.ListingKey} href={`/property/${listing.ListingKey}`} passHref>
-                <div className="border rounded-lg overflow-hidden shadow-md cursor-pointer hover:shadow-lg transition-shadow">
+                <div className={`border rounded-lg overflow-hidden shadow-md cursor-pointer hover:shadow-lg transition-shadow ${listing.StandardStatus === 'Closed' ? 'bg-gray-200' : ''}`}>
                   <img
                     src={listing.media}
                     alt={listing.UnparsedAddress || 'Property Image'}
@@ -202,6 +202,9 @@ const FeaturedListings = ({ featuredListings, searchResults }) => {
                     <p className="text-sm text-gray-500">
                       {listing.ListPrice ? `$${listing.ListPrice.toLocaleString()}` : 'Price not available'}
                     </p>
+                    {listing.StandardStatus === 'Closed' && (
+                      <p className="text-red-500 font-bold">Closed</p>
+                    )}
                   </div>
                 </div>
               </Link>

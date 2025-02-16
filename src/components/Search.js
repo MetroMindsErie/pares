@@ -188,7 +188,7 @@ const SearchBar = ({ onSearchResults }) => {
             >
               ZIP Code
             </button>
-            <button
+            <button disabled
               onClick={() => setShowMap(true)}
               className={`px-4 py-2 rounded-full shadow-md ${searchParams.locationType === 'map'
                 ? 'bg-blue-500 text-white'

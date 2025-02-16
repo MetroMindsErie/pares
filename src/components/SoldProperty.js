@@ -22,38 +22,24 @@ export default function SoldProperty({ data }) {
       <div className="property-details-grid">
         <div className="detail-group">
           <h3>Transaction Details</h3>
-          <p>
-            <strong>Sold Price:</strong> ${data.ClosePrice?.toLocaleString()}
-          </p>
-          <p>
-            <strong>Closed Date:</strong> {new Date(data.CloseDate).toLocaleDateString()}
-          </p>
-          <p>
-            <strong>Days on Market:</strong> {data.DaysOnMarket}
-          </p>
+          <p><strong>Sold Price:</strong> ${data.ClosePrice?.toLocaleString()}</p>
+          <p><strong>Closed Date:</strong> {new Date(data.CloseDate).toLocaleDateString()}</p>
+          <p><strong>Days on Market:</strong> {data.DaysOnMarket}</p>
         </div>
 
         <div className="detail-group">
           <h3>Property Features</h3>
           <p>• {data.LivingAreaSqFt} SqFt</p>
           <p>• {data.LotSizeAcres} Acre Lot</p>
-          <p>
-            • {data.BedroomsTotal} Bed / {data.BathroomsTotalInteger} Bath
-          </p>
+          <p>• {data.BedroomsTotal} Bed / {data.BathroomsTotalInteger} Bath</p>
           <p>• Built in {data.YearBuilt}</p>
         </div>
 
         <div className="detail-group">
           <h3>Financial Details</h3>
-          <p>
-            <strong>Assessed Value:</strong> ${data.TaxAssessedValue?.toLocaleString()}
-          </p>
-          <p>
-            <strong>Taxes:</strong> ${data.TaxAnnualAmount?.toLocaleString()}/year
-          </p>
-          <p>
-            <strong>Price per SqFt:</strong> {data.LivingAreaSqFt ? `$${(data.ClosePrice / data.LivingAreaSqFt).toFixed(2)}` : 'N/A'}
-          </p>
+          <p><strong>Assessed Value:</strong> ${data.TaxAssessedValue?.toLocaleString()}</p>
+          <p><strong>Taxes:</strong> ${data.TaxAnnualAmount?.toLocaleString()}/year</p>
+          <p><strong>Price per SqFt:</strong> {data.LivingAreaSqFt ? `$${(data.ClosePrice / data.LivingAreaSqFt).toFixed(2)}` : 'N/A'}</p>
         </div>
       </div>
 
@@ -73,6 +59,13 @@ export default function SoldProperty({ data }) {
           <p>Closed {new Date(data.CloseDate).toLocaleDateString()}</p>
           <p>Transfer Taxes: {data.TransferTax}</p>
         </div>
+      </div>
+
+      <div className="agent-section">
+        <h3>Listing Agent</h3>
+        <p>{data.ListAgentFullName}</p>
+        <p>{data.ListOfficeName}</p>
+        <p>{data.ListAgentPhone}</p>
       </div>
 
       {imageUrl && (

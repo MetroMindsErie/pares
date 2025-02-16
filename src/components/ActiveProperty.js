@@ -22,18 +22,10 @@ export default function ActiveProperty({ data }) {
       <div className="property-details-grid">
         <div className="detail-group">
           <h3>Property Overview</h3>
-          <p>
-            <strong>MLS#:</strong> {data.ListingKey}
-          </p>
-          <p>
-            <strong>List Price:</strong> ${data.ListPrice?.toLocaleString()}
-          </p>
-          <p>
-            <strong>Type:</strong> {data.PropertyType}
-          </p>
-          <p>
-            <strong>Bed/Bath:</strong> {data.BedroomsTotal} / {data.BathroomsTotalInteger}
-          </p>
+          <p><strong>MLS#:</strong> {data.ListingKey}</p>
+          <p><strong>List Price:</strong> ${data.ListPrice?.toLocaleString()}</p>
+          <p><strong>Type:</strong> {data.PropertyType}</p>
+          <p><strong>Bed/Bath:</strong> {data.BedroomsTotal} / {data.BathroomsTotalInteger}</p>
         </div>
 
         <div className="detail-group">
@@ -46,15 +38,9 @@ export default function ActiveProperty({ data }) {
 
         <div className="detail-group">
           <h3>Key Details</h3>
-          <p>
-            <strong>Status:</strong> {data.StandardStatus}
-          </p>
-          <p>
-            <strong>Last Updated:</strong> {new Date(data.ModificationTimestamp).toLocaleDateString()}
-          </p>
-          <p>
-            <strong>Days on Market:</strong> {data.DaysOnMarket}
-          </p>
+          <p><strong>Status:</strong> {data.StandardStatus}</p>
+          <p><strong>Last Updated:</strong> {new Date(data.ModificationTimestamp).toLocaleDateString()}</p>
+          <p><strong>Days on Market:</strong> {data.DaysOnMarket}</p>
         </div>
       </div>
 
@@ -73,6 +59,13 @@ export default function ActiveProperty({ data }) {
           <h4>Open House</h4>
           <p>Sat/Sun 1-4PM</p>
         </div>
+      </div>
+
+      <div className="agent-section">
+        <h3>Listing Agent</h3>
+        <p>{data.ListAgentFullName}</p>
+        <p>{data.ListOfficeName}</p>
+        <p>{data.ListAgentPhone}</p>
       </div>
 
       {imageUrl && (

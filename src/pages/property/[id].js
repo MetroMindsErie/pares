@@ -81,14 +81,11 @@ const PropertyDetail = ({ property }) => {
   }
 
   // Determine which template to use based on property status.
-  // Adjust this logic if your API uses a different value.
-  const isSold =
-    property.StandardStatus &&
-    property.StandardStatus.toLowerCase() === 'sold';
+  const isClosed = property.StandardStatus && property.StandardStatus.toLowerCase() === 'closed';
 
   return (
     <div>
-      {isSold ? (
+      {isClosed ? (
         <SoldProperty data={property} />
       ) : (
         <ActiveProperty data={property} />
