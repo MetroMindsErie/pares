@@ -34,8 +34,6 @@ const SearchBar = ({ onSearchResults }) => {
 
   const propertyTypes = [
     { value: 'Residential', label: 'Single Family Home' },
-    { value: 'Condo', label: 'Condo' },
-    { value: 'Townhouse', label: 'Townhouse' },
     { value: 'MultiFamily', label: 'Multi-Family' }
   ];
 
