@@ -34,7 +34,6 @@ const SearchBar = ({ onSearchResults }) => {
 
   const propertyTypes = [
     { value: 'Residential', label: 'Single Family Home' },
-    { value: 'MultiFamily', label: 'Multi-Family' }
   ];
 
   const buildODataQuery = () => {
