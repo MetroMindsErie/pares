@@ -186,43 +186,43 @@ const fetchMediaUrls = async (listingKey, token) => {
     <div className="bg-gray-100 py-8 px-4 md:px-6">
       <div className="max-w-5xl mx-auto space-y-4">
         {/* Location Selector */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className="space-y-2">
-            <label className="block font-medium">Search Area</label>
-            <div className="flex gap-4">
-              <button
-                onClick={() => setSearchParams(prev => ({
-                  ...prev,
-                  locationType: 'zipcode',
-                  coordinates: null
-                }))}
-                className={`px-4 py-2 rounded ${searchParams.locationType === 'zipcode' ? 'bg-blue-500 text-white' : 'bg-white'}`}
-              >
-                ZIP Code
-              </button>
-              <button
-                onClick={() => setShowMap(true)}
-                className={`px-4 py-2 rounded ${searchParams.locationType === 'map' ? 'bg-blue-500 text-white' : 'bg-white'}`}
-              >
-                Map Area
-              </button>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <label className="block font-medium">Search Area</label>
+              <div className="flex gap-4">
+                <button
+            onClick={() => setSearchParams(prev => ({
+              ...prev,
+              locationType: 'zipcode',
+              coordinates: null
+            }))}
+            className={`px-4 py-2 rounded ${searchParams.locationType === 'zipcode' ? 'bg-blue-500 text-white' : 'bg-white'}`}
+                >
+            ZIP Code
+                </button>
+                <button
+            onClick={() => alert("Map feature in development. Coming soon!")}
+            className={`px-4 py-2 rounded ${searchParams.locationType === 'map' ? 'bg-blue-500 text-white' : 'bg-white'}`}
+                >
+            Map Area
+                </button>
+              </div>
+              
+              {searchParams.locationType === 'zipcode' && (
+                <input
+            type="text"
+            placeholder="Enter ZIP Code"
+            value={searchParams.zipCode}
+            onChange={(e) => setSearchParams(prev => ({
+              ...prev,
+              zipCode: e.target.value
+            }))}
+            className="w-full p-2 border rounded"
+                />
+              )}
             </div>
-            
-            {searchParams.locationType === 'zipcode' && (
-              <input
-                type="text"
-                placeholder="Enter ZIP Code"
-                value={searchParams.zipCode}
-                onChange={(e) => setSearchParams(prev => ({
-                  ...prev,
-                  zipCode: e.target.value
-                }))}
-                className="w-full p-2 border rounded"
-              />
-            )}
-          </div>
 
-          {/* Property Type */}
+            {/* Property Type */}
           <div className="space-y-2">
             <label className="block font-medium">Property Type</label>
             <select
