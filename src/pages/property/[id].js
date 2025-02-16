@@ -1,89 +1,109 @@
+// /pages/property/[id].js
+import React from 'react';
+import { useRouter } from 'next/router';
 import axios from 'axios';
-import { useRouter } from 'next/router'; // Add this line
-
-const PropertyDetail = ({ property }) => {
-    const router = useRouter();
-
-    // Show a loading state if the page is being generated
-    if (router.isFallback) {
-        return <div>Loading...</div>;
-    }
-
-    return (
-        <div className="p-6 max-w-4xl mx-auto">
-            <h1 className="text-3xl font-bold mb-4">{property.UnparsedAddress}</h1>
-            <img
-                src={property.media}
-                alt={property.UnparsedAddress}
-                className="w-full h-64 object-cover mb-4"
-            />
-            <p className="text-gray-700">
-                <strong>Bedrooms:</strong> {property.BedroomsTotal}
-            </p>
-            <p className="text-gray-700">
-                <strong>Bathrooms:</strong> {property.BathroomsTotalInteger}
-            </p>
-            <p className="text-gray-700">
-                <strong>Status:</strong> {property.StandardStatus}
-            </p>
-            <p className="text-gray-700">
-                <strong>Property Type:</strong> {property.PropertyType}
-            </p>
-            <button
-                onClick={() => router.back()}
-                className="mt-4 bg-blue-500 text-white py-2 px-4 rounded"
-            >
-                Go Back
-            </button>
-        </div>
-    );
-};
+import ActiveProperty from '../../components/ActiveProperty';
+import SoldProperty from '../../components/SoldProperty';
 
 export async function getServerSideProps({ params }) {
   try {
-    // Get access token
+    // 1. Get an access token from Trestle
     const tokenResponse = await axios.post(
       'https://api-trestle.corelogic.com/trestle/oidc/connect/token',
       new URLSearchParams({
         grant_type: 'client_credentials',
         scope: 'api',
         client_id: process.env.TRESTLE_CLIENT_ID,
-        client_secret: process.env.TRESTLE_CLIENT_SECRET
+        client_secret: process.env.TRESTLE_CLIENT_SECRET,
       }),
       {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       }
     );
+    const token = tokenResponse.data.access_token;
 
-    const response = await axios.get(
+    // 2. Fetch the property details using the ListingKey (from params.id)
+    const propertyResponse = await axios.get(
       `https://api-trestle.corelogic.com/trestle/odata/Property?$filter=ListingKey eq '${params.id}'`,
       {
         headers: {
-          Authorization: `Bearer ${tokenResponse.data.access_token}`,
-          Accept: 'application/json'
-        }
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+        },
       }
     );
 
-    if (!response.data.value?.length) {
+    if (!propertyResponse.data.value || propertyResponse.data.value.length === 0) {
       return { notFound: true };
     }
+    const property = propertyResponse.data.value[0];
+
+    // 3. Fetch media URLs for this property
+    const mediaResponse = await axios.get(
+      `https://api-trestle.corelogic.com/trestle/odata/Media?$filter=ResourceRecordKey eq '${property.ListingKey}'&$orderby=Order`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+        },
+      }
+    );
+
+    // Map the returned media to get the MediaURL values
+    const mediaUrls = mediaResponse.data.value.map((media) => media.MediaURL);
+
+    // 4. Create a new property object with a single media URL (or fallback)
+    const propertyWithMedia = {
+      ...property,
+      media: mediaUrls[0] || '/fallback-property-image.jpg',
+    };
 
     return {
       props: {
-        property: response.data.value[0]
-      }
+        property: propertyWithMedia,
+      },
     };
   } catch (error) {
     console.error('API Error:', {
       message: error.message,
       status: error.response?.status,
-      data: error.response?.data
+      data: error.response?.data,
     });
     return { notFound: true };
   }
 }
+
+const PropertyDetail = ({ property }) => {
+  const router = useRouter();
+
+  if (router.isFallback) {
+    return <div>Loading...</div>;
+  }
+
+  // Determine which template to use based on property status.
+  // Adjust this logic if your API uses a different value.
+  const isSold =
+    property.StandardStatus &&
+    property.StandardStatus.toLowerCase() === 'sold';
+
+  return (
+    <div>
+      {isSold ? (
+        <SoldProperty data={property} />
+      ) : (
+        <ActiveProperty data={property} />
+      )}
+
+      <div className="flex justify-center mt-4">
+        <button
+          onClick={() => router.back()}
+          className="bg-blue-500 text-white py-2 px-4 rounded"
+        >
+          Go Back
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export default PropertyDetail;

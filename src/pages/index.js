@@ -1,16 +1,16 @@
+// /pages/index.js
 "use client";
 import { useState } from 'react';
-import Navbar from "../components/Navbar";
-import Hero from "../components/Hero";
-import FeaturedListings from "../components/FeaturedListings";
-import About from "../components/About";
-import Contact from "../components/Contact";
-import Footer from "../components/Footer";
-import SearchBar from "../components/Search";
-import client from "../../contentful";
+import Navbar from '../components/Navbar';
+import Hero from '../components/Hero';
+import FeaturedListings from '../components/FeaturedListings';
+import About from '../components/About';
+import Contact from '../components/Contact';
+import Footer from '../components/Footer';
+import SearchBar from '../components/Search';
 import 'leaflet/dist/leaflet.css';
 import '../styles/globals.css';
-
+import '../styles/propertyTemplates.css'
 export default function Home({ featuredListings, heroContent }) {
   const [searchResults, setSearchResults] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
@@ -27,20 +27,11 @@ export default function Home({ featuredListings, heroContent }) {
       </header>
       <main>
         <SearchBar onSearchResults={handleSearchResults} />
-        
-        {/* Conditionally render search results or featured listings */}
         {isSearching ? (
-          <FeaturedListings 
-            listings={searchResults} 
-            title="Search Results"
-          />
+          <FeaturedListings searchResults={searchResults} title="Search Results" />
         ) : (
-          <FeaturedListings 
-            listings={featuredListings} 
-            title="Featured Listings"
-          />
+          <FeaturedListings featuredListings={featuredListings} title="Featured Listings" />
         )}
-
         <Hero content={heroContent} />
         <About />
         <Contact />
@@ -52,23 +43,20 @@ export default function Home({ featuredListings, heroContent }) {
   );
 }
 
+// Assume getStaticProps calls your contentful service methods
 export async function getStaticProps() {
   try {
-    const [heroRes, listingsRes] = await Promise.all([
-      client.getEntries({ content_type: 'agent' }),
-      client.getEntries({ 
-        content_type: 'propertyListing',
-        limit: 12,
-        order: '-fields.date'
-      })
-    ]);
-
+    // For example, use a service file /services/contentfulService.js here
+    const heroContent = await import('../services/contentfulService')
+      .then((mod) => mod.getHeroContent());
+    const featuredListings = await import('../services/contentfulService')
+      .then((mod) => mod.getFeaturedListings());
     return {
       props: {
-        heroContent: heroRes.items[0]?.fields || null,
-        featuredListings: listingsRes.items.map(item => item.fields) || []
+        heroContent: heroContent || null,
+        featuredListings: featuredListings || []
       },
-      revalidate: 60, // Revalidate every 60 seconds
+      revalidate: 60
     };
   } catch (error) {
     console.error('Error fetching content:', error);

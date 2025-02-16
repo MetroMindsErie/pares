@@ -1,76 +1,103 @@
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import axios from 'axios';
+import { getAccessToken, getPropertiesByFilter, getMediaUrls } from '../services/trestleServices';
+import { useRouter } from 'next/router';
 
-const MapContainer = dynamic(() => import('react-leaflet').then((mod) => mod.MapContainer), { ssr: false });
-const TileLayer = dynamic(() => import('react-leaflet').then((mod) => mod.TileLayer), { ssr: false });
-const Marker = dynamic(() => import('react-leaflet').then((mod) => mod.Marker), { ssr: false });
-const Popup = dynamic(() => import('react-leaflet').then((mod) => mod.Popup), { ssr: false });
-const useMapEvents = dynamic(() => import('react-leaflet').then((mod) => mod.useMapEvents), { ssr: false });
+const MapContainer = dynamic(
+  () => import('react-leaflet').then((mod) => mod.MapContainer),
+  { ssr: false }
+);
+const TileLayer = dynamic(
+  () => import('react-leaflet').then((mod) => mod.TileLayer),
+  { ssr: false }
+);
+const Marker = dynamic(
+  () => import('react-leaflet').then((mod) => mod.Marker),
+  { ssr: false }
+);
+const Popup = dynamic(
+  () => import('react-leaflet').then((mod) => mod.Popup),
+  { ssr: false }
+);
+const useMapEvents = dynamic(
+  () => import('react-leaflet').then((mod) => mod.useMapEvents),
+  { ssr: false }
+);
 
-
-// API configuration
-const API_BASE_URL = 'https://api-trestle.corelogic.com';
-const DEFAULT_RADIUS = 10; // miles
+const DEFAULT_RADIUS = 10;
 
 const SearchBar = ({ onSearchResults }) => {
+  const router = useRouter();
   const [searchParams, setSearchParams] = useState({
-    propertyType: '',
-    priceMin: '',
-    priceMax: '',
-    beds: '',
-    baths: '',
-    sqftMin: '',
-    sqftMax: '',
-    locationType: 'zipcode',
-    zipCode: '',
+    propertyType: router.query.propertyType || 'Residential',
+    priceMin: router.query.priceMin || '',
+    priceMax: router.query.priceMax || '',
+    beds: router.query.beds || '',
+    baths: router.query.baths || '',
+    sqftMin: router.query.sqftMin || '',
+    sqftMax: router.query.sqftMax || '',
+    locationType: router.query.locationType || 'zipcode',
+    zipCode: router.query.zipCode || '',
     coordinates: null,
-    radius: DEFAULT_RADIUS
+    radius: router.query.radius ? parseInt(router.query.radius) : DEFAULT_RADIUS,
+    listingStatus: router.query.listingStatus || 'Active'
   });
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showMap, setShowMap] = useState(false);
 
+  useEffect(() => {
+    const isReload = performance.getEntriesByType('navigation')[0].type === 'reload';
+    if (isReload) {
+      localStorage.removeItem('searchParams');
+      localStorage.removeItem('searchResults');
+    } else {
+      const savedSearchParams = JSON.parse(localStorage.getItem('searchParams'));
+      const savedSearchResults = JSON.parse(localStorage.getItem('searchResults')) || [];
+      if (savedSearchParams) {
+        setSearchParams(savedSearchParams);
+      }
+      if (savedSearchResults) {
+        onSearchResults(savedSearchResults);
+      }
+    }
+  }, []);
+
   const propertyTypes = [
-    { value: 'Residential', label: 'Single Family Home' },
+    { value: 'Residential', label: 'Single Family Home' }
+    // Add additional types as needed
+  ];
+
+  const listingStatuses = [
+    { value: 'Active', label: 'Active' },
+    { value: 'ActiveUnderContract', label: 'Active Under Contract' },
+    { value: 'Closed', label: 'Closed' },
+    { value: 'ComingSoon', label: 'Coming Soon' }
   ];
 
   const buildODataQuery = () => {
     const filters = [];
-    
-    // Property Type filter
     if (searchParams.propertyType) {
       filters.push(`PropertyType eq '${searchParams.propertyType}'`);
     }
-
-    // Price range
     if (searchParams.priceMin) {
       filters.push(`ListPrice ge ${searchParams.priceMin}`);
     }
     if (searchParams.priceMax) {
       filters.push(`ListPrice le ${searchParams.priceMax}`);
     }
-
-    // Bedrooms
     if (searchParams.beds) {
       filters.push(`BedroomsTotal ge ${searchParams.beds}`);
     }
-
-    // Bathrooms
     if (searchParams.baths) {
       filters.push(`BathroomsTotalInteger ge ${searchParams.baths}`);
     }
-
-    // Square footage
     if (searchParams.sqftMin) {
       filters.push(`LivingAreaSqFt ge ${searchParams.sqftMin}`);
     }
     if (searchParams.sqftMax) {
       filters.push(`LivingAreaSqFt le ${searchParams.sqftMax}`);
     }
-
-    // Location filter
     if (searchParams.coordinates) {
       const { lat, lng } = searchParams.coordinates;
       filters.push(
@@ -78,100 +105,61 @@ const SearchBar = ({ onSearchResults }) => {
         `Longitude ge ${lng - 0.1} and Longitude le ${lng + 0.1}`
       );
     }
-
+    if (searchParams.listingStatus) {
+      filters.push(`MlsStatus has '${searchParams.listingStatus}'`);
+    }
     return filters.join(' and ');
-  };
-
- const fetchToken = async () => {
-    const response = await axios.post('/api/token', {
-      client_id: process.env.NEXT_PUBLIC_TRESTLE_CLIENT_ID,
-      client_secret: process.env.NEXT_PUBLIC_TRESTLE_CLIENT_SECRET,
-    });
-    return response.data.access_token;
   };
 
   const handleSearch = async () => {
     setLoading(true);
     setError('');
-    
     try {
-      const token = await fetchToken();
+      const token = await getAccessToken();
       const filterQuery = buildODataQuery();
-      
-      const response = await axios.get(
-        `${API_BASE_URL}/trestle/odata/Property`,
-        {
-          params: {
-            $filter: filterQuery,
-            $select: 'ListingKey,UnparsedAddress,ListPrice,BedroomsTotal,BathroomsTotalInteger,Latitude,Longitude,Media',
-            $top: 10
-          },
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/json'
-          }
-        }
-      );
-  
-      const properties = response.data.value || [];
-      
-      // Process listings with media using Promise.all
+      const properties = await getPropertiesByFilter(filterQuery, token);
       const listingsWithMedia = await Promise.all(
         properties.map(async (property) => {
-          const mediaUrls = await fetchMediaUrls(property.ListingKey, token);
-            return {
-              ...property,
-              media: mediaUrls.length > 0 ? mediaUrls[0] : '/properties.jpg',
-              allMedia: mediaUrls
-            };
+          const mediaUrls = await getMediaUrls(property.ListingKey, token);
+          return {
+            ...property,
+            media:
+              mediaUrls.length > 0
+                ? mediaUrls[0]
+                : '/fallback-property.jpg',
+            allMedia: mediaUrls
+          };
         })
       );
-  
-      // Pass results to parent component
       onSearchResults(listingsWithMedia);
-    } catch (error) {
-      console.error('Search error:', error);
+      localStorage.setItem('searchParams', JSON.stringify(searchParams));
+      localStorage.setItem('searchResults', JSON.stringify(listingsWithMedia));
+    } catch (err) {
+      console.error('Search error:', err);
       setError('Failed to fetch properties. Please try again.');
     } finally {
       setLoading(false);
     }
+    router.push({
+      pathname: '/',
+      query: {
+        propertyType: searchParams.propertyType,
+        priceMin: searchParams.priceMin,
+        priceMax: searchParams.priceMax,
+        beds: searchParams.beds,
+        baths: searchParams.baths,
+        sqftMin: searchParams.sqftMin,
+        sqftMax: searchParams.sqftMax,
+        locationType: searchParams.locationType,
+        zipCode: searchParams.zipCode,
+        radius: searchParams.radius,
+        listingStatus: searchParams.listingStatus
+      }
+    }, undefined, { shallow: true });
   };
 
-// Update the fetchMediaUrls function to use the correct endpoint format
-const fetchMediaUrls = async (listingKey, token) => {
-  try {
-    const response = await axios.get(
-      `${API_BASE_URL}/trestle/odata/Media`,
-      {
-        params: {
-          $filter: `ResourceRecordKey eq '${listingKey}' and MediaCategory eq 'Photo'`,
-          $orderby: 'Order',
-          $select: 'MediaURL'
-        },
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json'
-        }
-      }
-    );
-
-    // Extract and format valid URLs
-    return response.data.value
-      .map(media => {
-        // Clean up URL format if needed
-        let url = media.MediaURL?.replace(/^https:\/\//, '') || '';
-        return url ? `https://${url}` : null;
-      })
-      .filter(url => url !== null);
-
-  } catch (error) {
-    console.error('Media fetch error:', error);
-    return [];
-  }
-};
-
   const handleLocationSelect = (latLng) => {
-    setSearchParams(prev => ({
+    setSearchParams((prev) => ({
       ...prev,
       coordinates: { lat: latLng.lat, lng: latLng.lng },
       zipCode: ''
@@ -182,65 +170,71 @@ const fetchMediaUrls = async (listingKey, token) => {
   return (
     <div className="bg-gray-100 py-8 px-4 md:px-6">
       <div className="max-w-5xl mx-auto space-y-4">
-        {/* Location Selector */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <label className="block font-medium">Search Area</label>
-              <div className="flex gap-4">
-                <button
-            onClick={() => setSearchParams(prev => ({
-              ...prev,
-              locationType: 'zipcode',
-              coordinates: null
-            }))}
-            className={`px-4 py-2 rounded ${searchParams.locationType === 'zipcode' ? 'bg-blue-500 text-white' : 'bg-white'}`}
-                >
-            ZIP Code
-                </button>
-                <button
-            onClick={() => alert("Map feature in development. Coming soon!")}
-            className={`px-4 py-2 rounded ${searchParams.locationType === 'map' ? 'bg-blue-500 text-white' : 'bg-white'}`}
-                >
-            Map Area
-                </button>
-              </div>
-              
-              {searchParams.locationType === 'zipcode' && (
-                <input
-            type="text"
-            placeholder="Enter ZIP Code"
-            value={searchParams.zipCode}
-            onChange={(e) => setSearchParams(prev => ({
-              ...prev,
-              zipCode: e.target.value
-            }))}
-            className="w-full p-2 border rounded"
-                />
-              )}
-            </div>
-
-            {/* Property Type */}
-          <div className="space-y-2">
-            <label className="block font-medium">Property Type</label>
-            <select
-              value={searchParams.propertyType}
-              onChange={(e) => setSearchParams(prev => ({
+        <div className="space-y-2">
+          <label className="block font-medium">Search Area</label>
+          <div className="flex gap-4">
+            <button
+              onClick={() =>
+                setSearchParams((prev) => ({
+                  ...prev,
+                  locationType: 'zipcode',
+                  coordinates: null
+                }))
+              }
+              className={`px-4 py-2 rounded-full shadow-md ${searchParams.locationType === 'zipcode'
+                ? 'bg-blue-500 text-white'
+                : 'bg-white border'
+                }`}
+            >
+              ZIP Code
+            </button>
+            <button
+              onClick={() => setShowMap(true)}
+              className={`px-4 py-2 rounded-full shadow-md ${searchParams.locationType === 'map'
+                ? 'bg-blue-500 text-white'
+                : 'bg-white border'
+                }`}
+            >
+              Map Area
+            </button>
+          </div>
+          {searchParams.locationType === 'zipcode' && (
+            <input
+              type="text"
+              placeholder="Enter ZIP Code"
+              value={searchParams.zipCode}
+              onChange={(e) =>
+                setSearchParams((prev) => ({
+                  ...prev,
+                  zipCode: e.target.value
+                }))
+              }
+              className="w-full p-2 border rounded-full mt-2 shadow-md"
+            />
+          )}
+        </div>
+        <div className="space-y-2">
+          <label className="block font-medium">Property Type</label>
+          <select
+            value={searchParams.propertyType}
+            onChange={(e) =>
+              setSearchParams((prev) => ({
                 ...prev,
                 propertyType: e.target.value
-              }))}
-              className="w-full p-2 border rounded"
-            >
-              <option value="">All Types</option>
-              {propertyTypes.map((type) => (
-                <option key={type.value} value={type.value}>
-                  {type.label}
-                </option>
-              ))}
-            </select>
-          </div>
+              }))
+            }
+            className="w-full p-2 border rounded-full shadow-md"
+          >
+            <option value="">All Types</option>
+            {propertyTypes.map((type) => (
+              <option key={type.value} value={type.value}>
+                {type.label}
+              </option>
+            ))}
+          </select>
         </div>
 
-        {/* Price and Size Filters */}
+        {/* Other Filters */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <div className="space-y-2">
             <label className="block font-medium">Price Range</label>
@@ -249,80 +243,101 @@ const fetchMediaUrls = async (listingKey, token) => {
                 type="number"
                 placeholder="Min Price"
                 value={searchParams.priceMin}
-                onChange={(e) => setSearchParams(prev => ({
-                  ...prev,
-                  priceMin: e.target.value
-                }))}
-                className="w-full p-2 border rounded"
+                onChange={(e) =>
+                  setSearchParams((prev) => ({
+                    ...prev,
+                    priceMin: e.target.value
+                  }))
+                }
+                className="w-full p-2 border rounded-full shadow-md"
               />
               <input
                 type="number"
                 placeholder="Max Price"
                 value={searchParams.priceMax}
-                onChange={(e) => setSearchParams(prev => ({
-                  ...prev,
-                  priceMax: e.target.value
-                }))}
-                className="w-full p-2 border rounded"
+                onChange={(e) =>
+                  setSearchParams((prev) => ({
+                    ...prev,
+                    priceMax: e.target.value
+                  }))
+                }
+                className="w-full p-2 border rounded-full shadow-md"
               />
             </div>
           </div>
-
           <div className="space-y-2">
             <label className="block font-medium">Bedrooms</label>
             <input
               type="number"
               placeholder="Min Beds"
               value={searchParams.beds}
-              onChange={(e) => setSearchParams(prev => ({
-                ...prev,
-                beds: e.target.value
-              }))}
-              className="w-full p-2 border rounded"
+              onChange={(e) =>
+                setSearchParams((prev) => ({ ...prev, beds: e.target.value }))
+              }
+              className="w-full p-2 border rounded-full shadow-md"
             />
           </div>
-
           <div className="space-y-2">
             <label className="block font-medium">Bathrooms</label>
             <input
               type="number"
               placeholder="Min Baths"
               value={searchParams.baths}
-              onChange={(e) => setSearchParams(prev => ({
-                ...prev,
-                baths: e.target.value
-              }))}
-              className="w-full p-2 border rounded"
+              onChange={(e) =>
+                setSearchParams((prev) => ({ ...prev, baths: e.target.value }))
+              }
+              className="w-full p-2 border rounded-full shadow-md"
             />
+          </div>
+          <div className="space-y-2">
+            <label className="block font-medium">Listing Status</label>
+            <select
+              value={searchParams.listingStatus}
+              onChange={(e) =>
+                setSearchParams((prev) => ({
+                  ...prev,
+                  listingStatus: e.target.value
+                }))
+              }
+              className="w-full p-2 border rounded-full shadow-md"
+            >
+              {listingStatuses.map((status) => (
+                <option key={status.value} value={status.value}>
+                  {status.label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
-        {/* Search Button and Status */}
+        {/* Search Button */}
         <div className="flex flex-col items-center gap-2">
           <button
             onClick={handleSearch}
             disabled={loading}
-            className="px-6 py-3 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400"
+            className="px-6 py-3 bg-blue-500 text-white rounded-full shadow-md hover:bg-blue-600 disabled:bg-gray-400"
           >
             {loading ? 'Searching...' : 'Search Properties'}
           </button>
           {error && <p className="text-red-500">{error}</p>}
         </div>
+
+        {/* Map Modal */}
         {showMap && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-3xl">
+            <div className="bg-white rounded-lg p-6 w-full max-w-3xl shadow-lg">
               <h3 className="text-xl font-bold mb-4">Select Search Area</h3>
               <div className="h-96 relative">
-                <MapContainer 
-                  center={searchParams.coordinates || [42.1292, -80.0851]} 
-                  zoom={13} 
-                  className="h-full w-full"
+                <MapContainer
+                  center={searchParams.coordinates || [42.1292, -80.0851]}
+                  zoom={13}
+                  className="h-full w-full rounded-lg"
                 >
                   <TileLayer
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     attribution="© OpenStreetMap contributors"
                   />
-                  <LocationSelector 
+                  <LocationSelector
                     onLocationSelect={handleLocationSelect}
                     initialPosition={searchParams.coordinates}
                   />
@@ -334,16 +349,18 @@ const fetchMediaUrls = async (listingKey, token) => {
                   <input
                     type="number"
                     value={searchParams.radius}
-                    onChange={(e) => setSearchParams(prev => ({
-                      ...prev,
-                      radius: Math.max(1, parseInt(e.target.value))
-                    }))}
-                    className="w-20 p-1 border rounded"
+                    onChange={(e) =>
+                      setSearchParams((prev) => ({
+                        ...prev,
+                        radius: Math.max(1, parseInt(e.target.value))
+                      }))
+                    }
+                    className="w-20 p-1 border rounded-full shadow-md"
                   />
                 </div>
                 <button
                   onClick={() => setShowMap(false)}
-                  className="px-4 py-2 bg-gray-500 text-white rounded"
+                  className="px-4 py-2 bg-gray-500 text-white rounded-full shadow-md"
                 >
                   Close
                 </button>
@@ -358,15 +375,12 @@ const fetchMediaUrls = async (listingKey, token) => {
 
 const LocationSelector = ({ onLocationSelect, initialPosition }) => {
   const [marker, setMarker] = useState(initialPosition);
-
-  // Use the useMapEvents hook directly
-  const map = useMapEvents({
+  useMapEvents({
     click(e) {
       setMarker(e.latlng);
       onLocationSelect(e.latlng);
-    },
+    }
   });
-
   return (
     <>
       {marker && (
