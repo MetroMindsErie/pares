@@ -52,10 +52,10 @@ export async function getServerSideProps({ params }) {
     // Map the returned media to get the MediaURL values
     const mediaUrls = mediaResponse.data.value.map((media) => media.MediaURL);
 
-    // 4. Create a new property object with a single media URL (or fallback)
+    // 4. Create a new property object with all media URLs
     const propertyWithMedia = {
       ...property,
-      media: mediaUrls[0] || '/fallback-property-image.jpg',
+      media: mediaUrls,
     };
 
     return {

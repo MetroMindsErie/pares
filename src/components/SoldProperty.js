@@ -68,13 +68,16 @@ export default function SoldProperty({ data }) {
         <p>{data.ListAgentPhone}</p>
       </div>
 
-      {imageUrl && (
-        <div className="property-media">
-          <img
-            src={imageUrl}
-            alt={data.UnparsedAddress}
-            className="property-image"
-          />
+      {data.media && data.media.length > 0 && (
+        <div className="property-media-scroll">
+          {data.media.map((url, index) => (
+            <img
+              key={index}
+              src={url}
+              alt={`${data.UnparsedAddress} - ${index + 1}`}
+              className="property-image-scroll"
+            />
+          ))}
         </div>
       )}
     </div>
