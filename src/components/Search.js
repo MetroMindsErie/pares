@@ -195,22 +195,8 @@ const SearchBar = ({ onSearchResults }) => {
     } finally {
       setLoading(false);
     }
-    router.push({
-      pathname: '/',
-      query: {
-        propertyType: searchParams.propertyType,
-        priceMin: searchParams.priceMin,
-        priceMax: searchParams.priceMax,
-        beds: searchParams.beds,
-        baths: searchParams.baths,
-        sqftMin: searchParams.sqftMin,
-        sqftMax: searchParams.sqftMax,
-        locationType: searchParams.locationType,
-        zipCode: searchParams.zipCode,
-        radius: searchParams.radius,
-        listingStatus: searchParams.listingStatus
-      }
-    }, undefined, { shallow: true });
+    // Remove or comment out router.push to avoid reloading and resetting state:
+    // router.push({ pathname: '/', query: { ... } }, undefined, { shallow: true });
   };
 
   const handleLocationSelect = (latLng) => {
