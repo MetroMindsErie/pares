@@ -91,6 +91,7 @@ const FeaturedListings = ({ title, listings }) => {
 };
 
 const PropertyCard = ({ listing, mobile }) => {
+  const imageSrc = typeof listing.media === 'string' ? listing.media : '/fallback-property.jpg';
   return (
     <Link
       href={`/property/${listing.ListingKey}`}
@@ -100,7 +101,7 @@ const PropertyCard = ({ listing, mobile }) => {
     >
       <div className="relative h-60 bg-gray-100">
         <Image
-          src={listing.media || '/fallback-property.jpg'}
+          src={imageSrc}
           alt={listing.UnparsedAddress}
           fill
           className="object-cover"

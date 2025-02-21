@@ -6,7 +6,6 @@ import SearchBar from '../components/Search';
 import FeaturedListings from '../components/FeaturedListings';
 import SearchResults from '../components/SearchResults';  // new component
 import Hero from '../components/Hero';
-import About from '../components/About';
 import Contact from '../components/Contact';
 import Footer from '../components/Footer';
 import 'leaflet/dist/leaflet.css';
