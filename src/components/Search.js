@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { getAccessToken, getPropertiesByFilter, getMediaUrls } from '../services/trestleServices';
 import { useRouter } from 'next/router';
+import { MagnifyingGlassIcon, MapPinIcon } from '@heroicons/react/24/outline';
 
 const MapContainer = dynamic(
   () => import('react-leaflet').then((mod) => mod.MapContainer),
@@ -112,6 +113,7 @@ const SearchBar = ({ onSearchResults }) => {
   };
 
   const handleSearch = async () => {
+    e.preventDefault();
     setLoading(true);
     setError('');
     try {
@@ -168,208 +170,55 @@ const SearchBar = ({ onSearchResults }) => {
   };
 
   return (
-    <div className="bg-gray-100 py-8 px-4 md:px-6">
-      <div className="max-w-5xl mx-auto space-y-4">
-        <div className="space-y-2">
-          <label className="block font-medium">Search Area</label>
-          <div className="flex gap-4">
-            <button
-              onClick={() =>
-                setSearchParams((prev) => ({
-                  ...prev,
-                  locationType: 'zipcode',
-                  coordinates: null
-                }))
-              }
-              className={`px-4 py-2 rounded-full shadow-md ${searchParams.locationType === 'zipcode'
-                ? 'bg-blue-500 text-white'
-                : 'bg-white border'
-                }`}
-            >
-              ZIP Code
-            </button>
-            <button disabled
-              onClick={() => setShowMap(true)}
-              className={`px-4 py-2 rounded-full shadow-md ${searchParams.locationType === 'map'
-                ? 'bg-blue-500 text-white'
-                : 'bg-white border'
-                }`}
-            >
-              Map Area
-            </button>
-          </div>
-          {searchParams.locationType === 'zipcode' && (
-            <input
-              type="text"
-              placeholder="Enter ZIP Code"
-              value={searchParams.zipCode}
-              onChange={(e) =>
-                setSearchParams((prev) => ({
-                  ...prev,
-                  zipCode: e.target.value
-                }))
-              }
-              className="w-full p-2 border rounded-full mt-2 shadow-md"
-            />
-          )}
+    <form onSubmit={handleSearch} className="w-full max-w-5xl mx-auto">
+      <div className="flex flex-col md:flex-row gap-2 p-2 bg-white rounded-lg shadow-xl">
+        <div className="flex-1 relative">
+          <input
+            type="text"
+            placeholder="Enter city, neighborhood, or ZIP"
+            className="w-full pl-10 pr-4 py-3 rounded-lg border-0 focus:ring-2 focus:ring-blue-500"
+          />
+          <MapPinIcon className="w-5 h-5 absolute left-3 top-3.5 text-gray-400" />
         </div>
-        <div className="space-y-2">
-          <label className="block font-medium">Property Type</label>
+
+        <div className="flex gap-2">
           <select
             value={searchParams.propertyType}
-            onChange={(e) =>
-              setSearchParams((prev) => ({
-                ...prev,
-                propertyType: e.target.value
-              }))
-            }
-            className="w-full p-2 border rounded-full shadow-md"
+            onChange={(e) => setSearchParams(p => ({...p, propertyType: e.target.value}))}
+            className="px-4 py-2 rounded-lg border border-gray-200"
           >
-            <option value="">All Types</option>
-            {propertyTypes.map((type) => (
-              <option key={type.value} value={type.value}>
-                {type.label}
-              </option>
-            ))}
+            <option value="Residential">Homes</option>
+            <option value="Condo">Condos</option>
+            <option value="MultiFamily">Multi-Family</option>
           </select>
-        </div>
 
-        {/* Other Filters */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <div className="space-y-2">
-            <label className="block font-medium">Price Range</label>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                placeholder="Min Price"
-                value={searchParams.priceMin}
-                onChange={(e) =>
-                  setSearchParams((prev) => ({
-                    ...prev,
-                    priceMin: e.target.value
-                  }))
-                }
-                className="w-full p-2 border rounded-full shadow-md"
-              />
-              <input
-                type="number"
-                placeholder="Max Price"
-                value={searchParams.priceMax}
-                onChange={(e) =>
-                  setSearchParams((prev) => ({
-                    ...prev,
-                    priceMax: e.target.value
-                  }))
-                }
-                className="w-full p-2 border rounded-full shadow-md"
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <label className="block font-medium">Bedrooms</label>
-            <input
-              type="number"
-              placeholder="Min Beds"
-              value={searchParams.beds}
-              onChange={(e) =>
-                setSearchParams((prev) => ({ ...prev, beds: e.target.value }))
-              }
-              className="w-full p-2 border rounded-full shadow-md"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="block font-medium">Bathrooms</label>
-            <input
-              type="number"
-              placeholder="Min Baths"
-              value={searchParams.baths}
-              onChange={(e) =>
-                setSearchParams((prev) => ({ ...prev, baths: e.target.value }))
-              }
-              className="w-full p-2 border rounded-full shadow-md"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="block font-medium">Listing Status</label>
-            <select
-              value={searchParams.listingStatus}
-              onChange={(e) =>
-                setSearchParams((prev) => ({
-                  ...prev,
-                  listingStatus: e.target.value
-                }))
-              }
-              className="w-full p-2 border rounded-full shadow-md"
-            >
-              {listingStatuses.map((status) => (
-                <option key={status.value} value={status.value}>
-                  {status.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+          <input
+            type="number"
+            placeholder="Min price"
+            value={searchParams.priceMin}
+            onChange={(e) => setSearchParams(p => ({...p, priceMin: e.target.value}))}
+            className="w-24 px-4 py-2 rounded-lg border border-gray-200"
+          />
 
-        {/* Search Button */}
-        <div className="flex flex-col items-center gap-2">
+          <input
+            type="number"
+            placeholder="Max price"
+            value={searchParams.priceMax}
+            onChange={(e) => setSearchParams(p => ({...p, priceMax: e.target.value}))}
+            className="w-24 px-4 py-2 rounded-lg border border-gray-200"
+          />
+
           <button
-            onClick={handleSearch}
+            type="submit"
             disabled={loading}
-            className="px-6 py-3 bg-blue-500 text-white rounded-full shadow-md hover:bg-blue-600 disabled:bg-gray-400"
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 flex items-center gap-2"
           >
-            {loading ? 'Searching...' : 'Search Properties'}
+            <MagnifyingGlassIcon className="w-5 h-5" />
+            {loading ? 'Searching...' : 'Search'}
           </button>
-          {error && <p className="text-red-500">{error}</p>}
         </div>
-
-        {/* Map Modal */}
-        {showMap && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-3xl shadow-lg">
-              <h3 className="text-xl font-bold mb-4">Select Search Area</h3>
-              <div className="h-96 relative">
-                <MapContainer
-                  center={searchParams.coordinates || [42.1292, -80.0851]}
-                  zoom={13}
-                  className="h-full w-full rounded-lg"
-                >
-                  <TileLayer
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    attribution="© OpenStreetMap contributors"
-                  />
-                  <LocationSelector
-                    onLocationSelect={handleLocationSelect}
-                    initialPosition={searchParams.coordinates}
-                  />
-                </MapContainer>
-              </div>
-              <div className="mt-4 flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <label>Radius (miles):</label>
-                  <input
-                    type="number"
-                    value={searchParams.radius}
-                    onChange={(e) =>
-                      setSearchParams((prev) => ({
-                        ...prev,
-                        radius: Math.max(1, parseInt(e.target.value))
-                      }))
-                    }
-                    className="w-20 p-1 border rounded-full shadow-md"
-                  />
-                </div>
-                <button
-                  onClick={() => setShowMap(false)}
-                  className="px-4 py-2 bg-gray-500 text-white rounded-full shadow-md"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
-    </div>
+    </form>
   );
 };
 

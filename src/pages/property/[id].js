@@ -1,13 +1,14 @@
-// /pages/property/[id].js
+// pages/property/[id].js (updated)
 import React from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
-import ActiveProperty from '../../components/ActiveProperty';
-import SoldProperty from '../../components/SoldProperty';
+import PropertyHeader from '../../components/PropertyHeader';
+import PropertyGallery from '../../components/PropertyGallery';
+import PropertyDetails from '../../components/PropertyDetails';
+import PropertyMap from '../../components/PropertyMap';
 
 export async function getServerSideProps({ params }) {
   try {
-    // 1. Get an access token from Trestle
     const tokenResponse = await axios.post(
       'https://api-trestle.corelogic.com/trestle/oidc/connect/token',
       new URLSearchParams({
@@ -20,83 +21,91 @@ export async function getServerSideProps({ params }) {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       }
     );
+
     const token = tokenResponse.data.access_token;
 
-    // 2. Fetch the property details using the ListingKey (from params.id)
-    const propertyResponse = await axios.get(
-      `https://api-trestle.corelogic.com/trestle/odata/Property?$filter=ListingKey eq '${params.id}'`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json',
-        },
-      }
-    );
+    const [propertyResponse, mediaResponse] = await Promise.all([
+      axios.get(
+        `https://api-trestle.corelogic.com/trestle/odata/Property?$filter=ListingKey eq '${params.id}'`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+          },
+        }
+      ),
+      axios.get(
+        `https://api-trestle.corelogic.com/trestle/odata/Media?$filter=ResourceRecordKey eq '${params.id}'&$orderby=Order`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+          },
+        }
+      )
+    ]);
 
-    if (!propertyResponse.data.value || propertyResponse.data.value.length === 0) {
+    if (!propertyResponse.data.value?.length) {
       return { notFound: true };
     }
-    const property = propertyResponse.data.value[0];
 
-    // 3. Fetch media URLs for this property
-    const mediaResponse = await axios.get(
-      `https://api-trestle.corelogic.com/trestle/odata/Media?$filter=ResourceRecordKey eq '${property.ListingKey}'&$orderby=Order`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json',
-        },
-      }
-    );
-
-    // Map the returned media to get the MediaURL values
-    const mediaUrls = mediaResponse.data.value.map((media) => media.MediaURL);
-
-    // 4. Create a new property object with all media URLs
-    const propertyWithMedia = {
-      ...property,
-      media: mediaUrls,
+    const property = {
+      ...propertyResponse.data.value[0],
+      media: mediaResponse.data.value.map(media => media.MediaURL)
     };
 
     return {
       props: {
-        property: propertyWithMedia,
+        property,
+        coordinates: property.Latitude && property.Longitude ? {
+          lat: property.Latitude,
+          lng: property.Longitude
+        } : null
       },
     };
   } catch (error) {
-    console.error('API Error:', {
-      message: error.message,
-      status: error.response?.status,
-      data: error.response?.data,
-    });
+    console.error('API Error:', error);
     return { notFound: true };
   }
 }
 
-const PropertyDetail = ({ property }) => {
+const PropertyDetail = ({ property, coordinates }) => {
   const router = useRouter();
-
-  if (router.isFallback) {
-    return <div>Loading...</div>;
-  }
-
-  // Determine which template to use based on property status.
-  const isClosed = property.StandardStatus && property.StandardStatus.toLowerCase() === 'closed';
+  const isClosed = property.StandardStatus?.toLowerCase() === 'closed';
 
   return (
-    <div>
-      {isClosed ? (
-        <SoldProperty data={property} />
-      ) : (
-        <ActiveProperty data={property} />
-      )}
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-8">
+        <div>
+          <PropertyHeader property={property} />
+          <PropertyGallery media={property.media} />
+          <PropertyDetails property={property} />
+        </div>
+        
+        <div className="space-y-8">
+          {coordinates && <PropertyMap coordinates={coordinates} />}
+          <div className="bg-white p-6 rounded-lg shadow-sm">
+            <h3 className="text-xl font-bold mb-4">Contact Agent</h3>
+            <div className="space-y-4">
+              <p className="text-gray-600">{property.ListAgentFullName}</p>
+              <p className="text-gray-600">{property.ListOfficeName}</p>
+              <p className="text-gray-600">{property.ListAgentPhone}</p>
+              <button
+                className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Request Info
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      <div className="flex justify-center mt-4">
+      <div className="mt-8 text-center">
         <button
           onClick={() => router.back()}
-          className="bg-blue-500 text-white py-2 px-4 rounded"
+          className="bg-gray-100 text-gray-700 py-2 px-6 rounded-lg hover:bg-gray-200 transition-colors"
         >
-          Go Back
+          ← Back to Listings
         </button>
       </div>
     </div>

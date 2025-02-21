@@ -4,6 +4,7 @@ import axios from 'axios';
 import TrestleClient from 'trestle_client/lib/TrestleClient';
 import Logger from 'trestle_client/lib/Logger';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export const fetchToken = async () => {
   const response = await axios.post('/api/token', {
@@ -53,7 +54,7 @@ const fetchMediaUrls = async (listingKey, token) => {
   return response.data.value.map((media) => media.MediaURL);
 };
 
-const FeaturedListings = ({ featuredListings, searchResults }) => {
+const FeaturedListings = ({ title, featuredListings, searchResults }) => {
   const [listings, setListings] = useState([]);
   const [nextLink, setNextLink] = useState(null);
 
@@ -181,55 +182,65 @@ const FeaturedListings = ({ featuredListings, searchResults }) => {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100">
-      <section id="listings" className="p-4 bg-white rounded-lg shadow-md md:p-10">
-        <h2 className="text-2xl font-bold text-center mb-6 md:text-3xl md:mb-8">Featured Listings</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {listings.length > 0 ? (
-            listings.map((listing) => (
-              <Link key={listing.ListingKey} href={`/property/${listing.ListingKey}`} passHref>
-                <div className={`border rounded-lg overflow-hidden shadow-md cursor-pointer hover:shadow-lg transition-shadow ${listing.StandardStatus === 'Closed' ? 'bg-gray-200' : ''}`}>
-                  <img
-                    src={listing.media}
-                    alt={listing.UnparsedAddress || 'Property Image'}
-                    className="w-full h-48 object-cover"
-                  />
-                  <div className="p-4">
-                    <h3 className="text-lg font-bold">{listing.UnparsedAddress || 'No address'}</h3>
-                    <p className="text-gray-600">
-                      {listing.BedroomsTotal} Beds | {listing.BathroomsTotalInteger} Baths
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {listing.ListPrice ? `$${listing.ListPrice.toLocaleString()}` : 'Price not available'}
-                    </p>
-                    {listing.StandardStatus === 'Closed' && (
-                      <p className="text-red-500 font-bold">Closed</p>
-                    )}
-                  </div>
+    <section className="mb-16">
+      <h2 className="text-3xl font-bold text-gray-900 mb-8">{title}</h2>
+      {/* Aesthetic border & horizontal scroll container */}
+      <div className="flex space-x-4 overflow-x-auto border border-gray-300 rounded-lg p-4">
+        {listings.slice(0, 10).map((listing) => (  // changed from slice(0, 6) to slice(0, 10)
+          <Link 
+            key={listing.ListingKey} 
+            href={`/property/${listing.ListingKey}`}
+            className="min-w-[280px] flex-shrink-0 group block rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300"
+          >
+            <div className="relative h-60 bg-gray-100">
+              <Image
+                src={listing.media || '/fallback-property.jpg'}
+                alt={listing.UnparsedAddress}
+                fill
+                className="object-cover"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              />
+              {listing.StandardStatus === 'Closed' && (
+                <div className="absolute top-2 right-2 bg-red-600 text-white px-3 py-1 rounded-full text-sm font-medium">
+                  Sold
                 </div>
-              </Link>
-            ))
-          ) : (
-            <p>No properties available.</p>
-          )}
+              )}
+            </div>
+            
+            <div className="p-4 bg-white">
+              <h3 className="text-lg font-semibold text-gray-900 truncate">
+                {listing.UnparsedAddress}
+              </h3>
+              <p className="text-gray-500 text-sm mt-1">
+                {listing.BedroomsTotal} beds · {listing.BathroomsTotalInteger} baths
+              </p>
+              <p className="text-xl font-bold text-gray-900 mt-2">
+                {listing.ListPrice ? `$${listing.ListPrice.toLocaleString()}` : 'Price not available'}
+              </p>
+              <div className="mt-2 flex items-center text-sm text-gray-500">
+                <span className="truncate">{listing.PropertyType}</span>
+                {listing.LivingAreaSqFt && (
+                  <span className="ml-2">
+                    · {listing.LivingAreaSqFt.toLocaleString()} sqft
+                  </span>
+                )}
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+      
+      {listings?.length === 0 && (
+        <div className="text-center py-12">
+          <p className="text-gray-500 text-lg">No properties found</p>
         </div>
-
-        {/* Load More Button */}
-        {nextLink && (
-          <div className="mt-6 text-center">
-            <button onClick={handleLoadMore} className="bg-blue-500 text-white py-2 px-4 rounded">
-              Load More
-            </button>
-          </div>
-        )}
-      </section>
-    </div>
+      )}
+    </section>
   );
-};
-
-FeaturedListings.propTypes = {
-  featuredListings: PropTypes.array,
-  searchResults: PropTypes.array,
-};
-
-export default FeaturedListings;
+}
+  FeaturedListings.propTypes = {
+    listings: PropTypes.array,
+    title: PropTypes.string.isRequired,
+  };
+  
+  export default FeaturedListings;

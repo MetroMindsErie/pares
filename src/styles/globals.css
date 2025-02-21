@@ -5,13 +5,47 @@
 
 /* styles/globals.css */
 
-/* Prevent horizontal overflow */
-body {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    overflow-x: hidden;
+/* Global reset and box-sizing */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
+
+/* Base styles for body */
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #f9f9f9;
+  color: #333;
+  line-height: 1.6;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+/* Container for consistent width and horizontal padding */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* Section spacing */
+section {
+  padding: 4rem 0;
+}
+
+/* Header and footer spacing */
+header, footer {
+  padding: 2rem 0;
+}
+
+/* Additional utility spacing (optional) */
+.mt-4 { margin-top: 1rem; }
+.mb-4 { margin-bottom: 1rem; }
+.pt-4 { padding-top: 1rem; }
+.pb-4 { padding-bottom: 1rem; }
 
 /* Flexbox fix for horizontal scrolling */
 .flex-container {
