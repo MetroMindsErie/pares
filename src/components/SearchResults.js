@@ -21,7 +21,7 @@ const SearchResults = ({ listings }) => {
               <div className="relative h-60 bg-gray-100">
                 <Image
                   src={imageSrc}
-                  alt={listing.UnparsedAddress || 'Property image'}
+                  alt={listing.UnparsedAddress || null}
                   fill
                   className="object-cover"
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
