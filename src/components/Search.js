@@ -17,16 +17,16 @@ const fetchMediaUrls = async (listingKey, token) => {
   try {
     const response = await axios.get(
       `https://api-trestle.corelogic.com/trestle/odata/Media`, {
-        params: {
-          $filter: `ResourceRecordKey eq '${listingKey}'`,
-          $orderby: 'Order',
-          $select: 'MediaURL'
-        },
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json'
-        }
+      params: {
+        $filter: `ResourceRecordKey eq '${listingKey}'`,
+        $orderby: 'Order',
+        $select: 'MediaURL'
+      },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json'
       }
+    }
     );
     return response.data.value.map((media) => media.MediaURL);
   } catch (error) {
@@ -60,8 +60,10 @@ const SearchBar = ({ onSearchResults }) => {
   const [showBathsDropdown, setShowBathsDropdown] = useState(false);
 
   useEffect(() => {
-    const navEntries = performance.getEntriesByType('navigation');
+    const navEntries = typeof performance !== 'undefined' ?
+      performance.getEntriesByType('navigation') : [];
     const isReload = navEntries.length > 0 && navEntries[0].type === 'reload';
+
     if (isReload) {
       localStorage.removeItem('searchParams');
       localStorage.removeItem('searchResults');
@@ -181,7 +183,7 @@ const SearchBar = ({ onSearchResults }) => {
             media:
               mediaUrls.length > 0
                 ? mediaUrls[0]
-                : '/public/properties.jpg',
+                : '/properties.jpg',
             allMedia: mediaUrls
           };
         })
@@ -244,7 +246,7 @@ const SearchBar = ({ onSearchResults }) => {
         <div className="flex items-center gap-2 flex-wrap">
           <select
             value={searchParams.propertyType}
-            onChange={(e) => setSearchParams(p => ({...p, propertyType: e.target.value}))}
+            onChange={(e) => setSearchParams(p => ({ ...p, propertyType: e.target.value }))}
             className="px-4 py-2.5 rounded-lg border border-gray-200 text-sm 
               text-gray-700 focus:border-blue-500 focus:ring-blue-500"
           >
@@ -258,7 +260,7 @@ const SearchBar = ({ onSearchResults }) => {
               type="number"
               placeholder="Min Price"
               value={searchParams.priceMin}
-              onChange={(e) => setSearchParams(p => ({...p, priceMin: e.target.value}))}
+              onChange={(e) => setSearchParams(p => ({ ...p, priceMin: e.target.value }))}
               className="w-28 px-4 py-2.5 rounded-lg border border-gray-200 text-sm 
                 text-gray-700 focus:border-blue-500 focus:ring-blue-500"
             />

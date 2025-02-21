@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import ReactGA from 'react-ga4';
 import '../styles/globals.css';
 import '../styles/propertyTemplates.css';
+import { ErrorBoundary } from '@/components/ErrorBoundry';
 
 // Initialize Google Analytics with environment variable
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
@@ -31,7 +32,11 @@ function MyApp({ Component, pageProps }) {
     };
   }, [router.events]);
 
-  return <Component {...pageProps} />;
+  return (
+    <ErrorBoundary>
+      <Component {...pageProps} />
+    </ErrorBoundary>
+  );
 }
 
 export default MyApp;

@@ -7,8 +7,8 @@ import { useState } from "react";
 
 
 const Navbar = () => {
-const [showLogin, setShowLogin] = useState(false);
-const [showRegister, setShowRegister] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);
   // Toggle display of login and register modals
   const toggleLogin = () => setShowLogin(!showLogin);
   const toggleRegister = () => setShowRegister(!showRegister);

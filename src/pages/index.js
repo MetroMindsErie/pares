@@ -18,6 +18,7 @@ export default function Home({ featuredListings, heroContent }) {
 
   // Load search results from localStorage if available.
   useEffect(() => {
+    // Removed the navEntries check to avoid clearing stored search results
     const storedResults = localStorage.getItem('searchResults');
     if (storedResults) {
       setSearchResults(JSON.parse(storedResults));

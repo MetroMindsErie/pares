@@ -1,5 +1,6 @@
 // components/FeaturedListings.js
 import React, { useRef, useState, useEffect } from 'react';
+import PropTypes from 'prop-types'; // added import
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -89,9 +90,23 @@ const FeaturedListings = ({ title, listings }) => {
     </section>
   );
 };
-
+FeaturedListings.propTypes = {
+  title: PropTypes.string.isRequired,
+  listings: PropTypes.arrayOf(
+    PropTypes.shape({
+      ListingKey: PropTypes.string.isRequired,
+      media: PropTypes.string,
+      // ... other required props
+    })
+  ).isRequired
+};
 const PropertyCard = ({ listing, mobile }) => {
-  const imageSrc = typeof listing.media === 'string' ? listing.media : '/fallback-property.jpg';
+  if (!listing) return null;
+
+  const imageSrc = typeof listing.media === 'string' ? 
+    listing.media : 
+    '/properties.jpg';
+
   return (
     <Link
       href={`/property/${listing.ListingKey}`}
