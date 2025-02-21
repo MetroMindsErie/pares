@@ -60,7 +60,8 @@ const SearchBar = ({ onSearchResults }) => {
   const [showBathsDropdown, setShowBathsDropdown] = useState(false);
 
   useEffect(() => {
-    const isReload = performance.getEntriesByType('navigation')[0].type === 'reload';
+    const navEntries = performance.getEntriesByType('navigation');
+    const isReload = navEntries.length > 0 && navEntries[0].type === 'reload';
     if (isReload) {
       localStorage.removeItem('searchParams');
       localStorage.removeItem('searchResults');
