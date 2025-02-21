@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { getPropertiesByFilter } from '../services/trestleServices';
 import { useRouter } from 'next/router';
-import { MagnifyingGlassIcon, MapPinIcon } from '@heroicons/react/24/outline';
+import MagnifyingGlassIcon from '@heroicons/react/24/outline/MagnifyingGlassIcon';
+import MapPinIcon from '@heroicons/react/24/outline/MapPinIcon';
 import axios from 'axios';
+import ClientOnly from './ClientOnly';
 
 const DEFAULT_RADIUS = 10; // Define DEFAULT_RADIUS if not defined elsewhere
 export const fetchToken = async () => {
@@ -79,17 +81,7 @@ const SearchBar = ({ onSearchResults }) => {
     }
   }, []);
 
-  const propertyTypes = [
-    { value: 'Residential', label: 'Single Family Home' }
-    // Add additional types as needed
-  ];
 
-  const listingStatuses = [
-    { value: 'Active', label: 'Active' },
-    { value: 'ActiveUnderContract', label: 'Active Under Contract' },
-    { value: 'Closed', label: 'Closed' },
-    { value: 'ComingSoon', label: 'Coming Soon' }
-  ];
 
   const fetchSuggestions = async (input) => {
     if (!input) {
@@ -216,8 +208,11 @@ const SearchBar = ({ onSearchResults }) => {
       <div className="flex flex-col md:flex-row gap-2 p-2 bg-white rounded-lg shadow-lg border border-gray-200">
         <div className="flex-1 relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <MapPinIcon className="w-5 h-5 text-gray-400" />
-          </div>
+            <ClientOnly>
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <MapPinIcon className="w-5 h-5 text-gray-400" />
+              </div>
+            </ClientOnly>          </div>
           <input
             type="text"
             placeholder="City, Neighborhood, ZIP, or Address"
@@ -274,8 +269,9 @@ const SearchBar = ({ onSearchResults }) => {
               disabled:bg-gray-400 flex items-center gap-2 transition-colors 
               focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <MagnifyingGlassIcon className="w-5 h-5" />
-            <span className="hidden sm:inline">{loading ? 'Searching...' : 'Search'}</span>
+            <ClientOnly>
+              <MagnifyingGlassIcon className="w-5 h-5" />
+            </ClientOnly>            <span className="hidden sm:inline">{loading ? 'Searching...' : 'Search'}</span>
           </button>
         </div>
       </div>

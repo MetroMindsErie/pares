@@ -4,7 +4,7 @@ import PropTypes from 'prop-types'; // added import
 import Link from 'next/link';
 import Image from 'next/image';
 
-const FeaturedListings = ({ title, listings }) => {
+const FeaturedListings = ({ listings }) => {
   if (!Array.isArray(listings)) {
     console.error('FeaturedListings received invalid listings prop:', listings);
     return null;
