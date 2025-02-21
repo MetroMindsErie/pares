@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getPropertiesByFilter, getMediaUrls } from '../services/trestleServices';
+import { getPropertiesByFilter } from '../services/trestleServices';
 import { useRouter } from 'next/router';
 import { MagnifyingGlassIcon, MapPinIcon } from '@heroicons/react/24/outline';
 import axios from 'axios';
