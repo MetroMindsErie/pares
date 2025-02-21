@@ -13,6 +13,8 @@
   "dependencies": {
     "@contentful/rich-text-html-renderer": "^17.0.0",
     "@contentful/rich-text-react-renderer": "^16.0.1",
+    "@heroicons/react": "^2.0.18",
+    "@react-google-maps/api": "^2.20.6",
     "@vercel/analytics": "^1.4.1",
     "autoprefixer": "^10.4.20",
     "contentful": "^11.3.3",
@@ -28,9 +30,8 @@
     "react-dom": "^19.0.0",
     "react-ga4": "^2.1.0",
     "react-leaflet": "^5.0.0",
-    "trestle_client": "^1.1.45",
-    "@heroicons/react": "^2.0.18"
-    },
+    "trestle_client": "^1.1.45"
+  },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "eslint": "^9",

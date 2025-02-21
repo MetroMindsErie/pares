@@ -102,7 +102,7 @@ const PropertyDetail = ({ property, coordinates }) => {
 
       <div className="mt-8 text-center">
         <button
-          onClick={() => router.back()}
+          onClick={() => router.push("/")}
           className="bg-gray-100 text-gray-700 py-2 px-6 rounded-lg hover:bg-gray-200 transition-colors"
         >
           ← Back to Listings

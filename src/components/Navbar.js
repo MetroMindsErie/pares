@@ -63,9 +63,9 @@ const [showRegister, setShowRegister] = useState(false);
         )}
       <ul className="flex space-x-6">
         <li><Link href="/">Home</Link></li>
-        <li><Link href="#about">About</Link></li>
-        <li><Link href="#listings">Listings</Link></li>
-        <li><Link href="#contact">Contact</Link></li>
+        <li><Link href="/#about">About</Link></li>
+        <li><Link href="/#listings">Listings</Link></li>
+        <li><Link href="/#contact">Contact</Link></li>
         <li><Link href="/agents">Agents</Link></li>
       </ul>
     </nav>

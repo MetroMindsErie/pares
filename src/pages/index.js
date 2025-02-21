@@ -1,9 +1,11 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import Navbar from '../components/Navbar';
-import Hero from '../components/Hero';
 import SearchBar from '../components/Search';
 import FeaturedListings from '../components/FeaturedListings';
+import SearchResults from '../components/SearchResults';  // new component
+import Hero from '../components/Hero';
 import About from '../components/About';
 import Contact from '../components/Contact';
 import Footer from '../components/Footer';
@@ -11,8 +13,21 @@ import 'leaflet/dist/leaflet.css';
 import '../styles/globals.css';
 
 export default function Home({ featuredListings, heroContent }) {
+  const router = useRouter();
   const [searchResults, setSearchResults] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
+
+  // Load search results from localStorage if available.
+  useEffect(() => {
+    const storedResults = localStorage.getItem('searchResults');
+    if (storedResults) {
+      setSearchResults(JSON.parse(storedResults));
+      setIsSearching(true);
+    }
+    if (router.query && Object.keys(router.query).length) {
+      router.replace('/', undefined, { shallow: true });
+    }
+  }, [router]);
 
   const handleSearchResults = (results) => {
     setSearchResults(results);
@@ -23,32 +38,50 @@ export default function Home({ featuredListings, heroContent }) {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-grow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Render the updated SearchBar */}
-          <SearchBar onSearchResults={handleSearchResults} />
-          {/* Render FeaturedListings after the search bar */}
-          <FeaturedListings 
-            listings={isSearching ? searchResults : featuredListings} 
-            title={isSearching ? "Search Results" : "Featured Listings"}
-          />
+        {/* Hero Section with Search Bar */}
+        <div className="relative bg-blue-50 pb-16">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12">
+            <div className="text-center mb-12">
+              <h1 className="text-4xl font-bold text-gray-900 mb-4">
+                Find Your Dream Home
+              </h1>
+              <p className="text-lg text-gray-600">
+                Discover properties in your favorite locations
+              </p>
+            </div>
+            <SearchBar onSearchResults={handleSearchResults} />
+          </div>
         </div>
-        {/* Render Hero below the featured properties */}
+
+        {/* Render SearchResults if a search is active; else render FeaturedListings */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {isSearching ? (
+            <SearchResults listings={searchResults} />
+          ) : (
+            <FeaturedListings listings={featuredListings} title="Featured Homes" />
+          )}
+
+          {/* <div className="mt-16">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">About Our Service</h2>
+            <About />
+          </div> */}
+
+          <div className="mt-16 bg-gray-50 rounded-xl p-8">
+            <Contact />
+          </div>
+        </div>
+
         <Hero content={heroContent} />
-        <About />
-        <Contact />
       </main>
       <Footer />
     </div>
   );
 }
 
-// Assume getStaticProps calls your contentful service methods
 export async function getStaticProps() {
   try {
-    // Define heroContent and featuredListings (e.g., using your services)
-    const heroContent = null; // temporary default value or fetched content
-    const featuredListings = []; // temporary default value or fetched content
-
+    const heroContent = null;
+    const featuredListings = [];
     return {
       props: {
         heroContent: heroContent || null,
@@ -58,11 +91,6 @@ export async function getStaticProps() {
     };
   } catch (error) {
     console.error('Error fetching content:', error);
-    return {
-      props: {
-        heroContent: null,
-        featuredListings: []
-      }
-    };
+    return { props: { heroContent: null, featuredListings: [] } };
   }
 }
