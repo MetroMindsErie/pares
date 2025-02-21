@@ -11,34 +11,42 @@ import Footer from '../components/Footer';
 import 'leaflet/dist/leaflet.css';
 import '../styles/globals.css';
 
-export default function Home({ featuredListings, heroContent }) {
+export default function Home({ featuredListings = [], heroContent }) {
   const router = useRouter();
-  const [searchResults, setSearchResults] = useState(null);
+  const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  // Load search results from localStorage if available.
   useEffect(() => {
-    // Removed the navEntries check to avoid clearing stored search results
     const storedResults = localStorage.getItem('searchResults');
     if (storedResults) {
-      setSearchResults(JSON.parse(storedResults));
-      setIsSearching(true);
+      try {
+        const parsedResults = JSON.parse(storedResults);
+        setSearchResults(Array.isArray(parsedResults) ? parsedResults : []);
+        setIsSearching(true);
+      } catch (error) {
+        console.error('Error parsing search results:', error);
+        setSearchResults([]);
+      }
     }
-    if (router.query && Object.keys(router.query).length) {
-      router.replace('/', undefined, { shallow: true });
+    
+    // Safe router query cleanup
+    if (router?.query && Object.keys(router.query).length) {
+      router.replace('/', undefined, { shallow: true }).catch(() => {});
     }
   }, [router]);
 
   const handleSearchResults = (results) => {
-    setSearchResults(results);
-    setIsSearching(true);
+    if (Array.isArray(results)) {
+      setSearchResults(results);
+      setIsSearching(true);
+    }
   };
 
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-grow">
-        {/* Hero Section with Search Bar */}
+        {/* Hero Section */}
         <div className="relative bg-blue-50 pb-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12">
             <div className="text-center mb-12">
@@ -53,18 +61,16 @@ export default function Home({ featuredListings, heroContent }) {
           </div>
         </div>
 
-        {/* Render SearchResults if a search is active; else render FeaturedListings */}
+        {/* Main Content */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {isSearching ? (
             <SearchResults listings={searchResults} />
           ) : (
-            <FeaturedListings listings={featuredListings} title="Featured Homes" />
+            <FeaturedListings 
+              listings={featuredListings} 
+              title="Featured Homes" 
+            />
           )}
-
-          {/* <div className="mt-16">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">About Our Service</h2>
-            <About />
-          </div> */}
 
           <div className="mt-16 bg-gray-50 rounded-xl p-8">
             <Contact />
@@ -77,6 +83,8 @@ export default function Home({ featuredListings, heroContent }) {
     </div>
   );
 }
+
+// Keep getStaticProps the same
 
 export async function getStaticProps() {
   try {

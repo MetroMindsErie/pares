@@ -1,16 +1,17 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import PropTypes from 'prop-types';
 
 const SearchResults = ({ listings }) => {
-  if (!Array.isArray(listings)) return null; // added guard
-
   return (
     <section className="mb-16">
       <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Search Results</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {listings.map((listing) => {
-          const imageSrc = typeof listing.media === 'string' ? listing.media : '/fallback-property.jpg';
+          // Properly define imageSrc inside the map function
+          const imageSrc = listing?.media || '/fallback-property.jpg';
+          
           return (
             <Link 
               key={listing.ListingKey} 
@@ -20,7 +21,7 @@ const SearchResults = ({ listings }) => {
               <div className="relative h-60 bg-gray-100">
                 <Image
                   src={imageSrc}
-                  alt={listing.UnparsedAddress}
+                  alt={listing.UnparsedAddress || 'Property image'}
                   fill
                   className="object-cover"
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -55,6 +56,21 @@ const SearchResults = ({ listings }) => {
       </div>
     </section>
   );
+};
+
+SearchResults.propTypes = {
+  listings: PropTypes.arrayOf(
+    PropTypes.shape({
+      ListingKey: PropTypes.string.isRequired,
+      media: PropTypes.string,
+      UnparsedAddress: PropTypes.string,
+      StandardStatus: PropTypes.string,
+      BedroomsTotal: PropTypes.number,
+      BathroomsTotalInteger: PropTypes.number,
+      LivingAreaSqFt: PropTypes.number,
+      ListPrice: PropTypes.number
+    })
+  ).isRequired
 };
 
 export default SearchResults;
