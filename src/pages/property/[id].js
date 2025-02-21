@@ -5,7 +5,6 @@ import axios from 'axios';
 import PropertyHeader from '../../components/PropertyHeader';
 import PropertyGallery from '../../components/PropertyGallery';
 import PropertyDetails from '../../components/PropertyDetails';
-import PropertyMap from '../../components/PropertyMap';
 
 export async function getServerSideProps({ params }) {
   try {
@@ -83,7 +82,6 @@ const PropertyDetail = ({ property, coordinates }) => {
         </div>
         
         <div className="space-y-8">
-          {coordinates && <PropertyMap coordinates={coordinates} />}
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <h3 className="text-xl font-bold mb-4">Contact Agent</h3>
             <div className="space-y-4">
