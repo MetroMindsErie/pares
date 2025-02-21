@@ -3,6 +3,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 
 const SearchResults = ({ listings }) => {
+  if (!Array.isArray(listings)) return null; // added guard
+
   return (
     <section className="mb-16">
       <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Search Results</h2>
