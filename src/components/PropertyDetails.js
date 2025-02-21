@@ -30,7 +30,7 @@ export default function PropertyDetails({ property }) {
     );
   }
   
-  export default function DetailSection({ title, children }) {
+  function DetailSection({ title, children }) {
     return (
       <div>
         <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
