@@ -3,13 +3,12 @@ import Link from 'next/link';
 import Image from 'next/image';
 import PropTypes from 'prop-types';
 
-export function SearchResults({ listings }) {
+const SearchResults = ({ listings }) => {
   return (
     <section className="mb-16">
       <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Search Results</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {listings.map((listing) => {
-          // Properly define imageSrc inside the map function
           const imageSrc = listing?.media || '/fallback-property.jpg';
           
           return (
@@ -21,8 +20,8 @@ export function SearchResults({ listings }) {
               <div className="relative h-60 bg-gray-100">
                 <Image
                   src={imageSrc}
-                  alt={listing.UnparsedAddress || null}
-                  fill
+                  alt={listing.UnparsedAddress || 'Property Image'}
+                  layout="fill"
                   className="object-cover"
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                 />
@@ -72,3 +71,5 @@ SearchResults.propTypes = {
     })
   ).isRequired
 };
+
+export default SearchResults;
