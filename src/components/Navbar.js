@@ -1,12 +1,10 @@
 import React from 'react';
 import Link from 'next/link';
-import Register from "../components/Register";  // Import your Register component
+import {Register} from "../components/Register";  // Import your Register component
 import Login from "../components/Login";  // Import your Login component
 import { useState } from "react";
 
-
-
-const Navbar = () => {
+export function Navbar() {
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   // Toggle display of login and register modals
@@ -70,6 +68,4 @@ const Navbar = () => {
       </ul>
     </nav>
   );
-};
-
-export default Navbar;
+}

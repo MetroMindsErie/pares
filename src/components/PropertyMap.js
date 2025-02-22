@@ -6,7 +6,7 @@ const Map = dynamic(() => import('./MapComponent'), {
   loading: () => <p>Loading map...</p>
 });
 
-export default function PropertyMap({ coordinates }) {
+export const PropertyMap = ({ coordinates }) => {
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm">
       <h3 className="text-xl font-bold mb-4">Location</h3>
@@ -25,4 +25,4 @@ export default function PropertyMap({ coordinates }) {
       </div>
     </div>
   );
-}
+};

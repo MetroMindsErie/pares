@@ -1,7 +1,7 @@
 // components/PropertyGallery.js
 import Image from 'next/image';
 
-export default function PropertyGallery({ media }) {
+export function PropertyGallery({ media }) {
   return (
     <div className="mb-8">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

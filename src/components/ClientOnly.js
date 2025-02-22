@@ -1,9 +1,11 @@
-'use client';
+// 'use client';
 
-import dynamic from 'next/dynamic';
+// import dynamic from 'next/dynamic';
 
-const ClientOnly = ({ children }) => children;
+// const ClientOnly = ({ children }) => children;ildren;
 
-export default dynamic(() => Promise.resolve(ClientOnly), {
-  ssr: false
-});
+// export { ClientOnly };lve(ClientOnly), {
+
+// export default dynamic(() => Promise.resolve(ClientOnly), {
+//   ssr: false
+// });

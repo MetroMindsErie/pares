@@ -1,6 +1,6 @@
 import React from "react";
 
-const Contact = () => {
+export const Contact = () => {
     return(
         <section id="contact" className="p-10 bg-blue-500 text-white text-center">
   <h2 className="text-3xl font-bold mb-4">Ready to Find Your Dream Home?</h2>
@@ -11,5 +11,3 @@ const Contact = () => {
 </section>
     )
 };
-
-export default Contact;

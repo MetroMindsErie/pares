@@ -35,7 +35,7 @@ const fetchMediaUrls = async (listingKey, token) => {
   }
 };
 
-const SearchBar = ({ onSearchResults }) => {
+export function SearchBar({ onSearchResults }) {
   const router = useRouter();
   const [searchParams, setSearchParams] = useState({
     propertyType: router.query.propertyType || 'Residential',
@@ -309,6 +309,4 @@ const SearchBar = ({ onSearchResults }) => {
       </div>
     </form>
   );
-};
-
-export default SearchBar;
+}

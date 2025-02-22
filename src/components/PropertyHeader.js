@@ -1,5 +1,5 @@
 // components/PropertyHeader.js
-export default function PropertyHeader({ property }) {
+export function PropertyHeader({ property }) {
     return (
       <div className="mb-8">
         <div className="flex justify-between items-start">

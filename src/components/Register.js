@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const Register = () => {
+export function Register() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
@@ -53,6 +53,4 @@ const Register = () => {
       </button>
     </form>
   );
-};
-
-export default Register;
+}

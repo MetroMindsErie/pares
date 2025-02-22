@@ -2,9 +2,9 @@
 import React from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
-import PropertyHeader from '../../components/PropertyHeader';
-import PropertyGallery from '../../components/PropertyGallery';
-import PropertyDetails from '../../components/PropertyDetails';
+import { PropertyHeader } from '../../components/PropertyHeader';
+import { PropertyGallery } from '../../components/PropertyGallery';
+import { PropertyDetails } from '../../components/PropertyDetails';
 
 export async function getServerSideProps({ params }) {
   try {
@@ -68,7 +68,7 @@ export async function getServerSideProps({ params }) {
   }
 }
 
-const PropertyDetail = ({ property, coordinates }) => {
+export function PropertyDetail({ property, coordinates }) {
   const router = useRouter();
   const isClosed = property.StandardStatus?.toLowerCase() === 'closed';
 

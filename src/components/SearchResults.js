@@ -3,7 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import PropTypes from 'prop-types';
 
-const SearchResults = ({ listings }) => {
+export function SearchResults({ listings }) {
   return (
     <section className="mb-16">
       <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Search Results</h2>
@@ -72,5 +72,3 @@ SearchResults.propTypes = {
     })
   ).isRequired
 };
-
-export default SearchResults;

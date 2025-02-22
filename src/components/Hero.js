@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-const Hero = () => {
+export function Hero() {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -20,6 +20,4 @@ const Hero = () => {
       </button>
     </section>
   );
-};
-
-export default Hero;
+}

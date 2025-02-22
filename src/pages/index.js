@@ -1,13 +1,13 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import Navbar from '../components/Navbar';
-import SearchBar from '../components/Search';
-import FeaturedListings from '../components/FeaturedListings';
-import SearchResults from '../components/SearchResults';  // new component
-import Hero from '../components/Hero';
-import Contact from '../components/Contact';
-import Footer from '../components/Footer';
+import { Navbar } from '../components/Navbar';
+import { SearchBar } from '../components/Search';
+import { FeaturedListings } from '../components/FeaturedListings';
+import { SearchResults } from '../components/SearchResults';
+import { Hero } from '../components/Hero';
+import { Contact } from '../components/Contact';
+import { Footer } from '../components/Footer';
 import 'leaflet/dist/leaflet.css';
 import '../styles/globals.css';
 

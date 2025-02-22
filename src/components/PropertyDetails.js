@@ -1,5 +1,5 @@
 // components/PropertyDetails.js
-export default function PropertyDetails({ property }) {
+export function PropertyDetails({ property }) {
     return (
       <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Property Details</h2>
