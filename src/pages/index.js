@@ -8,8 +8,6 @@ import { SearchResults } from '../components/SearchResults';
 import { Hero } from '../components/Hero';
 import { Contact } from '../components/Contact';
 import { Footer } from '../components/Footer';
-import 'leaflet/dist/leaflet.css';
-import '../styles/globals.css';
 
 export default function Home({ featuredListings = [], heroContent }) {
   const router = useRouter();

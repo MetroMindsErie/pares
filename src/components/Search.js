@@ -35,7 +35,7 @@ const fetchMediaUrls = async (listingKey, token) => {
   }
 };
 
-export function SearchBar({ onSearchResults }) {
+export const SearchBar = ({ onSearchResults }) => {
   const router = useRouter();
   const [searchParams, setSearchParams] = useState({
     propertyType: router.query.propertyType || 'Residential',
@@ -56,7 +56,14 @@ export function SearchBar({ onSearchResults }) {
   const [query, setQuery] = useState('');
 
   useEffect(() => {
-   
+    const navEntries = typeof performance !== 'undefined' ?
+      performance.getEntriesByType('navigation') : [];
+    const isReload = navEntries.length > 0 && navEntries[0].type === 'reload';
+
+    if (isReload) {
+      localStorage.removeItem('searchParams');
+      localStorage.removeItem('searchResults');
+    } else {
       const savedSearchParams = JSON.parse(localStorage.getItem('searchParams'));
       const savedSearchResults = JSON.parse(localStorage.getItem('searchResults')) || [];
       if (savedSearchParams) {
@@ -65,6 +72,7 @@ export function SearchBar({ onSearchResults }) {
       if (savedSearchResults) {
         onSearchResults(savedSearchResults);
       }
+    }
   }, []);
 
 
@@ -146,7 +154,6 @@ export function SearchBar({ onSearchResults }) {
   const handleSearch = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
     try {
       const token = await fetchToken();
       const filterQuery = buildODataQuery();
@@ -186,7 +193,6 @@ export function SearchBar({ onSearchResults }) {
       coordinates: { lat: latLng.lat, lng: latLng.lng },
       zipCode: ''
     }));
-    setShowMap(false);
   };
 
   return (
@@ -297,4 +303,4 @@ export function SearchBar({ onSearchResults }) {
       </div>
     </form>
   );
-}
+};
