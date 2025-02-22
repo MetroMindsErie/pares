@@ -52,22 +52,11 @@ export function SearchBar({ onSearchResults }) {
     listingStatus: router.query.listingStatus || 'Active'
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [showMap, setShowMap] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [query, setQuery] = useState('');
-  const [showBedsDropdown, setShowBedsDropdown] = useState(false);
-  const [showBathsDropdown, setShowBathsDropdown] = useState(false);
 
   useEffect(() => {
-    const navEntries = typeof performance !== 'undefined' ?
-      performance.getEntriesByType('navigation') : [];
-    const isReload = navEntries.length > 0 && navEntries[0].type === 'reload';
-
-    if (isReload) {
-      localStorage.removeItem('searchParams');
-      localStorage.removeItem('searchResults');
-    } else {
+   
       const savedSearchParams = JSON.parse(localStorage.getItem('searchParams'));
       const savedSearchResults = JSON.parse(localStorage.getItem('searchResults')) || [];
       if (savedSearchParams) {
@@ -76,7 +65,6 @@ export function SearchBar({ onSearchResults }) {
       if (savedSearchResults) {
         onSearchResults(savedSearchResults);
       }
-    }
   }, []);
 
 
