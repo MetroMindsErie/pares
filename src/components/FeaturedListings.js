@@ -4,7 +4,7 @@ import PropTypes from 'prop-types'; // added import
 import Link from 'next/link';
 import Image from 'next/image';
 
-export function FeaturedListings({ listings }) {
+export function FeaturedListings({ listings, title }) {
   if (!Array.isArray(listings)) {
     console.error('FeaturedListings received invalid listings prop:', listings);
     return null;
@@ -40,7 +40,7 @@ export function FeaturedListings({ listings }) {
   return (
     <section className="mb-16">
       <div className="flex justify-between items-center mb-6">
-        {/* <h2 className="text-2xl font-bold text-gray-900">{title}</h2> */}
+        <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
         {!isMobile && scrollableListings.length > 0 && (
           <div className="flex gap-2">
             <button
