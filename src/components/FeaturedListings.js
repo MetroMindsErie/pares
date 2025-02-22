@@ -154,5 +154,3 @@ const PropertyCard = ({ listing, mobile }) => {
     </Link>
   );
 };
-
-export default FeaturedListings;
