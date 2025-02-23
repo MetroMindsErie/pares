@@ -1,22 +1,16 @@
+"use client";
 import React from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+import Image from 'next/legacy/image';
 import PropTypes from 'prop-types';
 
-export const SearchResults = ({ listings }) => {
+const SearchResults = ({ listings }) => {
   return (
     <section className="mb-16">
       <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Search Results</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {listings.map((listing) => {
-            const imageSrc =
-              Array.isArray(listing.media)
-                ? listing.media[0]  // Use the first URL if media is an array
-                : typeof listing?.media === 'string'
-                ? listing.media
-                : listing?.media && typeof listing.media === 'object'
-                ? listing.media.src || listing.media.url || '/fallback-property.jpg'
-                : '/fallback-property.jpg';
+          const imageSrc = listing?.media || '/fallback-property.jpg';
           
           return (
             <Link 
@@ -28,7 +22,7 @@ export const SearchResults = ({ listings }) => {
                 <Image
                   src={imageSrc}
                   alt={listing.UnparsedAddress || 'Property Image'}
-                  fill
+                  layout='fill'
                   className="object-cover"
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                 />

@@ -1,5 +1,5 @@
 // components/PropertyGallery.js
-import Image from 'next/image';
+import Image from 'next/legacy/image';
 
 export function PropertyGallery({ media }) {
   return (
@@ -10,7 +10,7 @@ export function PropertyGallery({ media }) {
             <Image
               src={url}
               alt={`Property image ${index + 1}`}
-              fill
+              layout='fill'
               className="object-cover"
               sizes="(max-width: 768px) 100vw, 50vw"
             />

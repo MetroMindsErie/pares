@@ -2,7 +2,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import PropTypes from 'prop-types'; // added import
 import Link from 'next/link';
-import Image from 'next/image';
+import Image from 'next/legacy/image';
 
 export function FeaturedListings({ listings, title }) {
   if (!Array.isArray(listings)) {

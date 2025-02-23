@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { Navbar } from '../components/Navbar';
-import SearchBar from '../components/Search'; // Changed from named import to default import
+import SearchBar from '../components/SearchBar'; // Changed from named import to default import
 import SearchResults from '../components/SearchResults'; // Use default import for SearchResults
 import { FeaturedListings } from '../components/FeaturedListings';
 import { Hero } from '../components/Hero';
@@ -26,10 +26,10 @@ export default function Home({ featuredListings = [], heroContent }) {
         setSearchResults([]);
       }
     }
-    
+
     // Safe router query cleanup
     if (router?.query && Object.keys(router.query).length) {
-      router.replace('/', undefined, { shallow: true }).catch(() => {});
+      router.replace('/', undefined, { shallow: true }).catch(() => { });
     }
   }, [router]);
 
@@ -62,12 +62,13 @@ export default function Home({ featuredListings = [], heroContent }) {
         {/* Main Content */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {isSearching ? (
-            <SearchResults listings={searchResults} />
+            typeof SearchResults === 'function' ? (
+              <SearchResults listings={searchResults} />
+            ) : (
+              <div>Error: SearchResults is not a component</div>
+            )
           ) : (
-            <FeaturedListings 
-              listings={featuredListings} 
-              title="Featured Homes" 
-            />
+            <FeaturedListings listings={featuredListings} title="Featured Homes" />
           )}
 
           <div className="mt-16 bg-gray-50 rounded-xl p-8">
