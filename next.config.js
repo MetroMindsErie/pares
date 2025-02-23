@@ -1,7 +1,8 @@
-export default {
-  // ...existing config...
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   images: {
-    domains: ['api-trestle.corelogic.com' /*, ...other allowed domains... */],
+    domains: ['api-trestle.corelogic.com'], // Allow external image domain
   },
-  // ...existing config...
 };
+
+module.exports = nextConfig;

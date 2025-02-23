@@ -6,6 +6,9 @@ const nextConfig = {
   experimental: {
     turbo: false,
   },
+  images: {
+    domains: ['api-trestle.corelogic.com'], // Allow external image domain
+  },
   webpack: (config) => {
     const __dirname = path.dirname(new URL(import.meta.url).pathname);
     config.resolve.modules.push(path.join(__dirname, 'node_modules'));
