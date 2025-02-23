@@ -47,3 +47,5 @@ export function PropertyDetails({ property }) {
       </div>
     );
   }
+
+  export default PropertyDetails;

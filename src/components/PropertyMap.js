@@ -26,3 +26,5 @@ export const PropertyMap = ({ coordinates }) => {
     </div>
   );
 };
+
+export default PropertyMap;

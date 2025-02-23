@@ -27,3 +27,5 @@ export function PropertyGallery({ media }) {
     </div>
   );
 }
+export default PropertyGallery;
+// Compare this snippet from src/components/PropertyGallery.js

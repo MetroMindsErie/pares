@@ -33,3 +33,5 @@ export function PropertyHeader({ property }) {
       </div>
     );
   }
+  
+  export default PropertyHeader;

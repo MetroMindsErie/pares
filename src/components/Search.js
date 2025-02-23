@@ -36,6 +36,7 @@ const fetchMediaUrls = async (listingKey, token) => {
 
 export const SearchBar = ({ onSearchResults }) => {
   const router = useRouter();
+  const [error, setError] = useState(null); // Added error state
   const [searchParams, setSearchParams] = useState({
     propertyType: router.query.propertyType || 'Residential',
     priceMin: router.query.priceMin || '',
@@ -178,7 +179,7 @@ export const SearchBar = ({ onSearchResults }) => {
       localStorage.setItem('searchResults', JSON.stringify(listingsWithMedia));
     } catch (err) {
       console.error('Search error:', err);
-      setError('Failed to fetch properties. Please try again.');
+      setError('Failed to fetch properties. Please try again.'); // Now defined
     } finally {
       setLoading(false);
     }
