@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { Navbar } from '../components/Navbar';
-import { SearchBar } from '../components/Search';
+import SearchBar from '../components/Search'; // Changed from named import to default import
 import { FeaturedListings } from '../components/FeaturedListings';
 import { SearchResults } from '../components/SearchResults';
 import { Hero } from '../components/Hero';
