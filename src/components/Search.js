@@ -301,3 +301,6 @@ export const SearchBar = ({ onSearchResults }) => {
     </form>
   );
 };
+
+// Added default export for production usage.
+export default SearchBar;

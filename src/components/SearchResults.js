@@ -76,3 +76,5 @@ SearchResults.propTypes = {
     })
   ).isRequired
 };
+
+export default SearchResults;
