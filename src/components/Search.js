@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import axios from 'axios';
 
 const DEFAULT_RADIUS = 10; // Define DEFAULT_RADIUS if not defined elsewhere
-export const fetchToken = async () => {
+export const fetchToken = async () => { 
   const response = await axios.post('/api/token', {
     client_id: process.env.NEXT_PUBLIC_TRESTLE_CLIENT_ID,
     client_secret: process.env.NEXT_PUBLIC_TRESTLE_CLIENT_SECRET,
