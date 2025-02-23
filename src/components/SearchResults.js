@@ -26,7 +26,7 @@ export const SearchResults = ({ listings }) => {
                 <Image
                   src={imageSrc}
                   alt={listing.UnparsedAddress || 'Property Image'}
-                  layout="fill"
+                  fill // Changed from layout="fill" to fill
                   className="object-cover"
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                 />
