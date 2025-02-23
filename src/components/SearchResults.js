@@ -10,11 +10,13 @@ export const SearchResults = ({ listings }) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {listings.map((listing) => {
             const imageSrc =
-            typeof listing?.media === 'string'
-              ? listing.media
-              : listing?.media && typeof listing.media === 'object'
-              ? listing.media.src || listing.media.url || String(listing.media)
-              : '/fallback-property.jpg';
+              Array.isArray(listing.media)
+                ? listing.media[0]  // Use the first URL if media is an array
+                : typeof listing?.media === 'string'
+                ? listing.media
+                : listing?.media && typeof listing.media === 'object'
+                ? listing.media.src || listing.media.url || '/fallback-property.jpg'
+                : '/fallback-property.jpg';
           
           return (
             <Link 
