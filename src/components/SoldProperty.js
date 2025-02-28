@@ -36,6 +36,103 @@ export const SoldProperty = ({ property }) => (
             <p className="font-medium">{property.buyerAgent}</p>
           </div>
         )}
+        {/* New fields */}
+        <div>
+          <p className="text-sm">Water Source</p>
+          <p className="font-medium">{property.waterSource}</p>
+        </div>
+        <div>
+          <p className="text-sm">Sewer</p>
+          <p className="font-medium">{property.sewer}</p>
+        </div>
+        <div>
+          <p className="text-sm">Property Type</p>
+          <p className="font-medium">{property.propertyType}</p>
+        </div>
+        <div>
+          <p className="text-sm">Zoning Description</p>
+          <p className="font-medium">{property.zoningDescription}</p>
+        </div>
+        <div>
+          <p className="text-sm">Days on Market</p>
+          <p className="font-medium">{property.daysOnMarket}</p>
+        </div>
+        <div>
+          <p className="text-sm">Flooring</p>
+          <p className="font-medium">{property.flooring}</p>
+        </div>
+        <div>
+          <p className="text-sm">Cooling</p>
+          <p className="font-medium">{property.cooling}</p>
+        </div>
+        <div>
+          <p className="text-sm">Heating</p>
+          <p className="font-medium">{property.heating}</p>
+        </div>
+        <div>
+          <p className="text-sm">Interior Features</p>
+          <p className="font-medium">{property.interiorFeatures}</p>
+        </div>
+        <div>
+          <p className="text-sm">Exterior Features</p>
+          <p className="font-medium">{property.exteriorFeatures}</p>
+        </div>
+        <div>
+          <p className="text-sm">Appliances</p>
+          <p className="font-medium">{property.appliances}</p>
+        </div>
+        <div>
+          <p className="text-sm">Lot Size Dimensions</p>
+          <p className="font-medium">{property.lotsizedimension}</p>
+        </div>
+        <div>
+          <p className="text-sm">Fireplace Features</p>
+          <p className="font-medium">{property.fireplacefeatures}</p>
+        </div>
+        <div>
+          <p className="text-sm">Pool</p>
+          <p className="font-medium">{property.pool}</p>
+        </div>
+        <div>
+          <p className="text-sm">View</p>
+          <p className="font-medium">{property.view}</p>
+        </div>
+        <div>
+          <p className="text-sm">Construction</p>
+          <p className="font-medium">{property.construction}</p>
+        </div>
+        <div>
+          <p className="text-sm">Roof</p>
+          <p className="font-medium">{property.roof}</p>
+        </div>
+        <div>
+          <p className="text-sm">Style</p>
+          <p className="font-medium">{property.style}</p>
+        </div>
+        <div>
+          <p className="text-sm">High School</p>
+          <p className="font-medium">{property.highschool}</p>
+        </div>
+        <div>
+          <p className="text-sm">Middle School</p>
+          <p className="font-medium">{property.middleschool}</p>
+        </div>
+        <div>
+          <p className="text-sm">Parking Features</p>
+          <p className="font-medium">{property.parkingFeatures}</p>
+        </div>
+        <div>
+          <p className="text-sm">Foundation Details</p>
+          <p className="font-medium">{property.foundationDetails}</p>
+        </div>
+        <div>
+          <p className="text-sm">Basement</p>
+          <p className="font-medium">{property.basement}</p>
+        </div>
+        <div>
+          <p className="text-sm">Utilities</p>
+          <p className="font-medium">{property.utilities}</p>
+        </div>
       </div>
     </div>
   </div>

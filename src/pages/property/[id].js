@@ -36,11 +36,31 @@ export async function getServerSideProps({ params }) {
     if (!propertyResponse.data.value?.length) {
       return { notFound: true };
     }
-
+    console.log(propertyResponse.data.value[0]);
     const rawProperty = propertyResponse.data.value[0];
     const isSold = rawProperty.StandardStatus?.toLowerCase() === 'closed';
 
     const transformedProperty = {
+      waterSource: rawProperty.WaterSource || 'Unknown',
+      sewer: rawProperty.Sewer || 'Unknown',
+      propertyType: rawProperty.PropertyType || 'Unknown',
+      zoningDescription: rawProperty.ZoningDescription || 'Unknown',
+      daysOnMarket: rawProperty.DaysOnMarket || 0,
+      flooring: rawProperty.Flooring || 'Unknown',
+      cooling: rawProperty.Cooling || 'Unknown',
+      heating: rawProperty.Heating || 'Unknown',
+      interiorFeatures: rawProperty.InteriorFeatures || 'Unknown',
+      exteriorFeatures: rawProperty.ExteriorFeatures || 'Unknown',
+      appliances: rawProperty.Appliances || 'Unknown',
+      lotsizedimension: rawProperty.LotSizeDimensions || 'Unknown',
+      fireplacefeatures: rawProperty.FireplaceFeatures || 'Unknown',
+      pool: rawProperty.PoolPrivateYN || 'Unknown',
+      view: rawProperty.View || 'Unknown',
+      construction: rawProperty.ConstructionMaterials || 'Unknown',
+      roof: rawProperty.Roof || 'Unknown',
+      style: rawProperty.ArchitecturalStyle || 'Unknown',
+      highschool: rawProperty.HighSchoolDistrict || 'Unknown',
+      middleschool: rawProperty.MiddleOrJuniorSchoolDistrict || 'Unknown',
       mlsNumber: rawProperty.ListingKey || null,
       address: rawProperty.UnparsedAddress || 'Address not available',
       price: rawProperty.ListPrice || 0,
@@ -49,6 +69,12 @@ export async function getServerSideProps({ params }) {
       sqft: rawProperty.LivingArea || 0,
       lotSize: rawProperty.LotSizeAcres || 0,
       description: rawProperty.PublicRemarks || 'No description available',
+      // ADDED FEATURES
+      parkingFeatures: rawProperty.ParkingFeatures || 'Unknown',
+      foundationDetails: rawProperty.FoundationDetails || 'Unknown',
+      basement: rawProperty.Basement || 'Unknown',
+      utilities: rawProperty.Utilities || 'Unknown',
+      // END ADDED FEATURES
       features: [
         rawProperty.GarageSpaces ? `${rawProperty.GarageSpaces} car garage` : null,
         rawProperty.RoofMaterialType || null,

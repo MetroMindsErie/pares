@@ -9,15 +9,15 @@ export const ActiveProperty = ({ property }) => {
 
   return (
     <div className="max-w-7xl mx-auto p-6 bg-white rounded-xl shadow-lg mb-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 relative">
-            <PropertyGallery media={property.images} />
-            <div className="absolute top-4 right-4 bg-white px-3 py-1 rounded-full text-sm font-bold">
-          MLS# {property.mlsNumber} • ACTIVE
-            </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 relative">
+          <PropertyGallery media={property.images} />
+          <div className="absolute top-4 right-4 bg-white px-3 py-1 rounded-full text-sm font-bold">
+            MLS# {property.mlsNumber} • ACTIVE
           </div>
+        </div>
 
-          {/* Key Details */}
+        {/* Key Details */}
         <div className="space-y-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
@@ -51,7 +51,6 @@ export const ActiveProperty = ({ property }) => {
           {/* Features Section */}
           <div className="grid grid-cols-2 gap-4">
             <div className="p-4 bg-gray-50 rounded-lg">
-              <h3 className="font-medium">Features</h3>
               <ul className="mt-2 space-y-1">
                 {property.features.slice(0, showAllDetails ? undefined : 3).map((feature, i) => (
                   <li key={i}>• {feature}</li>
@@ -100,6 +99,109 @@ export const ActiveProperty = ({ property }) => {
           </div>
         </div>
       </div>
+
+      {/* Raw Property Information */}
+      <div className="mt-12 p-6 bg-gray-50 rounded-lg">
+        <h3 className="text-lg font-bold mb-4">Raw Property Information</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-sm">Water Source</p>
+            <p className="font-medium">{property.waterSource}</p>
+          </div>
+          <div>
+            <p className="text-sm">Sewer</p>
+            <p className="font-medium">{property.sewer}</p>
+          </div>
+          <div>
+            <p className="text-sm">Property Type</p>
+            <p className="font-medium">{property.propertyType}</p>
+          </div>
+          <div>
+            <p className="text-sm">Zoning Description</p>
+            <p className="font-medium">{property.zoningDescription}</p>
+          </div>
+          <div>
+            <p className="text-sm">Days on Market</p>
+            <p className="font-medium">{property.daysOnMarket}</p>
+          </div>
+          <div>
+            <p className="text-sm">Flooring</p>
+            <p className="font-medium">{property.flooring}</p>
+          </div>
+          <div>
+            <p className="text-sm">Cooling</p>
+            <p className="font-medium">{property.cooling}</p>
+          </div>
+          <div>
+            <p className="text-sm">Heating</p>
+            <p className="font-medium">{property.heating}</p>
+          </div>
+          <div>
+            <p className="text-sm">Interior Features</p>
+            <p className="font-medium">{property.interiorFeatures}</p>
+          </div>
+          <div>
+            <p className="text-sm">Exterior Features</p>
+            <p className="font-medium">{property.exteriorFeatures}</p>
+          </div>
+          <div>
+            <p className="text-sm">Appliances</p>
+            <p className="font-medium">{property.appliances}</p>
+          </div>
+          <div>
+            <p className="text-sm">Lot Size Dimensions</p>
+            <p className="font-medium">{property.lotsizedimension}</p>
+          </div>
+          <div>
+            <p className="text-sm">Fireplace Features</p>
+            <p className="font-medium">{property.fireplacefeatures}</p>
+          </div>
+          <div>
+            <p className="text-sm">Pool</p>
+            <p className="font-medium">{property.pool}</p>
+          </div>
+          <div>
+            <p className="text-sm">View</p>
+            <p className="font-medium">{property.view}</p>
+          </div>
+          <div>
+            <p className="text-sm">Construction</p>
+            <p className="font-medium">{property.construction}</p>
+          </div>
+          <div>
+            <p className="text-sm">Roof</p>
+            <p className="font-medium">{property.roof}</p>
+          </div>
+          <div>
+            <p className="text-sm">Style</p>
+            <p className="font-medium">{property.style}</p>
+          </div>
+          <div>
+            <p className="text-sm">High School</p>
+            <p className="font-medium">{property.highschool}</p>
+          </div>
+          <div>
+            <p className="text-sm">Middle School</p>
+            <p className="font-medium">{property.middleschool}</p>
+          </div>
+          <div>
+            <p className="text-sm">Parking Features</p>
+            <p className="font-medium">{property.parkingFeatures}</p>
+          </div>
+          <div>
+            <p className="text-sm">Foundation Details</p>
+            <p className="font-medium">{property.foundationDetails}</p>
+          </div>
+          <div>
+            <p className="text-sm">Basement</p>
+            <p className="font-medium">{property.basement}</p>
+          </div>
+          <div>
+            <p className="text-sm">Utilities</p>
+            <p className="font-medium">{property.utilities}</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
@@ -122,5 +224,30 @@ ActiveProperty.propTypes = {
       photo: PropTypes.string.isRequired,
     }).isRequired,
     images: PropTypes.arrayOf(PropTypes.string),
+    // New fields
+    waterSource: PropTypes.string.isRequired,
+    sewer: PropTypes.string.isRequired,
+    propertyType: PropTypes.string.isRequired,
+    zoningDescription: PropTypes.string.isRequired,
+    daysOnMarket: PropTypes.number.isRequired,
+    flooring: PropTypes.string.isRequired,
+    cooling: PropTypes.string.isRequired,
+    heating: PropTypes.string.isRequired,
+    interiorFeatures: PropTypes.string.isRequired,
+    exteriorFeatures: PropTypes.string.isRequired,
+    appliances: PropTypes.string.isRequired,
+    lotsizedimension: PropTypes.string.isRequired,
+    fireplacefeatures: PropTypes.string.isRequired,
+    pool: PropTypes.string.isRequired,
+    view: PropTypes.string.isRequired,
+    construction: PropTypes.string.isRequired,
+    roof: PropTypes.string.isRequired,
+    style: PropTypes.string.isRequired,
+    highschool: PropTypes.string.isRequired,
+    middleschool: PropTypes.string.isRequired,
+    parkingFeatures: PropTypes.string.isRequired,
+    foundationDetails: PropTypes.string.isRequired,
+    basement: PropTypes.string.isRequired,
+    utilities: PropTypes.string.isRequired,
   }).isRequired,
 };
