@@ -6,8 +6,9 @@ import {
   Geography,
   ZoomableGroup,
 } from 'react-simple-maps';
-import { useRouter } from 'next/router'; // Import useRouter
+import { useRouter } from 'next/router';
 import { getPropertiesByFilter, getNextProperties } from './src/services/trestleServices';
+import HeatMapGraph from './src/components/HeatMapGraph';
 
 const PENNSYLVANIA_CENTER = [-77.5, 40.8];
 
@@ -78,9 +79,9 @@ const InteractiveRealEstateMap = () => {
   const [propertiesByCounty, setPropertiesByCounty] = useState({});
   const [selectedStatus, setSelectedStatus] = useState('active');
   const [nextLink, setNextLink] = useState(null);
-  const router = useRouter(); // Initialize useRouter
+  const router = useRouter();
 
-  // Add useEffect for fetching properties
+  // Fetch properties when a county is selected.
   useEffect(() => {
     const fetchProperties = async () => {
       if (selectedCounty && !propertiesByCounty[selectedCounty]) {
@@ -162,6 +163,29 @@ const InteractiveRealEstateMap = () => {
     router.push(`/property/${propertyId}`);
   };
 
+  // Helper function to compute aggregated MLS data for the heat map graph.
+  // We assume each property has a "Neighborhood" and "ListPrice" field.
+  const computeMLSHeatMapData = (properties) => {
+    const groups = {};
+    properties.forEach(property => {
+      const neighborhood = property.Neighborhood || 'Unknown';
+      if (!groups[neighborhood]) {
+        groups[neighborhood] = { count: 0, totalPrice: 0 };
+      }
+      groups[neighborhood].count += 1;
+      groups[neighborhood].totalPrice += property.ListPrice || 0;
+    });
+    const neighborhoods = Object.keys(groups);
+    const data = neighborhoods.map(nb => {
+      const group = groups[nb];
+      const avgPrice = group.count ? Math.round(group.totalPrice / group.count) : 0;
+      return [group.count, avgPrice];
+    });
+    const metrics = ['Listing Count', 'Avg Price'];
+    return { neighborhoods, metrics, data };
+  };
+
+  // Existing static neighborhood heat map
   const renderHeatMap = (neighborhoods) => {
     if (!neighborhoods) return null;
     
@@ -204,6 +228,13 @@ const InteractiveRealEstateMap = () => {
     const county = COUNTY_STYLES[selectedCounty];
     const properties = propertiesByCounty[selectedCounty]?.[selectedStatus] || [];
   
+    // Compute real MLS heat map data based on active listings.
+    const mlsHeatMapData =
+      propertiesByCounty[selectedCounty]?.active &&
+      propertiesByCounty[selectedCounty].active.length > 0
+        ? computeMLSHeatMapData(propertiesByCounty[selectedCounty].active)
+        : null;
+  
     return (
       <div className="p-4">
         <h2 className="text-2xl font-semibold mb-4">{county.name} County Details</h2>
@@ -224,65 +255,76 @@ const InteractiveRealEstateMap = () => {
           </div>
         </div>
   
-        {renderHeatMap(county.details.neighborhoods)}
+        {/* {renderHeatMap(county.details.neighborhoods)} */}
+        
+        {/* New MLS Data Heat Map Graph based on real MLS data */}
+        {/* {mlsHeatMapData ? (
+          console.log(mlsHeatMapData),
+          <div className="mls-heatmap mt-6">
+            <h3 className="text-lg font-semibold mb-2">MLS Data Heat Map</h3>
+            <HeatMapGraph
+              neighborhoods={mlsHeatMapData.neighborhoods}
+              metrics={mlsHeatMapData.metrics}
+              data={mlsHeatMapData.data}
+            />
+          </div>
+        ) : (
+          <p className="mt-6 text-gray-500">No MLS data available for heat map.</p>
+        )} */}
   
         <div className="mt-6">
-        <div className="flex gap-4 mb-4">
-          <button
-            onClick={() => setSelectedStatus('active')}
-            className={`px-4 py-2 rounded ${
-              selectedStatus === 'active' ? 'bg-blue-600 text-white' : 'bg-gray-200'
-            }`}
-          >
-            Active Listings
-          </button>
-          <button
-            onClick={() => setSelectedStatus('closed')}
-            className={`px-4 py-2 rounded ${
-              selectedStatus === 'closed' ? 'bg-blue-600 text-white' : 'bg-gray-200'
-            }`}
-          >
-            Closed Listings
-          </button>
-        </div>
-        {loading && <p>Loading properties...</p>}
-        {error && <p className="text-red-500">{error}</p>}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {propertiesByCounty[selectedCounty]?.[selectedStatus]?.map(property => (
-            <div 
-              key={property.ListingKey} 
-              className="bg-white rounded-lg shadow p-4 cursor-pointer"
-              onClick={() => handlePropertyClick(property.ListingKey)} // Add click handler
+          <div className="flex gap-4 mb-4">
+            <button
+              onClick={() => setSelectedStatus('active')}
+              className={`px-4 py-2 rounded ${selectedStatus === 'active' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
             >
-              <img
-                src={property.media}
-                alt={property.FullAddress}
-                className="w-full h-48 object-cover rounded mb-2"
-              />
-              <h3 className="font-semibold text-lg">
-                ${property.ListPrice?.toLocaleString()}
-              </h3>
-              <p className="text-sm text-gray-600">{property.FullAddress}</p>
-              <div className="mt-2 text-sm">
-                <p>Beds: {property.BedroomsTotal || 'N/A'}</p>
-                <p>Baths: {property.BathroomsTotalInteger || 'N/A'}</p>
-                <p>Sq Ft: {property.LivingArea?.toLocaleString() || 'N/A'}</p>
+              Active Listings
+            </button>
+            <button
+              onClick={() => setSelectedStatus('closed')}
+              className={`px-4 py-2 rounded ${selectedStatus === 'closed' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+            >
+              Closed Listings
+            </button>
+          </div>
+          {loading && <p>Loading properties...</p>}
+          {error && <p className="text-red-500">{error}</p>}
+  
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {properties.map(property => (
+              <div 
+                key={property.ListingKey} 
+                className="bg-white rounded-lg shadow p-4 cursor-pointer"
+                onClick={() => handlePropertyClick(property.ListingKey)}
+              >
+                <img
+                  src={property.media}
+                  alt={property.FullAddress}
+                  className="w-full h-48 object-cover rounded mb-2"
+                />
+                <h3 className="font-semibold text-lg">
+                  ${property.ListPrice?.toLocaleString()}
+                </h3>
+                <p className="text-sm text-gray-600">{property.FullAddress}</p>
+                <div className="mt-2 text-sm">
+                  <p>Beds: {property.BedroomsTotal || 'N/A'}</p>
+                  <p>Baths: {property.BathroomsTotalInteger || 'N/A'}</p>
+                  <p>Sq Ft: {property.LivingArea?.toLocaleString() || 'N/A'}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+  
+          {nextLink && (
+            <button
+              onClick={loadMoreProperties}
+              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded"
+            >
+              Load More Properties
+            </button>
+          )}
         </div>
-
-        {nextLink && (
-          <button
-            onClick={loadMoreProperties}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded"
-          >
-            Load More Properties
-          </button>
-        )}
       </div>
-    </div>
     );
   };
 
@@ -316,7 +358,7 @@ const InteractiveRealEstateMap = () => {
                       const hoverColor = countyStyle ? countyStyle.hoverColor : '#CBD5E1';
                       const centroid = geoCentroid(geo);
                       const countyName = countyStyle ? countyStyle.name : (geo.properties.NAME || 'County');
-
+  
                       return (
                         <Geography
                           key={geo.rsmKey}
@@ -369,9 +411,7 @@ const InteractiveRealEstateMap = () => {
             </ZoomableGroup>
           </ComposableMap>
         </div>
-        <div
-          className="map-legend mt-3 flex gap-6 justify-center text-sm"
-        >
+        <div className="map-legend mt-3 flex gap-6 justify-center text-sm">
           {Object.values(COUNTY_STYLES).map(({ name, color }) => (
             <div key={name} className="flex items-center gap-2">
               <div className="w-4 h-4" style={{ backgroundColor: color }} />

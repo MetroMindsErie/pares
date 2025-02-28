@@ -8,6 +8,9 @@ import { FeaturedListings } from '../components/FeaturedListings';
 import { Hero } from '../components/Hero';
 import { Contact } from '../components/Contact';
 import { Footer } from '../components/Footer';
+import Reels from '../components/Reels';
+import Blog from '../components/Blog';
+import Stablecoin from '../components/Stablecoin';
 
 export default function Home({ featuredListings = [], heroContent }) {
   const router = useRouter();
@@ -67,7 +70,9 @@ export default function Home({ featuredListings = [], heroContent }) {
           ) : (
            null
           )}
-
+          <Blog />
+          <Stablecoin />
+          <Reels />
           <div className="mt-16 bg-gray-100 rounded-xl p-8 border border-black">
             <Contact />
           </div>
