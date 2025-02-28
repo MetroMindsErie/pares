@@ -4,8 +4,13 @@ import axios from 'axios';
 const API_BASE_URL = 'https://api-trestle.corelogic.com';
 
 export const fetchToken = async () => {
-  const response = await axios.post('/api/token');
-  return response.data.access_token;
+  try {
+    const response = await axios.post('/api/token');
+    return response.data.access_token;
+  } catch (error) {
+    console.error('Error fetching token:', error);
+    throw new Error('Failed to fetch token');
+  }
 };
 
 export async function getPropertyById(listingKey) {
