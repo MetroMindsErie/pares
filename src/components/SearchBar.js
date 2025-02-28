@@ -112,11 +112,11 @@ const SearchBar = ({ onSearchResults }) => {
 
   return (
     <div className="w-full max-w-6xl mx-auto px-4">
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-center mb-4">
         <button
           type="button"
           onClick={() => setUseMapMode(prev => !prev)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md"
         >
           {useMapMode ? 'Use Text Search' : 'Use Map Search'}
         </button>
@@ -129,13 +129,6 @@ const SearchBar = ({ onSearchResults }) => {
             center={PENNSYLVANIA_CENTER}
             zoom={PA_ZOOM_LEVEL}
           />
-          {/* <button
-            onClick={handleSearch}
-            disabled={loading}
-            className="mt-4 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
-          >
-            {loading ? 'Searching...' : 'Search Properties'}
-          </button> */}
         </div>
       ) : (
         <form onSubmit={handleSearch} className="flex flex-col gap-2">

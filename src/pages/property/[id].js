@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { ActiveProperty } from '../../components/ActiveProperty';
 import { SoldProperty } from '../../components/SoldProperty';
 import axios from 'axios';
+import Navbar from '../../components/Navbar'; // Import Navbar
 
 export async function getServerSideProps({ params }) {
   try {
@@ -90,6 +91,7 @@ export default function PropertyDetail({ property, isSold }) {
 
   return (
     <div className="min-h-screen bg-white text-black">
+      <Navbar /> {/* Add Navbar here */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {isSold ? (
           <SoldProperty property={property} />

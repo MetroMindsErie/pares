@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { Navbar } from '../components/Navbar';
+import Navbar from '../components/Navbar';
 import SearchBar from '../components/SearchBar';
 import SearchResults from '../components/SearchResults';
 import { FeaturedListings } from '../components/FeaturedListings';
@@ -42,7 +42,7 @@ export default function Home({ featuredListings = [], heroContent }) {
   return (
     <div className="min-h-screen flex flex-col bg-white text-black">
       <Navbar />
-      <main className="flex-grow">
+      <main className="flex-grow pt-16"> {/* Add top padding here */}
         <div className="relative bg-gray-100 pb-16 border-b border-black">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12">
             <div className="text-center mb-12">
@@ -65,7 +65,7 @@ export default function Home({ featuredListings = [], heroContent }) {
               <div>Error: SearchResults is not a component</div>
             )
           ) : (
-            <FeaturedListings listings={featuredListings} title="Featured Homes" />
+           null
           )}
 
           <div className="mt-16 bg-gray-100 rounded-xl p-8 border border-black">
