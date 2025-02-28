@@ -1,44 +1,20 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { getPropertiesByFilter } from '../services/trestleServices';
+import { getPropertiesByFilter, fetchMediaUrls, getPropertyDetails } from '../services/trestleServices';
 import { useRouter } from 'next/router';
-import axios from 'axios';
+import dynamic from 'next/dynamic';
 
+const InteractiveRealEstateMap = dynamic(
+  () => import('../../interactive-real-estate-map'),
+  { ssr: false }
+);
 const DEFAULT_RADIUS = 10;
-
-export const fetchToken = async () => {
-  const response = await axios.post('/api/token', {
-    client_id: process.env.NEXT_PUBLIC_TRESTLE_CLIENT_ID,
-    client_secret: process.env.NEXT_PUBLIC_TRESTLE_CLIENT_SECRET,
-  });
-  return response.data.access_token;
-};
-
-const fetchMediaUrls = async (listingKey, token) => {
-  try {
-    const response = await axios.get(
-      `https://api-trestle.corelogic.com/trestle/odata/Media`,
-      {
-        params: {
-          $filter: `ResourceRecordKey eq '${listingKey}'`,
-          $orderby: 'Order',
-          $select: 'MediaURL',
-        },
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json',
-        },
-      }
-    );
-    return response.data.value.map((media) => media.MediaURL);
-  } catch (error) {
-    console.error('Error fetching media:', error);
-    return [];
-  }
-};
+const PENNSYLVANIA_CENTER = { lat: 40.876, lng: -77.012 }; // Approximate center of PA
+const PA_ZOOM_LEVEL = 7;
 
 const SearchBar = ({ onSearchResults }) => {
   const router = useRouter();
+  const [useMapMode, setUseMapMode] = useState(false);
   const [error, setError] = useState(null);
   const [searchParams, setSearchParams] = useState({
     propertyType: router.query.propertyType || 'Residential',
@@ -48,15 +24,11 @@ const SearchBar = ({ onSearchResults }) => {
     baths: router.query.baths || '',
     sqftMin: router.query.sqftMin || '',
     sqftMax: router.query.sqftMax || '',
-    locationType: router.query.locationType || 'zipcode',
-    zipCode: router.query.zipCode || '',
-    coordinates: null,
+    postalCode: router.query.postalCode || '',
     radius: router.query.radius ? parseInt(router.query.radius) : DEFAULT_RADIUS,
     listingStatus: router.query.listingStatus || 'Active',
   });
   const [loading, setLoading] = useState(false);
-  const [suggestions, setSuggestions] = useState([]);
-  const [query, setQuery] = useState('');
 
   useEffect(() => {
     const navEntries = typeof performance !== 'undefined' ? performance.getEntriesByType('navigation') : [];
@@ -76,50 +48,12 @@ const SearchBar = ({ onSearchResults }) => {
     }
   }, []);
 
-  const fetchSuggestions = async (input) => {
-    if (!input) {
-      setSuggestions([]);
-      return;
-    }
-    try {
-      const response = await axios.get(`https://nominatim.openstreetmap.org/search`, {
-        params: {
-          q: input,
-          format: 'json',
-          addressdetails: 1,
-          limit: 5,
-          viewbox: '-80.1,42.2,-79.9,42.1',
-          bounded: 1,
-        },
-      });
-      const filteredSuggestions = response.data.filter((suggestion) => {
-        const zip = suggestion.address.postcode;
-        return zip >= '16501' && zip <= '16513';
-      });
-      setSuggestions(filteredSuggestions);
-    } catch (error) {
-      console.error('Error fetching suggestions:', error);
-    }
-  };
-
-  const handleInputChange = (e) => {
-    const value = e.target.value;
-    setQuery(value);
-    fetchSuggestions(value);
-  };
-
-  const handleSuggestionSelect = (suggestion) => {
-    setQuery(suggestion.display_name);
-    setSuggestions([]);
-    const latLng = {
-      lat: parseFloat(suggestion.lat),
-      lng: parseFloat(suggestion.lon),
-    };
-    handleLocationSelect(latLng);
-  };
-
   const buildODataQuery = () => {
     const filters = [];
+    filters.push(`OriginatingSystemName eq 'MLS'`);
+    if (searchParams.postalCode) {
+      filters.push(`PostalCode eq '${searchParams.postalCode}'`);
+    }
     if (searchParams.propertyType) {
       filters.push(`PropertyType eq '${searchParams.propertyType}'`);
     }
@@ -135,14 +69,8 @@ const SearchBar = ({ onSearchResults }) => {
     if (searchParams.baths) {
       filters.push(`BathroomsTotalInteger ge ${searchParams.baths}`);
     }
-    if (searchParams.sqftMin) {
-      filters.push(`LivingAreaSqFt ge ${searchParams.sqftMin}`);
-    }
-    if (searchParams.sqftMax) {
-      filters.push(`LivingAreaSqFt le ${searchParams.sqftMax}`);
-    }
     if (searchParams.listingStatus) {
-      filters.push(`MlsStatus has '${searchParams.listingStatus}'`);
+      filters.push(`StandardStatus eq '${searchParams.listingStatus}'`);
     }
     return filters.join(' and ');
   };
@@ -151,19 +79,19 @@ const SearchBar = ({ onSearchResults }) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const token = await fetchToken();
       const filterQuery = buildODataQuery();
-      const properties = await getPropertiesByFilter(filterQuery, token);
+      const { properties } = await getPropertiesByFilter(filterQuery);
+      
       const listingsWithMedia = await Promise.all(
         properties.map(async (property) => {
-          const mediaUrls = await fetchMediaUrls(property.ListingKey, token);
+          const mediaUrls = await fetchMediaUrls(property.ListingKey);
           return {
             ...property,
-            media: mediaUrls.length > 0 ? mediaUrls[0] : '/properties.jpg',
-            allMedia: mediaUrls,
+            media: mediaUrls[0] || '/properties.jpg',
           };
         })
       );
+
       onSearchResults(listingsWithMedia);
       localStorage.setItem('searchParams', JSON.stringify(searchParams));
       localStorage.setItem('searchResults', JSON.stringify(listingsWithMedia));
@@ -175,96 +103,117 @@ const SearchBar = ({ onSearchResults }) => {
     }
   };
 
-  const handleLocationSelect = (latLng) => {
-    setSearchParams((prev) => ({
+  const handleMapSearchComplete = (mapFilters) => {
+    setSearchParams(prev => ({
       ...prev,
-      coordinates: { lat: latLng.lat, lng: latLng.lng },
-      zipCode: '',
+      ...mapFilters
     }));
   };
 
   return (
-    <form onSubmit={handleSearch} className="w-full max-w-6xl mx-auto px-4">
-      <div className="flex flex-col md:flex-row gap-2 p-2 bg-white rounded-lg shadow-lg border border-gray-200">
-        <div className="flex-1 relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"></div>
-          <input
-            type="text"
-            placeholder="City, Neighborhood, ZIP, or Address"
-            value={query}
-            onChange={handleInputChange}
-            className="w-full pl-10 pr-4 py-3 rounded-lg border-0 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500"
+    <div className="w-full max-w-6xl mx-auto px-4">
+      <div className="flex justify-end mb-4">
+        <button
+          type="button"
+          onClick={() => setUseMapMode(prev => !prev)}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          {useMapMode ? 'Use Text Search' : 'Use Map Search'}
+        </button>
+      </div>
+
+      {useMapMode ? (
+        <div>
+          <InteractiveRealEstateMap
+            onFilterSelect={handleMapSearchComplete}
+            center={PENNSYLVANIA_CENTER}
+            zoom={PA_ZOOM_LEVEL}
           />
-          {suggestions.length > 0 && (
-            <ul className="absolute z-20 mt-1 w-full bg-white rounded-lg shadow-lg border border-gray-200 divide-y divide-gray-100">
-              {suggestions.map((suggestion, index) => (
-                <li
-                  key={index}
-                  onClick={() => handleSuggestionSelect(suggestion)}
-                  className="px-4 py-3 cursor-pointer hover:bg-gray-50 text-sm text-gray-700 transition-colors"
-                >
-                  {suggestion.display_name}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <select
-            value={searchParams.propertyType}
-            onChange={(e) => setSearchParams((p) => ({ ...p, propertyType: e.target.value }))}
-            className="px-4 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-700 focus:border-blue-500 focus:ring-blue-500"
-          >
-            <option value="Residential">All Homes</option>
-            <option value="Condo">Condos</option>
-            <option value="MultiFamily">Multi-Family</option>
-          </select>
-          <div className="relative">
-            <input
-              type="number"
-              placeholder="Min Price"
-              value={searchParams.priceMin}
-              onChange={(e) => setSearchParams((p) => ({ ...p, priceMin: e.target.value }))}
-              className="w-28 px-4 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-700 focus:border-blue-500 focus:ring-blue-500"
-            />
-            <span className="absolute right-3 top-3 text-gray-400 text-sm">$</span>
-          </div>
-          <button
-            type="submit"
+          {/* <button
+            onClick={handleSearch}
             disabled={loading}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 flex items-center gap-2 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="mt-4 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
           >
-            <span className="hidden sm:inline">{loading ? 'Searching...' : 'Search'}</span>
-          </button>
+            {loading ? 'Searching...' : 'Search Properties'}
+          </button> */}
         </div>
-      </div>
-      <div className="mt-4 flex items-center gap-4 overflow-x-auto scrollbar-hide">
-        <div className="relative flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setSearchParams((p) => ({ ...p, beds: p.beds === 6 ? 1 : (p.beds || 0) + 1 }))}
-            className="px-4 py-2 rounded-full text-sm bg-gray-100 text-gray-600 hover:bg-blue-100 hover:text-blue-600 transition-colors"
-          >
-            Beds
-          </button>
-          <span className="px-2 py-1 rounded-full bg-gray-200 text-gray-700 text-sm shadow hover:bg-blue-100 hover:text-blue-600 transition-colors">
-            {searchParams.beds >= 6 ? '6+' : `${searchParams.beds || 0}`}
-          </span>
-        </div>
-        <div className="relative flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setSearchParams((p) => ({ ...p, baths: p.baths === 6 ? 1 : (p.baths || 0) + 1 }))}
-            className="px-4 py-2 rounded-full text-sm bg-gray-100 text-gray-600 hover:bg-blue-100 hover:text-blue-600 transition-colors"
-          >
-            Baths
-          </button>
-          <span className="px-2 py-1 rounded-full bg-gray-200 text-gray-700 text-sm shadow hover:bg-blue-100 hover:text-blue-600 transition-colors">
-            {searchParams.baths >= 6 ? '6+' : `${searchParams.baths || 0}`}
-          </span>
-        </div>
-      </div>
-    </form>
+      ) : (
+        <form onSubmit={handleSearch} className="flex flex-col gap-2">
+          <div className="flex flex-col md:flex-row gap-2 p-2 bg-white rounded-lg shadow-lg border border-gray-200">
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                placeholder="Postal Code"
+                value={searchParams.postalCode}
+                onChange={(e) => setSearchParams((p) => ({ ...p, postalCode: e.target.value }))}
+                className="w-full pl-10 pr-4 py-3 rounded-lg border-0 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <select
+                value={searchParams.propertyType}
+                onChange={(e) => setSearchParams((p) => ({ ...p, propertyType: e.target.value }))}
+                className="px-4 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-700 focus:border-blue-500 focus:ring-blue-500"
+              >
+                <option value="Residential">All Homes</option>
+                <option value="Condo">Condos</option>
+                <option value="MultiFamily">Multi-Family</option>
+              </select>
+              <div className="relative">
+                <input
+                  type="number"
+                  placeholder="Min Price"
+                  value={searchParams.priceMin}
+                  onChange={(e) => setSearchParams((p) => ({ ...p, priceMin: e.target.value }))}
+                  className="w-28 px-4 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-700 focus:border-blue-500 focus:ring-blue-500"
+                />
+                <span className="absolute right-3 top-3 text-gray-400 text-sm">$</span>
+              </div>
+              <div className="relative">
+                <input
+                  type="number"
+                  placeholder="Max Price"
+                  value={searchParams.priceMax}
+                  onChange={(e) => setSearchParams((p) => ({ ...p, priceMax: e.target.value }))}
+                  className="w-28 px-4 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-700 focus:border-blue-500 focus:ring-blue-500"
+                />
+                <span className="absolute right-3 top-3 text-gray-400 text-sm">$</span>
+              </div>
+              <input
+                type="number"
+                placeholder="Beds"
+                value={searchParams.beds}
+                onChange={(e) => setSearchParams(p => ({ ...p, beds: e.target.value }))}
+                className="w-28 px-4 py-2.5 rounded-lg border border-gray-200 text-sm"
+              />
+              <input
+                type="number"
+                placeholder="Baths"
+                value={searchParams.baths}
+                onChange={(e) => setSearchParams(p => ({ ...p, baths: e.target.value }))}
+                className="w-28 px-4 py-2.5 rounded-lg border border-gray-200 text-sm"
+              />
+              <select
+                value={searchParams.listingStatus}
+                onChange={(e) => setSearchParams((p) => ({ ...p, listingStatus: e.target.value }))}
+                className="px-4 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-700 focus:border-blue-500 focus:ring-blue-500"
+              >
+                <option value="Active">Active</option>
+                <option value="Closed">Closed</option>
+              </select>
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 flex items-center gap-2 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <span className="hidden sm:inline">{loading ? 'Searching...' : 'Search'}</span>
+              </button>
+            </div>
+          </div>
+        </form>
+      )}
+      {error && <div className="mt-4 text-red-600">{error}</div>}
+    </div>
   );
 };
 

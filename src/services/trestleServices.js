@@ -3,35 +3,19 @@ import axios from 'axios';
 
 const API_BASE_URL = 'https://api-trestle.corelogic.com';
 
-export async function getAccessToken() {
-  try {
-    const response = await axios.post(
-      `${API_BASE_URL}/trestle/oidc/connect/token`,
-      new URLSearchParams({
-        grant_type: 'client_credentials',
-        scope: 'api',
-        client_id: process.env.TRESTLE_CLIENT_ID,
-        client_secret: process.env.TRESTLE_CLIENT_SECRET
-      }),
-      {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-      }
-    );
-    return response.data.access_token;
-  } catch (error) {
-    console.error('Error getting access token:', error);
-    throw error;
-  }
-}
+export const fetchToken = async () => {
+  const response = await axios.post('/api/token');
+  return response.data.access_token;
+};
 
-export async function getPropertyById(listingKey, token) {
+export async function getPropertyById(listingKey) {
   try {
     const response = await axios.get(
       `${API_BASE_URL}/trestle/odata/Property`,
       {
         params: { $filter: `ListingKey eq '${listingKey}'` },
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${await fetchToken()}`,
           Accept: 'application/json'
         }
       }
@@ -43,31 +27,80 @@ export async function getPropertyById(listingKey, token) {
   }
 }
 
-export async function getPropertiesByFilter(filterQuery, token) {
+export async function getPropertyDetails(listingKey) {
   try {
     const response = await axios.get(
       `${API_BASE_URL}/trestle/odata/Property`,
       {
-        params: {
-          $filter: filterQuery,
-          $select:
-            'ListingKey,UnparsedAddress,ListPrice,BedroomsTotal,BathroomsTotalInteger,Latitude,Longitude,Media',
-          $top: 10
-        },
+        params: { $filter: `ListingKey eq '${listingKey}'` },
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${await fetchToken()}`,
           Accept: 'application/json'
         }
       }
     );
-    return response.data.value;
+    return response.data.value[0];
   } catch (error) {
-    console.error('Error fetching properties:', error);
+    console.error('Error fetching property details:', error);
     throw error;
   }
 }
 
-export async function getMediaUrls(listingKey, token) {
+// trestleServices.js
+export const getPropertiesByFilter = async (filterQuery, top = 10, skip = 0) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/trestle/odata/Property?${filterQuery}&$top=${top}&$skip=${skip}&$expand=Media`, {
+      headers: {
+        Authorization: `Bearer ${await fetchToken()}`,
+        Accept: 'application/json'
+      }
+    });
+
+    if (!response.ok) throw new Error('Failed to fetch properties');
+
+    const data = await response.json();
+    const properties = Array.isArray(data.value) ? data.value : [];
+    return {
+      properties: properties.map(property => ({
+        ...property,
+        media: property.Media?.[0]?.MediaURL || '/fallback-property.jpg'
+      })),
+      nextLink: data['@odata.nextLink'] || null
+    };
+  } catch (error) {
+    console.error('Error in getPropertiesByFilter:', error);
+    throw error;
+  }
+};
+
+// Function to fetch the next set of properties using the nextLink
+export const getNextProperties = async (nextLink) => {
+  try {
+    const response = await fetch(nextLink, {
+      headers: {
+        Authorization: `Bearer ${await fetchToken()}`,
+        Accept: 'application/json'
+      }
+    });
+
+    if (!response.ok) throw new Error('Failed to fetch properties');
+
+    const data = await response.json();
+    const properties = Array.isArray(data.value) ? data.value : [];
+    return {
+      properties: properties.map(property => ({
+        ...property,
+        media: property.Media?.[0]?.MediaURL || '/fallback-property.jpg'
+      })),
+      nextLink: data['@odata.nextLink'] || null
+    };
+  } catch (error) {
+    console.error('Error in getNextProperties:', error);
+    throw error;
+  }
+};
+
+export async function getMediaUrls(listingKey) {
     try {
       const response = await axios.get(
         `${API_BASE_URL}/trestle/odata/Media`,
@@ -78,7 +111,7 @@ export async function getMediaUrls(listingKey, token) {
             $select: 'MediaURL'
           },
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${await fetchToken()}`,
             Accept: 'application/json'
           }
         }
@@ -96,3 +129,39 @@ export async function getMediaUrls(listingKey, token) {
       return [];
     }
   }
+
+  export const fetchCountyNames = async () => {
+    const response = await fetch('https://api-trestle.corelogic.com/trestle/odata/Lookup', {
+      headers: {
+        Authorization: `Bearer ${await fetchToken()}`
+      }
+    });
+    const data = await response.json();
+    const counties = data.value
+      .filter(item => item.LookupType === 'CountyOrParish' && ['Erie', 'Crawford', 'Warren'].includes(item.LookupValue))
+      .map(item => item.LookupValue);
+    return counties;
+  };
+
+  export const fetchMediaUrls = async (listingKey) => {
+    try {
+      const response = await axios.get(
+        `https://api-trestle.corelogic.com/trestle/odata/Media`,
+        {
+          params: {
+            $filter: `ResourceRecordKey eq '${listingKey}'`,
+            $orderby: 'Order',
+            $select: 'MediaURL',
+          },
+          headers: {
+            Authorization: `Bearer ${await fetchToken()}`,
+            Accept: 'application/json',
+          },
+        }
+      );
+      return response.data.value.map((media) => media.MediaURL);
+    } catch (error) {
+      console.error('Error fetching media:', error);
+      return [];
+    }
+  };

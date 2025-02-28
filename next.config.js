@@ -7,11 +7,27 @@ const nextConfig = {
     turbo: false,
   },
   images: {
-    domains: ['api-trestle.corelogic.com'], // Allow external image domain
+    domains: ['cdnjs.cloudflare.com', 'tiles.stadiamaps.com', 'api-trestle.corelogic.com']
   },
   webpack: (config) => {
     const __dirname = path.dirname(new URL(import.meta.url).pathname);
     config.resolve.modules.push(path.join(__dirname, 'node_modules'));
+    // Disable persistent caching to avoid large buffer allocations
+    config.cache = false;
+    // Replace url-loader rule with asset module configuration:
+    config.module.rules.push({
+      test: /\.(png|jpg|jpeg|gif|svg)$/i,
+      type: 'asset',
+      parser: {
+        dataUrlCondition: {
+          maxSize: 8192,
+        },
+      },
+      generator: {
+        publicPath: '/_next/static/images',
+        outputPath: 'static/images/',
+      },
+    });
     return config;
   },
   env: {
@@ -20,6 +36,5 @@ const nextConfig = {
     TRESTLE_CLIENT_SECRET: process.env.TRESTLE_CLIENT_SECRET,
   },
 };
-
 
 export default nextConfig;

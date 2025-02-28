@@ -2,8 +2,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { Navbar } from '../components/Navbar';
-import SearchBar from '../components/SearchBar'; // Changed from named import to default import
-import SearchResults from '../components/SearchResults'; // Use default import for SearchResults
+import SearchBar from '../components/SearchBar';
+import SearchResults from '../components/SearchResults';
 import { FeaturedListings } from '../components/FeaturedListings';
 import { Hero } from '../components/Hero';
 import { Contact } from '../components/Contact';
@@ -27,7 +27,6 @@ export default function Home({ featuredListings = [], heroContent }) {
       }
     }
 
-    // Safe router query cleanup
     if (router?.query && Object.keys(router.query).length) {
       router.replace('/', undefined, { shallow: true }).catch(() => { });
     }
@@ -41,14 +40,13 @@ export default function Home({ featuredListings = [], heroContent }) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-white text-black">
       <Navbar />
       <main className="flex-grow">
-        {/* Hero Section */}
-        <div className="relative bg-blue-50 pb-16">
+        <div className="relative bg-gray-100 pb-16 border-b border-black">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12">
             <div className="text-center mb-12">
-              <h1 className="text-4xl font-bold text-gray-900 mb-4">
+              <h1 className="text-4xl font-bold text-black mb-4">
                 Find Your Dream Home
               </h1>
               <p className="text-lg text-gray-600">
@@ -59,7 +57,6 @@ export default function Home({ featuredListings = [], heroContent }) {
           </div>
         </div>
 
-        {/* Main Content */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {isSearching ? (
             typeof SearchResults === 'function' ? (
@@ -71,7 +68,7 @@ export default function Home({ featuredListings = [], heroContent }) {
             <FeaturedListings listings={featuredListings} title="Featured Homes" />
           )}
 
-          <div className="mt-16 bg-gray-50 rounded-xl p-8">
+          <div className="mt-16 bg-gray-100 rounded-xl p-8 border border-black">
             <Contact />
           </div>
         </div>
@@ -82,8 +79,6 @@ export default function Home({ featuredListings = [], heroContent }) {
     </div>
   );
 }
-
-// Keep getStaticProps the same
 
 export async function getStaticProps() {
   try {

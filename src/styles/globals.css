@@ -3,8 +3,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* styles/globals.css */
-
 /* Global reset and box-sizing */
 * {
   margin: 0;
@@ -15,8 +13,8 @@
 /* Base styles for body */
 body {
   font-family: 'Inter', sans-serif;
-  background-color: #f9f9f9;
-  color: #333;
+  background-color: #fff;
+  color: #000;
   line-height: 1.6;
   margin: 0;
   padding: 0;
@@ -72,6 +70,13 @@ header, footer {
         flex-direction: column;
         align-items: center;
         padding: 0 16px;
-        /* Optional: Add some padding */
     }
+}
+
+.leaflet-container {
+  z-index: 0 !important;
+}
+
+.leaflet-control-attribution {
+  font-size: 0.7rem !important;
 }
