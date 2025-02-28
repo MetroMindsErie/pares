@@ -52,7 +52,7 @@ export async function getPropertyDetails(listingKey) {
 }
 
 // trestleServices.js
-export const getPropertiesByFilter = async (filterQuery, top = 10, skip = 0) => {
+export const getPropertiesByFilter = async (filterQuery, top = 9, skip = 0) => {
   try {
     const response = await fetch(`${API_BASE_URL}/trestle/odata/Property?${filterQuery}&$top=${top}&$skip=${skip}&$expand=Media`, {
       headers: {

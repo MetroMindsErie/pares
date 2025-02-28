@@ -245,7 +245,6 @@ const InteractiveRealEstateMap = () => {
             Closed Listings
           </button>
         </div>
-
         {loading && <p>Loading properties...</p>}
         {error && <p className="text-red-500">{error}</p>}
 
