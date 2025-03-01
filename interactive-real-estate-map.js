@@ -299,13 +299,13 @@ const InteractiveRealEstateMap = () => {
               >
                 <img
                   src={property.media}
-                  alt={property.FullAddress}
+                  alt={property.UnparsedAddress}
                   className="w-full h-48 object-cover rounded mb-2"
                 />
                 <h3 className="font-semibold text-lg">
                   ${property.ListPrice?.toLocaleString()}
                 </h3>
-                <p className="text-sm text-gray-600">{property.FullAddress}</p>
+                <p className="text-sm text-gray-600">{property.UnparsedAddress}</p>
                 <div className="mt-2 text-sm">
                   <p>Beds: {property.BedroomsTotal || 'N/A'}</p>
                   <p>Baths: {property.BathroomsTotalInteger || 'N/A'}</p>

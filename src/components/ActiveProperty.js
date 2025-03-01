@@ -24,7 +24,8 @@ export const ActiveProperty = ({ property }) => {
             <h1 className="text-3xl font-bold text-gray-900">
               ${property.price.toLocaleString()}
             </h1>
-            <p className="text-lg text-gray-600 mt-1">{property.address}</p>
+            {/* <p className="text-lg text-gray-600 mt-1">{property.address}</p> */}
+            <p className="text-sm text-gray-500">{property.unparsedAddress}</p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -213,6 +214,7 @@ ActiveProperty.propTypes = {
   property: PropTypes.shape({
     mlsNumber: PropTypes.string.isRequired,
     address: PropTypes.string.isRequired,
+    unparsedAddress: PropTypes.string.isRequired,
     price: PropTypes.number.isRequired,
     bedrooms: PropTypes.number.isRequired,
     bathrooms: PropTypes.number.isRequired,
