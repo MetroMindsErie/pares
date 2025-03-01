@@ -6,6 +6,7 @@ import { PropertyGallery } from './PropertyGallery';
 
 export const ActiveProperty = ({ property }) => {
   const [showRawDetails, setShowRawDetails] = useState(false);
+  const [showFullDescription, setShowFullDescription] = useState(false);
 
   return (
     <div className="max-w-7xl mx-auto p-6 bg-white rounded-xl shadow-lg mb-8">
@@ -41,16 +42,28 @@ export const ActiveProperty = ({ property }) => {
       </div>
 
       {/* Additional Details */}
-      <div className="mt-12 grid grid-cols-1 lg:grid-cols-3 gap-8">
       <div className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="space-y-8">
-            <h2 className="text-2xl font-bold">Property Details</h2>
-            <p>{property.description}</p>
-          </div>
+          <h2 className="text-2xl font-bold">Property Details</h2>
+          <p>
+            {property.description.length > 200 ? (
+              <>
+                {property.description.substring(0, 200)}...
+                <button
+                  className="text-blue-600 text-sm"
+                  onClick={() => setShowFullDescription(!showFullDescription)}
+                >
+                  {showFullDescription ? 'Show Less' : 'Show More'}
+                </button>
+                {showFullDescription && <span>{property.description.substring(200)}</span>}
+              </>
+            ) : (
+              property.description
+            )}
+          </p>
         </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
+      </div>
+      <div className="space-y-6">
           <div className="p-6 bg-gray-50 rounded-lg">
             <h3 className="text-lg font-bold mb-4">Tax Information</h3>
             <div className="space-y-2">
@@ -79,7 +92,6 @@ export const ActiveProperty = ({ property }) => {
             </ActionButton>
           </div>
         </div>
-      </div>
 
       {/* Raw Property Information */}
       <div className="mt-12 p-6 bg-gray-50 rounded-lg">
