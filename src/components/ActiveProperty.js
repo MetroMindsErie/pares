@@ -49,18 +49,20 @@ export const ActiveProperty = ({ property }) => {
             {property.description.length > 200 ? (
               <>
                 {property.description.substring(0, 200)}...
-                <button
-                  className="text-blue-600 text-sm"
-                  onClick={() => setShowFullDescription(!showFullDescription)}
-                >
-                  {showFullDescription ? 'Show Less' : 'Show More'}
-                </button>
                 {showFullDescription && <span>{property.description.substring(200)}</span>}
               </>
             ) : (
               property.description
             )}
           </p>
+          {property.description.length > 200 && (
+            <button
+              className="text-blue-600 text-sm"
+              onClick={() => setShowFullDescription(!showFullDescription)}
+            >
+              {showFullDescription ? 'Show Less' : 'Show More'}
+            </button>
+          )}
         </div>
       </div>
       <div className="space-y-6">
@@ -68,8 +70,8 @@ export const ActiveProperty = ({ property }) => {
             <h3 className="text-lg font-bold mb-4">Tax Information</h3>
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span>Annual Taxes</span>
-                <span>${property.taxes.toLocaleString()}</span>
+                <span>Annual Taxes:  <span>${property.taxes.toLocaleString()}</span></span>
+               
               </div>
             </div>
           </div>
