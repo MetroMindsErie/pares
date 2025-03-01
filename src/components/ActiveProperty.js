@@ -75,26 +75,6 @@ export const ActiveProperty = ({ property }) => {
               </div>
             </div>
           </div>
-
-          <div className="p-6 bg-gray-50 rounded-lg">
-            <h3 className="text-lg font-bold mb-4">Listing Agent</h3>
-            <div className="flex items-center">
-              <img
-                src={property.agent.photo}
-                className="w-12 h-12 rounded-full mr-3"
-                alt={property.agent.name}
-              />
-              <div>
-                <p className="font-medium">{property.agent.name}</p>
-                <p className="text-sm text-gray-600">{property.agent.brokerage}</p>
-              </div>
-            </div>
-            <ActionButton variant="primary" className="mt-4">
-              Contact Agent
-            </ActionButton>
-          </div>
-        </div>
-
       {/* Raw Property Information */}
       <div className="mt-12 p-6 bg-gray-50 rounded-lg">
         <h3 className="text-lg font-bold mb-4">Additional Property Information</h3>
@@ -205,6 +185,26 @@ export const ActiveProperty = ({ property }) => {
           </div>
         )}
       </div>
+         
+        </div>
+
+        <div className="p-6 bg-gray-50 rounded-lg">
+            <h3 className="text-lg font-bold mb-4">Listing Agent</h3>
+            <div className="flex items-center">
+              <img
+                src={property.agent.photo}
+                className="w-12 h-12 rounded-full mr-3"
+                alt={property.agent.name}
+              />
+              <div>
+                <p className="font-medium">{property.agent.name}</p>
+                <p className="text-sm text-gray-600">{property.agent.brokerage}</p>
+              </div>
+            </div>
+            <ActionButton variant="primary" className="mt-4">
+              Contact Agent
+            </ActionButton>
+          </div>
     </div>
   );
 };

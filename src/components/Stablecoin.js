@@ -8,7 +8,7 @@ const Stablecoin = () => {
       paddingTop: '50%',
     }}>
       <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
-        <div className="bg-white bg-opacity-95 p-8 rounded-lg shadow-xl max-w-5xl mx-auto text-center md:text-left">
+        <div className="bg-white bg-opacity-75 p-8 rounded-lg shadow-xl max-w-5xl mx-auto text-center md:text-left">
           <h2 className="text-4xl md:text-5xl font-extrabold text-center mb-6 text-blue-900 hover:text-blue-500 transition duration-300">
             Discover EstateCoin: Your Key to Real Estate Riches
           </h2>

@@ -55,10 +55,10 @@ const Navbar = () => {
 
           {/* User Actions (Desktop) */}
           <div className="hidden md:flex items-center space-x-4">
-            <Link href="/" className="px-4 py-2 rounded text-blue-600 hover:text-blue-800">
+            <Link href="/login" className="px-4 py-2 rounded text-blue-600 hover:text-blue-800">
               Log In
             </Link>
-            <Link href="/" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+            <Link href="/register" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
               Sign Up
             </Link>
           </div>
