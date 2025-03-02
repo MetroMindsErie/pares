@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Menu, X, Home, Building, Search, User, HeartIcon } from 'lucide-react';
+import { useAuth } from '../context/auth-context';
 
-const Navbar = () => {
+const Navbar = ({ isAuthenticated, user, onLogout, onLogin, onRegister }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -20,6 +21,76 @@ const Navbar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Update renderUserActions
+  const renderUserActions = () => (
+    <div className="hidden md:flex items-center space-x-4">
+      {isAuthenticated ? (
+        <>
+          <Link href="/profile" className="px-4 py-2 text-gray-600 hover:text-blue-600">
+            <User className="h-4 w-4 mr-2" />
+            {user?.email}
+          </Link>
+          <button
+            onClick={onLogout}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Logout
+          </button>
+        </>
+      ) : (
+        <>
+          <button
+            onClick={onLogin}
+            className="px-4 py-2 text-blue-600 hover:text-blue-800"
+          >
+            Log In
+          </button>
+          <button
+            onClick={onRegister}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Sign Up
+          </button>
+        </>
+      )}
+    </div>
+  );
+
+  // Update renderMobileUserActions
+  const renderMobileUserActions = () => (
+    <div className="pt-4 border-t border-gray-200">
+      {isAuthenticated ? (
+        <>
+          <Link href="/profile" className="block w-full px-3 py-2 text-center text-gray-600">
+            {user?.email}
+          </Link>
+          <button
+            onClick={onLogout}
+            className="block w-full mt-2 px-3 py-2 text-center bg-blue-600 text-white rounded"
+          >
+            Logout
+          </button>
+        </>
+      ) : (
+        <>
+          <button
+            onClick={onLogin}
+            className="block w-full px-3 py-2 text-center text-blue-600"
+          >
+            Log In
+          </button>
+          <button
+            onClick={onRegister}
+            className="block w-full mt-2 px-3 py-2 text-center bg-blue-600 text-white rounded"
+          >
+            Sign Up
+          </button>
+        </>
+      )}
+    </div>
+  );
+
+  // Update the return statement to use the new components
   return (
     <nav className={`fixed w-full z-50 transition-all duration-300 ${
       scrolled ? 'bg-white shadow-md py-2' : 'bg-transparent py-4'
@@ -53,15 +124,7 @@ const Navbar = () => {
             </Link>
           </div>
 
-          {/* User Actions (Desktop) */}
-          <div className="hidden md:flex items-center space-x-4">
-            <Link href="/login" className="px-4 py-2 rounded text-blue-600 hover:text-blue-800">
-              Log In
-            </Link>
-            <Link href="/register" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
-              Sign Up
-            </Link>
-          </div>
+          {renderUserActions()}
 
           {/* Mobile menu button */}
           <div className="md:hidden flex items-center">
@@ -107,14 +170,7 @@ const Navbar = () => {
                 <span>Favorites</span>
               </div>
             </Link>
-            <div className="pt-4 border-t border-gray-200">
-              <Link href="/login" className="block w-full px-3 py-2 text-center rounded text-blue-600 hover:bg-blue-50">
-                Log In
-              </Link>
-              <Link href="/signup" className="block w-full mt-2 px-3 py-2 text-center bg-blue-600 text-white rounded hover:bg-blue-700">
-                Sign Up
-              </Link>
-            </div>
+            {renderMobileUserActions()}
           </div>
         </div>
       )}

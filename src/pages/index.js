@@ -1,21 +1,21 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import Navbar from '../components/Navbar';
 import SearchBar from '../components/SearchBar';
 import SearchResults from '../components/SearchResults';
-import { FeaturedListings } from '../components/FeaturedListings';
 import { Hero } from '../components/Hero';
 import { Contact } from '../components/Contact';
-import { Footer } from '../components/Footer';
 import Reels from '../components/Reels';
 import Blog from '../components/Blog';
 import Stablecoin from '../components/Stablecoin';
+import { useAuth } from '../context/auth-context';
+import Layout from '../components/Layout';
 
 export default function Home({ featuredListings = [], heroContent }) {
   const router = useRouter();
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+  const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
     const storedResults = localStorage.getItem('searchResults');
@@ -43,9 +43,8 @@ export default function Home({ featuredListings = [], heroContent }) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-white text-black">
-      <Navbar />
-      <main className="flex-grow pt-16"> {/* Add top padding here */}
+    <Layout>
+      <main className="pt-16"> {/* Main page content */}
         <div className="relative bg-gray-100 pb-16 border-b border-black">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12">
             <div className="text-center mb-12">
@@ -61,27 +60,29 @@ export default function Home({ featuredListings = [], heroContent }) {
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {isSearching ? (
-            typeof SearchResults === 'function' ? (
-              <SearchResults listings={searchResults} />
-            ) : (
-              <div>Error: SearchResults is not a component</div>
-            )
+          {isAuthenticated ? (
+            <>
+              {isSearching && typeof SearchResults === 'function' ? (
+                <SearchResults listings={searchResults} />
+              ) : (
+                <div>Error: SearchResults is not a component</div>
+              )}
+              <Blog />
+              <Stablecoin />
+              <Reels />
+              <div className="mt-16 bg-gray-100 rounded-xl p-8 border border-black">
+                <Contact />
+              </div>
+            </>
           ) : (
-           null
+            <div className="text-center text-gray-700">
+              Enjoy our free guest tier. To log in or sign up, use options in the navbar.
+            </div>
           )}
-          <Blog />
-          <Stablecoin />
-          <Reels />
-          <div className="mt-16 bg-gray-100 rounded-xl p-8 border border-black">
-            <Contact />
-          </div>
+          <Hero content={heroContent} />
         </div>
-
-        <Hero content={heroContent} />
       </main>
-      <Footer />
-    </div>
+    </Layout>
   );
 }
 

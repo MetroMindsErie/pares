@@ -16,6 +16,7 @@
     "@heroicons/react": "^2.1.1",
     "@radix-ui/react-slot": "^1.1.2",
     "@react-google-maps/api": "^2.20.6",
+    "@supabase/supabase-js": "^2.49.1",
     "@types/leaflet": "^1.9.16",
     "@vercel/analytics": "^1.5.0",
     "autoprefixer": "^10.4.20",
@@ -37,6 +38,7 @@
     "react-heatmap-grid": "^0.9.1",
     "react-leaflet": "^4.2.1",
     "react-simple-maps": "^3.0.0",
+    "redis": "^4.7.0",
     "tailwind-merge": "^3.0.2",
     "tailwindcss-animate": "^1.0.7",
     "trestle_client": "^1.1.45"
