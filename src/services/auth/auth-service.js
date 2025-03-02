@@ -6,7 +6,6 @@ import supabase from '../../lib/supabase-setup';
  */
 export const signUpWithEmail = async (email, password, userData = {}) => {
   try {
-    // First register with Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -14,27 +13,18 @@ export const signUpWithEmail = async (email, password, userData = {}) => {
 
     if (authError) throw authError;
 
-    // If auth successful, create the user record in our custom users table
     if (authData?.user) {
-      const { error: profileError } = await supabase
+      const { error: userError } = await supabase
         .from('users')
         .insert({
           id: authData.user.id,
           email,
-          ...userData,
+          hasprofile: false,
+          created_at: new Date().toISOString(),
+          ...userData
         });
 
-      if (profileError) throw profileError;
-
-      // Assign default role (assuming 'free_tier' with id=2)
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert({
-          user_id: authData.user.id,
-          role_id: 2, // free_tier role
-        });
-
-      if (roleError) throw roleError;
+      if (userError) throw userError;
     }
 
     return { data: authData, error: null };
@@ -70,6 +60,11 @@ export const signInWithProvider = async (provider) => {
       provider,
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
+        scopes: provider === 'google' ? 'profile email' : 'email,public_profile',
+        queryParams: provider === 'google' ? {
+          access_type: 'offline',
+          prompt: 'consent',
+        } : undefined
       }
     });
     
@@ -84,62 +79,65 @@ export const signInWithProvider = async (provider) => {
  * Handle third-party auth callback
  */
 export const handleAuthCallback = async () => {
-  const { data, error } = await supabase.auth.getSession();
+  const { data: { session }, error } = await supabase.auth.getSession();
   
-  if (error) {
-    throw error;
-  }
+  if (error) throw error;
   
-  if (data?.session?.user) {
-    // Check if this user already exists in our users table
+  if (session?.user) {
+    const { id: userId, email, user_metadata } = session.user;
+    
+    // Check if user exists in our users table
     const { data: existingUser } = await supabase
       .from('users')
       .select('*')
-      .eq('id', data.session.user.id)
+      .eq('id', userId)
       .single();
       
     if (!existingUser) {
-      // Create new user record
+      // Create new user record with provider data
       await supabase.from('users').insert({
-        id: data.session.user.id,
-        email: data.session.user.email,
+        id: userId,
+        email,
+        first_name: user_metadata?.full_name?.split(' ')[0] || '',
+        last_name: user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
+        avatar_url: user_metadata?.avatar_url,
+        hasprofile: false,
+        profile_type_id: 1 // default profile type
       });
       
       // Assign default role
       await supabase.from('user_roles').insert({
-        user_id: data.session.user.id,
-        role_id: 2, // free_tier role
+        user_id: userId,
+        role_id: 2 // free_tier role
       });
     }
     
-    // Store provider info
-    const provider = data.session.user.app_metadata?.provider;
-    const providerUserId = data.session.user.identities?.[0]?.id;
-    
-    if (provider && providerUserId) {
+    // Store provider-specific information
+    const provider = session.user.app_metadata?.provider;
+    if (provider) {
       const { data: existingProvider } = await supabase
         .from('auth_providers')
         .select('*')
-        .eq('user_id', data.session.user.id)
+        .eq('user_id', userId)
         .eq('provider', provider)
         .single();
         
       if (!existingProvider) {
         await supabase.from('auth_providers').insert({
-          user_id: data.session.user.id,
+          user_id: userId,
           provider,
-          provider_user_id: providerUserId,
-          access_token: data.session.provider_token || null,
-          refresh_token: data.session.provider_refresh_token || null,
-          token_expiry: data.session.expires_at 
-            ? new Date(data.session.expires_at * 1000).toISOString()
-            : null,
+          provider_user_id: session.user.identities?.[0]?.id,
+          provider_data: user_metadata,
+          access_token: session.provider_token,
+          refresh_token: session.provider_refresh_token,
+          token_expiry: session.expires_at ? 
+            new Date(session.expires_at * 1000).toISOString() : null
         });
       }
     }
   }
   
-  return { data, error };
+  return { data: session, error };
 };
 
 /**
@@ -164,7 +162,15 @@ export const getCurrentUser = async () => {
     }
 
     // Get user data from our custom table with profile type and roles
-    const { data, error: profileError } = await supabase
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('hasprofile')
+      .eq('id', session.user.id)
+      .single();
+      
+    if (userError) throw userError;
+    
+    const { data: profileData, error: profileError } = await supabase
       .from('user_profiles')
       .select('*')
       .eq('id', session.user.id)
@@ -172,11 +178,11 @@ export const getCurrentUser = async () => {
       
     if (profileError) throw profileError;
     
-    if (!data) {
+    if (!profileData) {
       return { user: null, error: 'User not found' };
     }
     
-    return { user: data, error: null };
+    return { user: { ...profileData, hasprofile: userData.hasprofile }, error: null };
   } catch (error) {
     console.error('Get current user error:', error);
     return { user: null, error };

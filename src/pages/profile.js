@@ -6,6 +6,12 @@ import { useAuth } from '../context/auth-context';
 
 const INTEREST_OPTIONS = ['Real Estate', 'Finance', 'Family', 'Gaming', 'Technology', 'Travel', 'Cooking', 'Sports', 'Music', 'Movies'];
 
+const PROFILE_TYPES = [
+  { id: 1, type: 'buyer', label: 'Buyer' },
+  { id: 2, type: 'seller', label: 'Seller' },
+  { id: 3, type: 'agent', label: 'Agent' }
+];
+
 export default function ProfilePage() {
   const [step, setStep] = useState(1);
   const [firstName, setFirstName] = useState('');
@@ -20,17 +26,22 @@ export default function ProfilePage() {
   const [success, setSuccess] = useState('');
   const [isFirstTime, setIsFirstTime] = useState(false);
   const [profile, setProfile] = useState(null);
+  const [profileType, setProfileType] = useState(null);
   const router = useRouter();
   const { user, isAuthenticated, hasProfile, loading } = useAuth();
   const isSetup = router.query.setup === 'true';
 
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      router.push('/login');
-      return;
-    }
-    if (!loading && isAuthenticated && hasProfile && isSetup) {
-      router.push('/dashboard');
+    if (!loading) {
+      if (!isAuthenticated) {
+        router.push('/login');
+        return;
+      }
+      
+      // Only redirect to dashboard if user has profile and it's not a setup request
+      if (hasProfile && !isSetup) {
+        router.push('/dashboard');
+      }
     }
   }, [isAuthenticated, loading, hasProfile, router, isSetup]);
 
@@ -61,11 +72,10 @@ export default function ProfilePage() {
     if (!user?.id) return;
 
     try {
-      const { error: upsertError } = await supabase
+      // Update users table only
+      const { error: userError } = await supabase
         .from('users')
-        .upsert({
-          id: user.id,
-          email: user.email,
+        .update({
           first_name: firstName,
           last_name: lastName,
           city,
@@ -75,15 +85,22 @@ export default function ProfilePage() {
           alternate_email: alternateEmail,
           interests: interests.join(','),
           hasprofile: true,
-          profile_type_id: 1,
+          profile_type_id: profileType,
           updated_at: new Date().toISOString()
-        });
-      if (upsertError) throw upsertError;
+        })
+        .eq('id', user.id);
+
+      if (userError) {
+        console.error('User update error:', userError);
+        throw userError;
+      }
+
       setSuccess('Profile saved successfully!');
       setTimeout(() => {
         router.push('/dashboard');
       }, 2000);
     } catch (err) {
+      console.error('Profile creation error:', err);
       setError(err.message);
     }
   };
@@ -157,6 +174,40 @@ export default function ProfilePage() {
       )}
       {step === 4 && (
         <div>
+          <h2 className="text-xl mb-4">Select Your Role</h2>
+          <div className="grid grid-cols-1 gap-4 mb-6">
+            {PROFILE_TYPES.map((type) => (
+              <button
+                key={type.id}
+                type="button"
+                onClick={() => setProfileType(type.id)}
+                className={`p-4 rounded-lg border-2 ${
+                  profileType === type.id
+                    ? 'border-indigo-500 bg-indigo-50'
+                    : 'border-gray-200 hover:border-indigo-200'
+                }`}
+              >
+                <h3 className="font-semibold">{type.label}</h3>
+                <p className="text-sm text-gray-500">
+                  {type.description || `Register as a ${type.label.toLowerCase()}`}
+                </p>
+              </button>
+            ))}
+          </div>
+          <button onClick={prevStep} className="bg-gray-400 text-white py-3 px-6 rounded-lg hover:bg-gray-500 transition-colors mr-2">
+            Previous
+          </button>
+          <button 
+            onClick={nextStep} 
+            disabled={!profileType}
+            className="bg-indigo-500 text-white py-3 px-6 rounded-lg hover:bg-indigo-600 transition-colors disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      )}
+      {step === 5 && (
+        <div>
           <h2 className="text-xl mb-4">Preferences and Interests</h2>
           <div className="mb-4">
             <label className="block text-gray-700 mb-1">Interests</label>
@@ -176,8 +227,11 @@ export default function ProfilePage() {
           <button onClick={prevStep} className="bg-gray-400 text-white py-3 px-6 rounded-lg hover:bg-gray-500 transition-colors mr-2">
             Previous
           </button>
-          <button onClick={handleProfileSubmit} className="bg-green-500 text-white py-3 px-6 rounded-lg hover:bg-green-600 transition-colors">
-            Save Profile
+          <button 
+            onClick={handleProfileSubmit}
+            className="bg-green-500 text-white py-3 px-6 rounded-lg hover:bg-green-600 transition-colors"
+          >
+            Complete Profile
           </button>
         </div>
       )}

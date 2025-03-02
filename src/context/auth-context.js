@@ -11,20 +11,25 @@ export function useAuth() {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  // We'll store the user role if returned in the session or profile data.
   const [role, setRole] = useState(null);
   const [hasProfile, setHasProfile] = useState(false);
 
   const signOut = async () => {
     try {
+      setLoading(true);
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      // Clear any user data from state
+      
+      // Clear all auth states
       setUser(null);
       setRole(null);
       setHasProfile(false);
+      setLoading(false);
+      
+      // Redirect to home page handled by component
     } catch (error) {
       console.error('Error signing out:', error.message);
+      setLoading(false);
       throw error;
     }
   };
@@ -63,7 +68,6 @@ export function AuthProvider({ children }) {
 
     const fetchSession = async () => {
       try {
-        console.log('Fetching session...');
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -72,19 +76,27 @@ export function AuthProvider({ children }) {
           return;
         }
 
-        if (mounted) {
-          console.log('Session status:', session ? 'Active' : 'No session');
-          setUser(session?.user || null);
-          setRole(session?.user?.user_metadata?.role || null);
-          const { data: profileData } = await supabase
+        if (mounted && session?.user) {
+          setUser(session.user);
+
+          // Only check users table if we have a session
+          const { data: userData, error: userError } = await supabase
             .from('users')
-            .select('hasprofile, role')
+            .select('hasprofile')
             .eq('id', session.user.id)
             .single();
-          setHasProfile(profileData?.hasprofile || false);
-          if (profileData?.role) setRole(profileData.role);
-          setLoading(false);
+          
+          if (userError && userError.code !== 'PGRST116') {
+            console.error('User fetch error:', userError);
+          }
+          
+          setHasProfile(userData?.hasprofile || false);
+        } else {
+          setUser(null);
+          setHasProfile(false);
         }
+
+        setLoading(false);
       } catch (error) {
         console.error('Session fetch error:', error);
         if (mounted) setLoading(false);
@@ -95,10 +107,15 @@ export function AuthProvider({ children }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state change:', event, session ? 'Session exists' : 'No session');
-        if (mounted) {
-          setUser(session?.user || null);
-          setLoading(false);
+        console.log('Auth state change:', event);
+        if (!mounted) return;
+
+        if (session?.user) {
+          setUser(session.user);
+          // No need to check hasProfile here, it will be handled by fetchSession
+        } else {
+          setUser(null);
+          setHasProfile(false);
         }
       }
     );

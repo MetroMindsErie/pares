@@ -2,10 +2,22 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Menu, X, Home, Building, Search, User, HeartIcon } from 'lucide-react';
 import { useAuth } from '../context/auth-context';
+import { useRouter } from 'next/router';
 
 const Navbar = ({ isAuthenticated, user, onLogout, onLogin, onRegister }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { signOut } = useAuth();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      router.push('/'); // or '/login'
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   // Handle scroll effect for navbar
   useEffect(() => {
@@ -31,7 +43,7 @@ const Navbar = ({ isAuthenticated, user, onLogout, onLogin, onRegister }) => {
             {user?.email}
           </Link>
           <button
-            onClick={onLogout}
+            onClick={handleLogout}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
             Logout
@@ -65,7 +77,7 @@ const Navbar = ({ isAuthenticated, user, onLogout, onLogin, onRegister }) => {
             {user?.email}
           </Link>
           <button
-            onClick={onLogout}
+            onClick={handleLogout}
             className="block w-full mt-2 px-3 py-2 text-center bg-blue-600 text-white rounded"
           >
             Logout

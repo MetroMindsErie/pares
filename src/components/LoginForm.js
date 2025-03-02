@@ -46,11 +46,22 @@ const Login = ({ onLogin }) => {
 
   const handleSocialLogin = async (provider) => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: provider,
+      setError(null);
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          scopes: provider === 'google' ? 'profile email' : 'email,public_profile',
+          queryParams: provider === 'google' ? {
+            prompt: 'select_account',
+            access_type: 'offline',
+          } : undefined,
+        }
       });
+      
       if (error) throw error;
     } catch (error) {
+      console.error(`${provider} login error:`, error);
       setError(error.message);
     }
   };
@@ -58,7 +69,41 @@ const Login = ({ onLogin }) => {
   return (
     <div className="max-w-md mx-auto p-8 bg-white/80 backdrop-blur-md rounded-2xl shadow-xl mt-10">
       <h2 className="text-3xl font-semibold mb-6 text-center text-gray-800">Log In</h2>
-      {error && <div className="text-red-500 text-center">{error}</div>}
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded text-center">
+          {error}
+        </div>
+      )}
+      
+      {/* Social Login Buttons */}
+      <div className="space-y-3 mb-6">
+        <button
+          onClick={() => handleSocialLogin('google')}
+          className="w-full flex items-center justify-center gap-2 bg-white p-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          <img src="/google-icon.svg" alt="Google" className="w-5 h-5" />
+          Continue with Google
+        </button>
+        
+        <button
+          onClick={() => handleSocialLogin('facebook')}
+          className="w-full flex items-center justify-center gap-2 bg-[#1877F2] text-white p-3 rounded-lg hover:bg-[#1864D9] transition-colors"
+        >
+          <img src="/facebook-icon.svg" alt="Facebook" className="w-5 h-5" />
+          Continue with Facebook
+        </button>
+      </div>
+
+      <div className="relative my-6">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-gray-300"></div>
+        </div>
+        <div className="relative flex justify-center text-sm">
+          <span className="px-2 bg-white text-gray-500">Or continue with</span>
+        </div>
+      </div>
+
+      {/* Existing Email/Password Form */}
       <form onSubmit={handleLogin} className="space-y-6">
         <input
           type="text"
@@ -81,14 +126,6 @@ const Login = ({ onLogin }) => {
           Login
         </button>
       </form>
-      <div className="mt-6 space-y-3">
-        <button onClick={() => handleSocialLogin('google')} className="w-full flex items-center justify-center p-3 border border-gray-300 rounded-lg hover:shadow-md transition">
-          Continue with Google
-        </button>
-        <button onClick={() => handleSocialLogin('facebook')} className="w-full flex items-center justify-center p-3 border border-gray-300 rounded-lg hover:shadow-md transition">
-          Continue with Facebook
-        </button>
-      </div>
     </div>
   );
 };

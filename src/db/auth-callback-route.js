@@ -11,62 +11,44 @@ export async function GET(request) {
     const cookieStore = cookies();
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
 
-    // Exchange the code for a session
     await supabase.auth.exchangeCodeForSession(code);
-
-    // Check if user exists in our custom users table
     const { data: { session } } = await supabase.auth.getSession();
     
     if (session?.user) {
-      // Check if user already exists in our users table
-      const { data: existingUser } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
-        
-      if (!existingUser) {
-        // Create new user record
-        await supabase.from('users').insert({
-          id: session.user.id,
-          email: session.user.email,
-        });
-        
-        // Assign default role
-        await supabase.from('user_roles').insert({
-          user_id: session.user.id,
-          role_id: 2, // free_tier role
-        });
-      }
+      const { user } = session;
       
-      // Store provider info
-      const provider = session.user.app_metadata?.provider;
-      const providerUserId = session.user.identities?.[0]?.identity_id;
-      
-      if (provider && providerUserId) {
-        const { data: existingProvider } = await supabase
-          .from('auth_providers')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .eq('provider', provider)
+      try {
+        // Check if user exists in users table
+        const { data: existingUser, error: userCheckError } = await supabase
+          .from('users')
+          .select('id')
+          .eq('id', user.id)
           .single();
-          
-        if (!existingProvider) {
-          await supabase.from('auth_providers').insert({
-            user_id: session.user.id,
-            provider,
-            provider_user_id: providerUserId,
-            access_token: session.provider_token || null,
-            refresh_token: session.provider_refresh_token || null,
-            token_expiry: session.expires_at 
-              ? new Date(session.expires_at * 1000).toISOString()
-              : null,
-          });
+
+        if (!existingUser && !userCheckError) {
+          // Create new user record
+          const { error: insertError } = await supabase
+            .from('users')
+            .insert({
+              id: user.id,
+              email: user.email,
+              first_name: user.user_metadata?.full_name?.split(' ')[0] || '',
+              last_name: user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
+              hasprofile: false,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
+
+          if (insertError) {
+            console.error('Error creating user:', insertError);
+            throw insertError;
+          }
         }
+      } catch (error) {
+        console.error('Error in auth callback:', error);
       }
     }
   }
 
-  // URL to redirect to after sign in process completes
-  return NextResponse.redirect(new URL('/dashboard', request.url));
+  return NextResponse.redirect(new URL('/profile?setup=true', request.url));
 }

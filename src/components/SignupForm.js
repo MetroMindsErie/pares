@@ -38,6 +38,25 @@ const SignupForm = () => {
     }
   };
 
+  const handleSocialSignup = async (provider) => {
+    setLoading(true);
+    setError('');
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          scopes: provider === 'google' ? 'profile email' : 'email,public_profile',
+        }
+      });
+      
+      if (error) throw error;
+    } catch (err) {
+      setError(err.message || `Failed to sign up with ${provider}`);
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="max-w-md mx-auto p-8 bg-white/80 backdrop-blur-md rounded-2xl shadow-xl mt-10">
       <h2 className="text-3xl font-semibold mb-6 text-center text-gray-800">Sign Up</h2>
@@ -48,6 +67,36 @@ const SignupForm = () => {
       
       {message && <div className="mb-4 p-3 bg-green-100 text-green-700 rounded">{message}</div>}
       
+      {/* Social Signup Buttons */}
+      <div className="space-y-3 mb-6">
+        <button
+          onClick={() => handleSocialSignup('google')}
+          disabled={loading}
+          className="w-full flex items-center justify-center gap-2 bg-white p-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          <img src="/google-icon.svg" alt="Google" className="w-5 h-5" />
+          Sign up with Google
+        </button>
+        
+        <button
+          onClick={() => handleSocialSignup('facebook')}
+          disabled={loading}
+          className="w-full flex items-center justify-center gap-2 bg-[#1877F2] text-white p-3 rounded-lg hover:bg-[#1864D9] transition-colors"
+        >
+          <img src="/facebook-icon.svg" alt="Facebook" className="w-5 h-5" />
+          Sign up with Facebook
+        </button>
+      </div>
+
+      <div className="relative my-6">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-gray-300"></div>
+        </div>
+        <div className="relative flex justify-center text-sm">
+          <span className="px-2 bg-white text-gray-500">Or sign up with email</span>
+        </div>
+      </div>
+
       <form onSubmit={handleSignup} className="space-y-5">
         <div className="mb-4">
           <label className="block text-gray-700 mb-1" htmlFor="email">
