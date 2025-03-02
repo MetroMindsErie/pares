@@ -93,7 +93,7 @@ const Navbar = ({ isAuthenticated, user, onLogout, onLogin, onRegister }) => {
   // Update the return statement to use the new components
   return (
     <nav className={`fixed w-full z-50 transition-all duration-300 ${
-      scrolled ? 'bg-white shadow-md py-2' : 'bg-transparent py-4'
+      scrolled ? 'bg-white shadow-md py-2' : 'bg-white py-4'
     }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center">

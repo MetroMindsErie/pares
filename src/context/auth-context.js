@@ -44,35 +44,38 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const login = async (email, password) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
+  };
+
   useEffect(() => {
-    // Fetch session from Supabase (or cache) to initialize
+    let mounted = true;
+
     const fetchSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setUser(session.user);
-        // Optionally set role if available from user metadata or later by a separate query.
-        setRole(session.user.user_metadata?.role || null);
-        // Check if user has profile.
-        const { data: profileData } = await supabase
-          .from('users')
-          .select('hasprofile, role')
-          .eq('id', session.user.id)
-          .single();
-        setHasProfile(profileData?.hasprofile || false);
-        // If role is stored on profile data, update it.
-        if (profileData?.role) setRole(profileData.role);
-      }
-      setLoading(false);
-    };
+      try {
+        console.log('Fetching session...');
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Session error:', error);
+          if (mounted) setLoading(false);
+          return;
+        }
 
-    fetchSession();
-
-    // Listen for auth changes.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setUser(session?.user || null);
-        if (session?.user) {
-          setRole(session.user.user_metadata?.role || null);
+        if (mounted) {
+          console.log('Session status:', session ? 'Active' : 'No session');
+          setUser(session?.user || null);
+          setRole(session?.user?.user_metadata?.role || null);
           const { data: profileData } = await supabase
             .from('users')
             .select('hasprofile, role')
@@ -80,15 +83,30 @@ export function AuthProvider({ children }) {
             .single();
           setHasProfile(profileData?.hasprofile || false);
           if (profileData?.role) setRole(profileData.role);
-        } else {
-          setHasProfile(false);
-          setRole(null);
+          setLoading(false);
         }
-        setLoading(false);
+      } catch (error) {
+        console.error('Session fetch error:', error);
+        if (mounted) setLoading(false);
+      }
+    };
+
+    fetchSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state change:', event, session ? 'Session exists' : 'No session');
+        if (mounted) {
+          setUser(session?.user || null);
+          setLoading(false);
+        }
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription?.unsubscribe();
+    };
   }, []);
 
   const value = {
@@ -98,7 +116,8 @@ export function AuthProvider({ children }) {
     loading,
     hasProfile,
     signOut,
-    signup // Add signup to the context value
+    signup,
+    login, // Add login to context
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

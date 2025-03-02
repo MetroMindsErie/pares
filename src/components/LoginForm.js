@@ -12,10 +12,8 @@ const Login = ({ onLogin }) => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      // If user is already logged in, redirect accordingly.
-      router.push('/profile');
+      router.push('/dashboard');
     }
-    // Optionally, add additional listeners if needed.
   }, [isAuthenticated, router]);
 
   const handleLogin = async (e) => {
@@ -28,7 +26,6 @@ const Login = ({ onLogin }) => {
       });
       if (error) throw error;
 
-      // Use the returned session to determine routing.
       if (data?.user) {
         const { data: profileData } = await supabase
           .from('users')
