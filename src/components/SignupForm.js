@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useAuth } from '../context/auth-context';
-import { useRouter } from 'next/router';
 import supabase from '../lib/supabase-setup';
 
 const SignupForm = () => {
@@ -11,31 +10,27 @@ const SignupForm = () => {
   const [message, setMessage] = useState(''); // new state for confirmation message
   
   const { signup } = useAuth();
-  const router = useRouter();
-
+  // Removed unused router variable to avoid the "p is not a function" error.
   const handleSignup = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     try {
-      const result = await signup(email, password);
-      // Ensure we got a user returned
-      if (!result?.user) {
-        setError(result?.error || 'Failed to sign up. Please try again.');
+      const { user, error } = await signup(email, password);
+      
+      if (error) {
+        setError(error.message);
         return;
       }
-      // Upsert new user into the "users" table
-      const userId = result.user.id;
-      const { error: upsertError } = await supabase
-        .from('users')
-        .upsert({ id: userId, email });
-      if (upsertError) {
-        setError(upsertError.message);
+
+      if (!user) {
+        setError('Failed to sign up. Please try again.');
         return;
       }
-      // Instead of redirecting, instruct the user to check email for confirmation
+
       setMessage("Registration successful! Please check your email to confirm your account.");
-      // Optionally clear form fields, etc.
+      setEmail('');
+      setPassword('');
     } catch (err) {
       setError(err.message || 'An unexpected error occurred');
     } finally {

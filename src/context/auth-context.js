@@ -29,6 +29,21 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const signup = async (email, password) => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+      
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error signing up:', error.message);
+      throw error;
+    }
+  };
+
   useEffect(() => {
     // Fetch session from Supabase (or cache) to initialize
     const fetchSession = async () => {
@@ -82,7 +97,8 @@ export function AuthProvider({ children }) {
     role,
     loading,
     hasProfile,
-    signOut
+    signOut,
+    signup // Add signup to the context value
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
