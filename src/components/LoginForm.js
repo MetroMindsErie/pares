@@ -75,35 +75,34 @@ const Login = ({ onLogin }) => {
         </div>
       )}
       
-      {/* Social Login Buttons */}
-      <div className="space-y-3 mb-6">
-        <button
-          onClick={() => handleSocialLogin('google')}
-          className="w-full flex items-center justify-center gap-2 bg-white p-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          <img src="/google-icon.svg" alt="Google" className="w-5 h-5" />
-          Continue with Google
-        </button>
-        
-        <button
-          onClick={() => handleSocialLogin('facebook')}
-          className="w-full flex items-center justify-center gap-2 bg-[#1877F2] text-white p-3 rounded-lg hover:bg-[#1864D9] transition-colors"
-        >
-          <img src="/facebook-icon.svg" alt="Facebook" className="w-5 h-5" />
-          Continue with Facebook
-        </button>
-      </div>
-
-      <div className="relative my-6">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-gray-300"></div>
+        <div className="space-y-3 mb-6">
+          <button
+            onClick={() => handleSocialLogin('google')}
+            className="w-full flex items-center justify-center gap-2 bg-[#E85445] text-white p-3 rounded-lg hover:bg-[#C33D2E] transition-colors"
+          >
+            <img src="/google.png" alt="Google" className="w-5 h-5 rounded-full" style={{ marginRight: '8px', filter: 'drop-shadow(0 0 5px rgba(0,0,0,0.5))' }} />
+            Continue with Google
+          </button>
+          
+          <button
+            onClick={() => handleSocialLogin('facebook')}
+            className="w-full flex items-center justify-center gap-2 bg-[#1877F2] text-white p-3 rounded-lg hover:bg-[#1864D9] transition-colors"
+          >
+            <img src="/fb2.png" alt="Facebook" className="w-5 h-5" style={{ marginRight: '8px', filter: 'drop-shadow(0 0 5px rgba(0,0,0,0.5))' }} />
+            Continue with Facebook
+          </button>
         </div>
-        <div className="relative flex justify-center text-sm">
-          <span className="px-2 bg-white text-gray-500">Or continue with</span>
-        </div>
-      </div>
 
-      {/* Existing Email/Password Form */}
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white text-gray-500">Or continue with</span>
+          </div>
+        </div>
+
+        {/* Existing Email/Password Form */}
       <form onSubmit={handleLogin} className="space-y-6">
         <input
           type="text"
