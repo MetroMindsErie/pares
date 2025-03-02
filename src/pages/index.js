@@ -62,10 +62,14 @@ export default function Home({ featuredListings = [], heroContent }) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {isAuthenticated ? (
             <>
-              {isSearching && typeof SearchResults === 'function' ? (
+              {isSearching && typeof SearchResults === 'function' && searchResults.length > 0 ? (
                 <SearchResults listings={searchResults} />
               ) : (
-                <div>Error: SearchResults is not a component</div>
+                !isSearching ? (<Blog />) : (
+                  <div className="text-center text-gray-700">
+                    No results found.
+                  </div>
+                )
               )}
               <Blog />
               <Stablecoin />
