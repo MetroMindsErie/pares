@@ -44,7 +44,9 @@ const SignupForm = () => {
     setLoading(true);
     setError('');
     try {
-      const redirectTo = `${window.location.origin}/auth/callback`; // Always use current origin
+      const redirectTo = process.env.NODE_ENV === 'development'
+        ? 'http://localhost:3000/auth/callback'
+        : 'https://www.parealestatesolutions.com/auth/callback'; // Hardcoded
   
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
@@ -55,7 +57,6 @@ const SignupForm = () => {
       });
   
       if (error) throw error;
-      // If using a version that requires manual redirect
       if (data?.url) window.location.href = data.url;
     } catch (err) {
       setError(err.message || `Failed to sign up with ${provider}`);
