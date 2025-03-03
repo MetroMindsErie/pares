@@ -47,10 +47,14 @@ const Login = ({ onLogin }) => {
   const handleSocialLogin = async (provider) => {
     try {
       setError(null);
+      const redirectTo = process.env.NODE_ENV === 'development'
+        ? 'http://localhost:3000/auth/callback'
+        : `${window.location.origin}/auth/callback`;
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo,
           scopes: provider === 'google' ? 'profile email' : 'email,public_profile',
           queryParams: provider === 'google' ? {
             prompt: 'select_account',

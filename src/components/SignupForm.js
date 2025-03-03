@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../context/auth-context';
 import supabase from '../lib/supabase-setup';
+import { useRouter } from 'next/router';
 
 const SignupForm = () => {
   const [email, setEmail] = useState('');
@@ -10,7 +11,8 @@ const SignupForm = () => {
   const [message, setMessage] = useState(''); // new state for confirmation message
   
   const { signup } = useAuth();
-  // Removed unused router variable to avoid the "p is not a function" error.
+  const router = useRouter();
+
   const handleSignup = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -42,10 +44,14 @@ const SignupForm = () => {
     setLoading(true);
     setError('');
     try {
+      const redirectTo = process.env.NODE_ENV === 'development'
+        ? 'http://localhost:3000/auth/callback'
+        : `${window.location.origin}/auth/callback`;
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo,
           scopes: provider === 'google' ? 'profile email' : 'email,public_profile',
         }
       });
