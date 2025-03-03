@@ -3,13 +3,18 @@ import { useRouter } from 'next/router';
 import supabase from '../lib/supabase-setup';
 import Layout from '../components/Layout';
 import { useAuth } from '../context/auth-context';
+import ProfileForm from '../components/Profile/ProfileForm';
+import ProgressStepper from '../components/Profile/ProgressStepper';
+import RoleSelector from '../components/Profile/RoleSelector';
+import InterestPicker from '../components/Profile/InterestPicker';
+import ProfileView from '../components/Profile/ProfileView';
 
-const INTEREST_OPTIONS = ['Real Estate', 'Finance', 'Family', 'Gaming', 'Technology', 'Travel', 'Cooking', 'Sports', 'Music', 'Movies'];
-
-const PROFILE_TYPES = [
-  { id: 1, type: 'buyer', label: 'Buyer' },
-  { id: 2, type: 'seller', label: 'Seller' },
-  { id: 3, type: 'agent', label: 'Agent' }
+const PROFILE_STEPS = [
+  { title: 'Basic Info', component: 'ProfileForm' },
+  { title: 'Location', component: 'ProfileForm' },
+  { title: 'Contact', component: 'ProfileForm' },
+  { title: 'Role', component: 'RoleSelector' },
+  { title: 'Interests', component: 'InterestPicker' }
 ];
 
 export default function ProfilePage() {
@@ -27,8 +32,11 @@ export default function ProfilePage() {
   const [isFirstTime, setIsFirstTime] = useState(false);
   const [profile, setProfile] = useState(null);
   const [profileType, setProfileType] = useState(null);
+  const [roles, setRoles] = useState([]);
+  const [metadata, setMetadata] = useState({});
+  const [profilePictureUrl, setProfilePictureUrl] = useState('');
   const router = useRouter();
-  const { user, isAuthenticated, hasProfile, loading } = useAuth();
+  const { user, isAuthenticated, hasProfile, loading, userPicture, saveUserPicture } = useAuth();
   const isSetup = router.query.setup === 'true';
 
   useEffect(() => {
@@ -51,6 +59,37 @@ export default function ProfilePage() {
     }
   }, [user, hasProfile]);
 
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (user?.id && !isFirstTime) {
+        const { data, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        
+        if (data && !error) {
+          setProfile(data);
+        }
+      }
+    };
+
+    fetchProfile();
+  }, [user, isFirstTime]);
+
+  useEffect(() => {
+    if (user && !hasProfile && userPicture) {
+      setProfilePictureUrl(userPicture);
+    }
+  }, [user, hasProfile, userPicture]);
+
+  // Update the profile picture when available from auth
+  useEffect(() => {
+    if (user && userPicture && !profilePictureUrl) {
+      setProfilePictureUrl(userPicture);
+    }
+  }, [user, userPicture]);
+
   const nextStep = () => {
     setStep(step + 1);
   };
@@ -68,11 +107,12 @@ export default function ProfilePage() {
   };
 
   const handleProfileSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!user?.id) return;
 
     try {
-      // Update users table only
+      const profile_picture_url = userPicture || profilePictureUrl;
+      
       const { error: userError } = await supabase
         .from('users')
         .update({
@@ -83,205 +123,90 @@ export default function ProfilePage() {
           zip_code,
           phone,
           alternate_email: alternateEmail,
-          interests: interests.join(','),
+          interests,
           hasprofile: true,
           profile_type_id: profileType,
+          roles,
+          profile_picture_url,
+          metadata,
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id);
 
-      if (userError) {
-        console.error('User update error:', userError);
-        throw userError;
-      }
+      if (userError) throw userError;
 
       setSuccess('Profile saved successfully!');
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 2000);
+      setTimeout(() => router.push('/dashboard'), 2000);
     } catch (err) {
-      console.error('Profile creation error:', err);
       setError(err.message);
+      console.error('Profile update error:', err);
     }
   };
 
+  const handleFormSubmit = (formData) => {
+    // Update state based on current step
+    if (step === 1) {
+      setFirstName(formData.firstName);
+      setLastName(formData.lastName);
+      setProfileType(formData.profileTypeId); // Add this line
+    } else if (step === 2) {
+      setCity(formData.city);
+      setState(formData.state);
+      setZip_code(formData.zipCode);
+    } else if (step === 3) {
+      setPhone(formData.phone);
+      setAlternateEmail(formData.alternateEmail);
+    }
+    nextStep();
+  };
+
   const renderProfileCreationForm = () => (
-    <div>
-      {step === 1 && (
-        <div>
-          <h2 className="text-xl mb-4">Name Information</h2>
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-1" htmlFor="firstName">First Name</label>
-            <input id="firstName" type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 transition" required />
-          </div>
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-1" htmlFor="lastName">Last Name</label>
-            <input id="lastName" type="text" value={lastName} onChange={(e) => setLastName(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 transition" required />
-          </div>
-          <button onClick={nextStep} className="bg-indigo-500 text-white py-3 px-6 rounded-lg hover:bg-indigo-600 transition-colors">
-            Next
-          </button>
-        </div>
+    <div className="space-y-8">
+      <ProgressStepper 
+        steps={PROFILE_STEPS} 
+        currentStep={step} 
+        onStepClick={setStep}
+      />
+      
+      {step <= 3 && (
+        <ProfileForm
+          onSubmit={handleFormSubmit}
+          onBack={prevStep}
+          step={step}
+          initialData={{
+            first_name: firstName,
+            last_name: lastName,
+            city,
+            state,
+            zip_code,
+            phone,
+            alternate_email: alternateEmail
+          }}
+        />
       )}
-      {step === 2 && (
-        <div>
-          <h2 className="text-xl mb-4">Location Information</h2>
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-1" htmlFor="city">City</label>
-            <input id="city" type="text" value={city} onChange={(e) => setCity(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 transition" required />
-          </div>
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-1" htmlFor="state">State</label>
-            <input id="state" type="text" value={state} onChange={(e) => setState(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 transition" required />
-          </div>
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-1" htmlFor="zipcode">Zipcode</label>
-            <input id="zipcode" type="text" value={zip_code} onChange={(e) => setZip_code(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 transition" required />
-          </div>
-          <button onClick={prevStep} className="bg-gray-400 text-white py-3 px-6 rounded-lg hover:bg-gray-500 transition-colors mr-2">
-            Previous
-          </button>
-          <button onClick={nextStep} className="bg-indigo-500 text-white py-3 px-6 rounded-lg hover:bg-indigo-600 transition-colors">
-            Next
-          </button>
-        </div>
-      )}
-      {step === 3 && (
-        <div>
-          <h2 className="text-xl mb-4">Contact Information</h2>
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-1" htmlFor="phone">Phone</label>
-            <input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 transition" />
-          </div>
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-1" htmlFor="alternateEmail">Alternate Email</label>
-            <input id="alternateEmail" type="email" value={alternateEmail} onChange={(e) => setAlternateEmail(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 transition" />
-          </div>
-          <button onClick={prevStep} className="bg-gray-400 text-white py-3 px-6 rounded-lg hover:bg-gray-500 transition-colors mr-2">
-            Previous
-          </button>
-          <button onClick={nextStep} className="bg-indigo-500 text-white py-3 px-6 rounded-lg hover:bg-indigo-600 transition-colors">
-            Next
-          </button>
-        </div>
-      )}
+      
       {step === 4 && (
-        <div>
-          <h2 className="text-xl mb-4">Select Your Role</h2>
-          <div className="grid grid-cols-1 gap-4 mb-6">
-            {PROFILE_TYPES.map((type) => (
-              <button
-                key={type.id}
-                type="button"
-                onClick={() => setProfileType(type.id)}
-                className={`p-4 rounded-lg border-2 ${
-                  profileType === type.id
-                    ? 'border-indigo-500 bg-indigo-50'
-                    : 'border-gray-200 hover:border-indigo-200'
-                }`}
-              >
-                <h3 className="font-semibold">{type.label}</h3>
-                <p className="text-sm text-gray-500">
-                  {type.description || `Register as a ${type.label.toLowerCase()}`}
-                </p>
-              </button>
-            ))}
-          </div>
-          <button onClick={prevStep} className="bg-gray-400 text-white py-3 px-6 rounded-lg hover:bg-gray-500 transition-colors mr-2">
-            Previous
-          </button>
-          <button 
-            onClick={nextStep} 
-            disabled={!profileType}
-            className="bg-indigo-500 text-white py-3 px-6 rounded-lg hover:bg-indigo-600 transition-colors disabled:opacity-50"
-          >
-            Next
-          </button>
-        </div>
+        <RoleSelector
+          selectedRoles={roles}
+          onChange={setRoles}
+          onNext={nextStep}
+          onBack={prevStep}
+        />
       )}
+      
       {step === 5 && (
-        <div>
-          <h2 className="text-xl mb-4">Preferences and Interests</h2>
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-1">Interests</label>
-            <div className="flex flex-wrap gap-2">
-              {INTEREST_OPTIONS.map(interest => (
-                <button
-                  key={interest}
-                  type="button"
-                  className={`py-2 px-4 rounded-full text-sm ${interests.includes(interest) ? 'bg-indigo-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-                  onClick={() => handleInterestChange(interest)}
-                >
-                  {interest}
-                </button>
-              ))}
-            </div>
-          </div>
-          <button onClick={prevStep} className="bg-gray-400 text-white py-3 px-6 rounded-lg hover:bg-gray-500 transition-colors mr-2">
-            Previous
-          </button>
-          <button 
-            onClick={handleProfileSubmit}
-            className="bg-green-500 text-white py-3 px-6 rounded-lg hover:bg-green-600 transition-colors"
-          >
-            Complete Profile
-          </button>
-        </div>
+        <InterestPicker
+          selectedInterests={interests}
+          onChange={setInterests}
+          onBack={prevStep}
+          onSubmit={handleProfileSubmit}
+        />
       )}
     </div>
   );
 
   const renderProfilePage = () => (
-    <div>
-      <h1 className="text-3xl text-center mb-6">Your Profile</h1>
-      <div className="max-w-md mx-auto p-6 bg-white/90 rounded-2xl shadow-lg">
-        {profile ? (
-          <>
-            <div className="mb-4">
-              <label className="block text-gray-700 mb-1">First Name</label>
-              <p>{profile.first_name}</p>
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 mb-1">Last Name</label>
-              <p>{profile.last_name}</p>
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 mb-1">City</label>
-              <p>{profile.city}</p>
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 mb-1">State</label>
-              <p>{profile.state}</p>
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 mb-1">Zipcode</label>
-              <p>{profile.zip_code}</p>
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 mb-1">Phone</label>
-              <p>{profile.phone}</p>
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 mb-1">Alternate Email</label>
-              <p>{profile.alternate_email}</p>
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 mb-1">Interests</label>
-              <p>{profile.interests}</p>
-            </div>
-          </>
-        ) : (
-          <p>Loading profile...</p>
-        )}
-      </div>
-    </div>
+    <ProfileView profile={profile} />
   );
 
   if (loading) {
