@@ -44,7 +44,7 @@ const SignupForm = () => {
     setLoading(true);
     setError('');
     try {
-      const redirectTo = `${window.location.origin}/auth/v1/callback`; // Always use current origin
+      const redirectTo = `${window.location.origin}/auth/callback`; // Always use current origin
   
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
