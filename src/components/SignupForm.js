@@ -81,7 +81,7 @@ const SignupForm = () => {
           disabled={loading}
           className="w-full flex items-center justify-center gap-2 bg-white p-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
         >
-          <img src="/google-icon.svg" alt="Google" className="w-5 h-5" />
+          <img src="/google.png" alt="Google" className="w-5 h-5" />
           Sign up with Google
         </button>
         
@@ -90,7 +90,7 @@ const SignupForm = () => {
           disabled={loading}
           className="w-full flex items-center justify-center gap-2 bg-[#1877F2] text-white p-3 rounded-lg hover:bg-[#1864D9] transition-colors"
         >
-          <img src="/facebook-icon.svg" alt="Facebook" className="w-5 h-5" />
+          <img src="/fb2.png" alt="Facebook" className="w-5 h-5" />
           Sign up with Facebook
         </button>
       </div>
