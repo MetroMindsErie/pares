@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Menu, X, Home, Building, Search, User, HeartIcon } from 'lucide-react';
 import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/router';
+import supabase from '../lib/supabase-setup';
 
 const Navbar = ({ isAuthenticated, user, onLogout, onLogin, onRegister }) => {
   const { logout } = useAuth();
@@ -19,7 +20,41 @@ const Navbar = ({ isAuthenticated, user, onLogout, onLogin, onRegister }) => {
     }
   };
 
-  // Handle scroll effect for navbar
+  // Handle user profile navigation based on profile status
+  const handleProfileNavigation = async () => {
+    console.log("Auth user object:", user);
+    
+    try {
+      // Query the users table to get the hasprofile value
+      const { data, error } = await supabase
+        .from('users')
+        .select('hasprofile')
+        .eq('id', user.id)
+        .single();
+      
+      console.log("User profile data:", data);
+      
+      if (error) {
+        console.error("Error fetching user profile:", error);
+        router.push('/profile');
+        return;
+      }
+      
+      // Check if the user has a profile and navigate accordingly
+      if (data && data.hasprofile === true) {
+        console.log("User has profile, navigating to dashboard");
+        router.push('/dashboard');
+      } else {
+        console.log("User doesn't have profile, navigating to profile page");
+        router.push('/profile');
+      }
+    } catch (err) {
+      console.error("Error in profile navigation:", err);
+      // Default to profile page on error
+      router.push('/profile');
+    }
+  };
+
   // Handle scroll effect for navbar
   useEffect(() => {
     const handleScroll = () => {
@@ -33,16 +68,19 @@ const Navbar = ({ isAuthenticated, user, onLogout, onLogin, onRegister }) => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-  // Update renderUserActions
+
   // User actions for desktop
   const renderUserActions = () => (
     <div className="hidden md:flex items-center space-x-4">
       {isAuthenticated ? (
         <>
-          <Link href="/profile" className="px-4 py-2 text-gray-600 hover:text-blue-600">
+          <button 
+            onClick={handleProfileNavigation} 
+            className="px-4 py-2 text-gray-600 hover:text-blue-600 flex items-center"
+          >
             <User className="h-4 w-4 mr-2" />
             {user?.email}
-          </Link>
+          </button>
           <button
             onClick={handleLogout}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
@@ -68,14 +106,18 @@ const Navbar = ({ isAuthenticated, user, onLogout, onLogin, onRegister }) => {
       )}
     </div>
   );
-  // Update renderMobileUserActions(
+
+  // Update renderMobileUserActions
   const renderMobileUserActions = () => (
     <div className="pt-4 border-t border-gray-200">
       {isAuthenticated ? (
         <>
-          <Link href="/profile" className="block w-full px-3 py-2 text-center text-gray-600">
+          <button 
+            onClick={handleProfileNavigation} 
+            className="block w-full px-3 py-2 text-center text-gray-600"
+          >
             {user?.email}
-          </Link>
+          </button>
           <button
             onClick={handleLogout}
             className="block w-full mt-2 px-3 py-2 text-center bg-blue-600 text-white rounded"
@@ -101,6 +143,7 @@ const Navbar = ({ isAuthenticated, user, onLogout, onLogin, onRegister }) => {
       )}
     </div>
   );
+
   // Return the navbar component
   return (
     <nav className={`fixed w-full z-50 transition-all duration-300 ${

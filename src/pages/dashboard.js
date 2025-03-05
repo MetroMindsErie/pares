@@ -13,6 +13,7 @@ export default function DashboardPage() {
   const [activities, setActivities] = useState([]);
   const router = useRouter();
 
+  // Simple redirect if not authenticated
   useEffect(() => {
     if (!loading && !isAuthenticated) {
       router.push('/login');
@@ -91,10 +92,10 @@ export default function DashboardPage() {
       </div>
 
       <div className="mt-8 bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Your Facebook Reels</h2>
+        {/* <h2 className="text-xl font-semibold mb-4">Your Facebook Reels</h2>
         <p className="text-gray-600 mb-6">
           Connect your Facebook account to display and manage your real estate reels.
-        </p>
+        </p> */}
         
         {/* Reels component */}
         <div className="bg-gray-50 rounded-lg">

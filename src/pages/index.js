@@ -10,8 +10,9 @@ import Blog from '../components/Blog';
 import Stablecoin from '../components/Stablecoin';
 import { useAuth } from '../context/auth-context';
 import Layout from '../components/Layout';
+import { handleProfileNavigation } from '../utils/profileUtils';
 
-export default function Home({ featuredListings = [], heroContent }) {
+const HomePage = ({ featuredListings = [], heroContent }) => {
   const router = useRouter();
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -39,6 +40,17 @@ export default function Home({ featuredListings = [], heroContent }) {
     if (Array.isArray(results)) {
       setSearchResults(results);
       setIsSearching(true);
+    }
+  };
+
+  const handleEmailClick = async (e) => {
+    e.preventDefault();
+    
+    if (user) {
+      await handleProfileNavigation(user, router);
+    } else {
+      // If no user is logged in, redirect to login
+      router.push('/login');
     }
   };
 
@@ -77,6 +89,11 @@ export default function Home({ featuredListings = [], heroContent }) {
             </div>
           )}
           <Hero content={heroContent} />
+          <div className="some-container">
+            <a href="#" onClick={handleEmailClick} className="email-link">
+              {user?.email || 'Sign in'}
+            </a>
+          </div>
         </div>
       </main>
   );
@@ -98,3 +115,5 @@ export async function getStaticProps() {
     return { props: { heroContent: null, featuredListings: [] } };
   }
 }
+
+export default HomePage;
