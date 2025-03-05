@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import supabase from '../lib/supabase-setup';
 import axios from 'axios';
 import { loginWithFacebook } from '../lib/facebook-auth';
+import { fetchAndStoreFacebookProfilePicture } from '../lib/facebook-utils';
 
 const AuthContext = createContext();
 
@@ -141,7 +142,63 @@ export function AuthProvider({ children }) {
       return { success: false, error };
     }
   };
-  
+
+  // Enhanced sign-in handler that fetches profile picture for Facebook logins
+  const handleSignInWithProvider = async (provider) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`
+        }
+      });
+      
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      setError(error.message);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle user session changes
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Set the user and authentication status
+      setUser(session?.user || null);
+      setIsAuthenticated(!!session);
+      setLoading(false);
+
+      // When a user logs in, check if they're using Facebook
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
+        console.log('Auth state change detected:', event);
+        
+        // For Facebook users, fetch and save profile picture
+        const isFacebookAuth = session.provider === 'facebook' || 
+                              (session.user?.app_metadata?.provider === 'facebook') ||
+                              session.provider_token;
+        
+        if (isFacebookAuth) {
+          console.log('Facebook user detected, fetching profile picture');
+          // Pass both user and provider_token
+          await fetchAndStoreFacebookProfilePicture(
+            session.user, 
+            session.provider_token
+          );
+        }
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
   const value = {
     user,
     loading,

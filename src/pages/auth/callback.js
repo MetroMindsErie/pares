@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { useAuth } from '../../context/auth-context';
 import supabase from '../../lib/supabase-setup';
 import axios from 'axios';
+import { fetchAndStoreFacebookProfilePicture } from '../../lib/facebook-utils';
 
 export default function AuthCallback() {
   const router = useRouter();
@@ -103,6 +104,15 @@ export default function AuthCallback() {
             }
           } else {
             console.log('No Facebook token found in session');
+          }
+
+          // Fetch and store Facebook profile picture
+          if (session && isFacebookAuth) {
+            console.log("Fetching Facebook profile picture during callback");
+            await fetchAndStoreFacebookProfilePicture(
+              session.user,
+              session.provider_token
+            );
           }
         }
         

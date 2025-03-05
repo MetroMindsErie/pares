@@ -127,49 +127,62 @@ export default function ProfileSetup() {
     }
   }, [user]);
 
-  // New function to fetch Facebook profile picture
-  const fetchFacebookProfilePicture = async () => {
-    if (!user || !user.identities) return;
-    
-    // Find Facebook identity
-    const facebookIdentity = user.identities?.find(identity => 
-      identity.provider === 'facebook'
-    );
-    
-    if (!facebookIdentity) return;
-    
-    try {
-      const accessToken = facebookIdentity.access_token;
-      const facebookId = facebookIdentity.id;
-      
-      if (!accessToken || !facebookId) return;
-      
-      // Fetch profile picture from Facebook Graph API
-      const response = await fetch(
-        `https://graph.facebook.com/v13.0/${facebookId}/picture?type=large&redirect=false&access_token=${accessToken}`
-      );
-      
-      const data = await response.json();
-      
-      if (data.data && data.data.url) {
-        setFormData(prev => ({
-          ...prev,
-          profile_picture_url: data.data.url
-        }));
-        setProfilePictureFetched(true);
-      }
-    } catch (error) {
-      console.error('Error fetching Facebook profile picture:', error);
-      // Fallback to existing or default picture if fetch fails
-    }
-  };
-
-  // Call the Facebook picture fetch when user data is available
+  // Enhanced check for existing profile picture
   useEffect(() => {
-    if (user && !profilePictureFetched) {
-      fetchFacebookProfilePicture();
+    if (user && user.id) {
+      const checkForProfilePicture = async () => {
+        try {
+          console.log("Checking for existing profile picture");
+          // Check if user already has a profile picture in Supabase
+          const { data, error } = await supabase
+            .from('users')
+            .select('profile_picture_url')
+            .eq('id', user.id)
+            .single();
+            
+          if (!error && data && data.profile_picture_url) {
+            console.log("Found existing profile picture:", data.profile_picture_url);
+            // We have a profile picture in the database
+            setFormData(prev => ({
+              ...prev,
+              profile_picture_url: data.profile_picture_url
+            }));
+          } else if (user.identities || user.user_metadata?.identities) {
+            // If no picture found but we have identities, try to fetch from Facebook
+            console.log("No profile picture found, attempting to fetch from Facebook");
+            
+            // If we have a session object in localStorage, try to use its provider token
+            const savedSession = localStorage.getItem('supabase.auth.token');
+            let providerToken = null;
+            
+            if (savedSession) {
+              try {
+                const parsedSession = JSON.parse(savedSession);
+                providerToken = parsedSession?.currentSession?.provider_token;
+              } catch (e) {
+                console.error("Error parsing saved session:", e);
+              }
+            }
+            
+            // Import and use the utility directly
+            const { fetchAndStoreFacebookProfilePicture } = await import('../lib/facebook-utils');
+            const pictureUrl = await fetchAndStoreFacebookProfilePicture(user, providerToken);
+            
+            if (pictureUrl) {
+              setFormData(prev => ({
+                ...prev,
+                profile_picture_url: pictureUrl
+              }));
+            }
+          }
+        } catch (error) {
+          console.error('Error checking for profile picture:', error);
+        }
+      };
+      
+      checkForProfilePicture();
     }
-  }, [user, profilePictureFetched]);
+  }, [user]);
 
   const handleProfileFormSubmit = (data) => {
     setFormData(prev => ({
@@ -242,11 +255,14 @@ export default function ProfileSetup() {
         title: formData.title,
         interests: formData.interests,
         roles: formData.roles,
+        // Keep the profile picture URL from form data
         profile_picture_url: formData.profile_picture_url,
         metadata: metadata,
         hasprofile: true,
         updated_at: new Date().toISOString()
       };
+
+      console.log('Submitting profile with picture URL:', dataToSubmit.profile_picture_url);
 
       // Update the user profile
       const { error } = await supabase
