@@ -1,24 +1,21 @@
-// lib/supabase.js
-import { createClient } from '@supabase/supabase-js';
+const express = require('express');
+const cors = require('cors');
+const app = express();
 
-// Initialize the Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const allowedOrigins = ['http://localhost:3000', 'https://www.parealestatesolutions.com'];
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
-}
-
-const supabase = createClient(
-  supabaseUrl,
-  supabaseAnonKey,
-  {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
     }
   }
-);
+}));
 
-export default supabase;
+// Your other middleware and routes here
+
+app.listen(3000, () => {
+  console.log('Server running on port 3000');
+});
