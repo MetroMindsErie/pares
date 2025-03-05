@@ -5,20 +5,21 @@ import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/router';
 
 const Navbar = ({ isAuthenticated, user, onLogout, onLogin, onRegister }) => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { logout } = useAuth();
   const [scrolled, setScrolled] = useState(false);
-  const { signOut } = useAuth();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const router = useRouter();
 
   const handleLogout = async () => {
     try {
-      await signOut();
-      router.push('/'); // or '/login'
+      await logout();
+      router.push('/');
     } catch (error) {
       console.error('Logout error:', error);
     }
   };
 
+  // Handle scroll effect for navbar
   // Handle scroll effect for navbar
   useEffect(() => {
     const handleScroll = () => {
@@ -32,8 +33,8 @@ const Navbar = ({ isAuthenticated, user, onLogout, onLogin, onRegister }) => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
   // Update renderUserActions
+  // User actions for desktop
   const renderUserActions = () => (
     <div className="hidden md:flex items-center space-x-4">
       {isAuthenticated ? (
@@ -67,8 +68,7 @@ const Navbar = ({ isAuthenticated, user, onLogout, onLogin, onRegister }) => {
       )}
     </div>
   );
-
-  // Update renderMobileUserActions
+  // Update renderMobileUserActions(
   const renderMobileUserActions = () => (
     <div className="pt-4 border-t border-gray-200">
       {isAuthenticated ? (
@@ -101,43 +101,42 @@ const Navbar = ({ isAuthenticated, user, onLogout, onLogin, onRegister }) => {
       )}
     </div>
   );
-
-  // Update the return statement to use the new components
+  // Return the navbar component
   return (
     <nav className={`fixed w-full z-50 transition-all duration-300 ${
       scrolled ? 'bg-white shadow-md py-2' : 'bg-white py-4'
     }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center">
-                <div className="flex items-center">
-                <Link href="/" className="flex items-center">
-                  <img src="/pares5.jpeg" alt="PaRes Logo" className="h-8 w-8 rounded-full" /> {/* Add logo image */}
-                  <span className="ml-2 text-xl font-bold text-blue-600">PARES</span>
-                </Link>
-                </div>
-
-                {/* Desktop Navigation */}
+          <div className="flex items-center">
+            <Link href="/" className="flex items-center">
+              <img src="/pares5.jpeg" alt="PaRes Logo" className="h-8 w-8 rounded-full" />
+              <span className="ml-2 text-xl font-bold text-blue-600">PARES</span>
+            </Link>
+          </div>
+          
+          {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             <Link href="/" className="text-gray-600 hover:text-blue-600 flex items-center">
               <Home className="h-4 w-4 mr-1" />
               <span>Home</span>
             </Link>
-            <Link href="/" className="text-gray-600 hover:text-blue-600 flex items-center">
+            <Link href="/properties" className="text-gray-600 hover:text-blue-600 flex items-center">
               <Building className="h-4 w-4 mr-1" />
               <span>Properties</span>
             </Link>
-            <Link href="/" className="text-gray-600 hover:text-blue-600 flex items-center">
+            <Link href="/search" className="text-gray-600 hover:text-blue-600 flex items-center">
               <Search className="h-4 w-4 mr-1" />
               <span>Search</span>
             </Link>
-            <Link href="/" className="text-gray-600 hover:text-blue-600 flex items-center">
+            <Link href="/favorites" className="text-gray-600 hover:text-blue-600 flex items-center">
               <HeartIcon className="h-4 w-4 mr-1" />
               <span>Favorites</span>
             </Link>
           </div>
-
+          
           {renderUserActions()}
-
+          
           {/* Mobile menu button */}
           <div className="md:hidden flex items-center">
             <button
@@ -153,7 +152,7 @@ const Navbar = ({ isAuthenticated, user, onLogout, onLogin, onRegister }) => {
           </div>
         </div>
       </div>
-
+      
       {/* Mobile Navigation */}
       {isMenuOpen && (
         <div className="md:hidden bg-white shadow-lg rounded-b-lg mt-2">

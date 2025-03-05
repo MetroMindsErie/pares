@@ -47,17 +47,29 @@ const Login = ({ onLogin }) => {
   const handleSocialLogin = async (provider) => {
     try {
       setError(null);
-      const redirectTo = `${window.location.origin}/auth/callback`;
+      const redirectTo = `${window.location.origin}/auth/callback?provider=${provider}`;
       console.log("Redirect URI:", redirectTo);
+      
+      // Add proper scopes for user_videos when authenticating with Facebook
+      const scopes = provider === 'facebook' 
+        ? 'email,public_profile,user_videos,pages_show_list' 
+        : (provider === 'google' ? 'profile email' : undefined);
+      
+      // Add response_type=token to get token in URL hash
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
           redirectTo,
-          scopes: provider === 'google' ? 'profile email' : 'email,public_profile',
-          queryParams: provider === 'google' ? {
-            prompt: 'select_account',
-            access_type: 'offline',
-          } : undefined,
+          scopes,
+          queryParams: provider === 'facebook' 
+            ? {
+                response_type: 'token',
+                // Other Facebook-specific params can be added here
+              } 
+            : (provider === 'google' ? {
+                prompt: 'select_account',
+                access_type: 'offline',
+              } : undefined),
         }
       });
       

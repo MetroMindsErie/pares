@@ -4,8 +4,8 @@ import axios from 'axios';
 export default async function handler(req, res) {
   if (req.method === 'POST') {
     // Get the client credentials from environment variables or the request body
-    const client_id = process.env.TRESTLE_CLIENT_ID;
-    const client_secret = process.env.TRESTLE_CLIENT_SECRET;
+    const client_id = process.env.NEXT_PUBLIC_TRESTLE_CLIENT_ID;
+    const client_secret = process.env.NEXT_PUBLIC_TRESTLE_CLIENT_SECRET;
 
     try {
       // Make a request to the Trestle API to get the token
@@ -29,6 +29,7 @@ export default async function handler(req, res) {
     } catch (error) {
       // Handle error and send it back to the frontend
       console.error('Error getting token:', error);
+      console.error('Error details:', error.response ? error.response.data : error.message);
       res.status(500).json({ error: 'Failed to fetch token' });
     }
   } else {

@@ -1,143 +1,158 @@
-// context/AuthContext.js
-import { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import supabase from '../lib/supabase-setup';
+import axios from 'axios';
+import { loginWithFacebook } from '../lib/facebook-auth';
 
-const AuthContext = createContext({});
+const AuthContext = createContext();
 
-export function useAuth() {
-  return useContext(AuthContext);
-}
+// Server API base URL
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [role, setRole] = useState(null);
-  const [hasProfile, setHasProfile] = useState(false);
+  const [user, setUser] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [socialConnections, setSocialConnections] = useState({
+    facebook: false,
+    google: false
+  });
 
-  const signOut = async () => {
-    try {
-      setLoading(true);
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      
-      // Clear all auth states
-      setUser(null);
-      setRole(null);
-      setHasProfile(false);
-      setLoading(false);
-      
-      // Redirect to home page handled by component
-    } catch (error) {
-      console.error('Error signing out:', error.message);
-      setLoading(false);
-      throw error;
-    }
-  };
-
-  const signup = async (email, password) => {
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-      
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Error signing up:', error.message);
-      throw error;
-    }
-  };
-
-  const login = async (email, password) => {
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Login error:', error);
-      throw error;
-    }
-  };
+  // Configure axios
+  axios.defaults.withCredentials = true;
 
   useEffect(() => {
-    let mounted = true;
-
-    const fetchSession = async () => {
+    // Check authentication status with both Passport and Supabase
+    const checkAuthStatus = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        setLoading(true);
         
-        if (error) {
-          console.error('Session error:', error);
-          if (mounted) setLoading(false);
-          return;
-        }
-
-        if (mounted && session?.user) {
-          setUser(session.user);
-
-          // Only check users table if we have a session
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('hasprofile')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (userError && userError.code !== 'PGRST116') {
-            console.error('User fetch error:', userError);
-          }
-          
-          setHasProfile(userData?.hasprofile || false);
-        } else {
-          setUser(null);
-          setHasProfile(false);
-        }
-
-        setLoading(false);
-      } catch (error) {
-        console.error('Session fetch error:', error);
-        if (mounted) setLoading(false);
-      }
-    };
-
-    fetchSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state change:', event);
-        if (!mounted) return;
+        // Remove or comment out the failing passport call:
+        // const passportRes = await axios.get(`${API_URL}/auth/me`);
+        
+        // If not authenticated with Passport, check Supabase
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log('Supabase session:', session); // <-- Add this log
 
         if (session?.user) {
           setUser(session.user);
-          // No need to check hasProfile here, it will be handled by fetchSession
+          setIsAuthenticated(true);
+          
+          // Check Facebook connection status
+          try {
+            // First check auth_providers table
+            const { data: providerData } = await supabase
+              .from('auth_providers')
+              .select('provider')
+              .eq('user_id', session.user.id)
+              .eq('provider', 'facebook')
+              .maybeSingle();
+            
+            if (providerData) {
+              setSocialConnections(prev => ({...prev, facebook: true}));
+            } else {
+              // Then check users table
+              const { data: userData } = await supabase
+                .from('users')
+                .select('facebook_access_token')
+                .eq('id', session.user.id)
+                .single();
+                
+              setSocialConnections(prev => ({
+                ...prev, 
+                facebook: !!userData?.facebook_access_token
+              }));
+            }
+          } catch (err) {
+            console.error('Error checking social connections:', err);
+            setSocialConnections(prev => ({...prev, facebook: false}));
+          }
         } else {
           setUser(null);
-          setHasProfile(false);
+          setIsAuthenticated(false);
+          setSocialConnections({ facebook: false, google: false });
         }
+      } catch (error) {
+        console.error('Auth check error:', error);
+        // Clear state on error
+        setUser(null);
+        setIsAuthenticated(false);
+        setSocialConnections({ facebook: false, google: false });
+      } finally {
+        setLoading(false);
       }
-    );
-
-    return () => {
-      mounted = false;
-      subscription?.unsubscribe();
     };
+    
+    checkAuthStatus();
+    
+    // Force loading state to false after timeout
+    const loadingTimeout = setTimeout(() => {
+      console.log('Forcing loading state to false after timeout');
+      setLoading(false);
+    }, 5000);
+    
+    return () => clearTimeout(loadingTimeout);
   }, []);
-
-  const value = {
-    isAuthenticated: !!user,
-    user,
-    role,
-    loading,
-    hasProfile,
-    signOut,
-    signup,
-    login, // Add login to context
+  
+  // Authentication methods
+  const login = async (email, password) => {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    return data;
   };
-
+  
+  const signup = async (email, password) => {
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) throw error;
+    return data;
+  };
+  
+  const logout = async () => {
+    try {
+      // Logout from Passport
+      await axios.get(`${API_URL}/auth/logout`).catch(console.error);
+      
+      // Logout from Supabase
+      await supabase.auth.signOut();
+      
+      setUser(null);
+      setIsAuthenticated(false);
+      setSocialConnections({ facebook: false, google: false });
+      
+      // Redirect to login page
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+  
+  const connectFacebook = async () => {
+    try {
+      const result = await loginWithFacebook();
+      if (result.success) {
+        // Update social connections state after successful connection
+        setSocialConnections(prev => ({...prev, facebook: true}));
+        return result;
+      }
+      return result;
+    } catch (error) {
+      console.error('Facebook connection error:', error);
+      return { success: false, error };
+    }
+  };
+  
+  const value = {
+    user,
+    loading,
+    isAuthenticated,
+    socialConnections,
+    login,
+    signup,
+    logout,
+    connectFacebook,
+    loginWithFacebook
+  };
+  
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-export default AuthContext;
+export const useAuth = () => useContext(AuthContext);
