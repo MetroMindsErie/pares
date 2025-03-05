@@ -6,7 +6,9 @@ import { loginWithFacebook } from '../lib/facebook-auth';
 const AuthContext = createContext();
 
 // Server API base URL
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_URL = process.env.NODE_ENV === 'production' 
+  ? process.env.NEXT_PUBLIC_API_URL 
+  : 'http://localhost:5000';
 
 export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);

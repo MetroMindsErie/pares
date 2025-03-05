@@ -11,35 +11,62 @@ const Reels = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [isFacebookConnected, setIsFacebookConnected] = useState(socialConnections?.facebook || false);
 
-  // Fetch reels if authenticated and Facebook connection is active
+  // Initialize based on auth context
   useEffect(() => {
-    if (isAuthenticated && socialConnections.facebook) {
+    if (socialConnections?.facebook) {
+      setIsFacebookConnected(true);
+    }
+  }, [socialConnections]);
+
+  // Initial load - always try to fetch reels
+  // This will help determine if Facebook is connected
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchReels(true); // silent mode for initial check
+    }
+  }, [isAuthenticated]);
+
+  // Normal fetch when dependencies change
+  useEffect(() => {
+    if (isAuthenticated && isFacebookConnected) {
       fetchReels();
     }
-  }, [isAuthenticated, socialConnections.facebook]);
+  }, [isAuthenticated, isFacebookConnected]);
 
-  const fetchReels = async () => {
+  const fetchReels = async (silent = false) => {
     if (!isAuthenticated) return;
-    setLoading(true);
-    setError(null);
+    
+    if (!silent) setLoading(true);
+    if (!silent) setError(null);
+    
     try {
       const authConfig = await getAuthHeaders();
+      
+      // Try to fetch reels - if successful, Facebook must be connected
       const response = await axios.get('/api/reels/fetch', authConfig);
-      // Use reels property from API response
       setReels(response.data.reels || []);
+      
+      // If we successfully fetched reels, Facebook must be connected
+      setIsFacebookConnected(true);
     } catch (err) {
       console.error('Error fetching reels:', err);
-      if (
-        err.response?.data?.action === 'connect_facebook' ||
-        err.response?.data?.action === 'reconnect_facebook'
-      ) {
-        setError('Please connect your Facebook account to access your reels');
-      } else {
-        setError(err.response?.data?.error || 'Failed to load reels');
+      
+      // Only set errors in non-silent mode
+      if (!silent) {
+        if (
+          err.response?.data?.action === 'connect_facebook' ||
+          err.response?.data?.action === 'reconnect_facebook'
+        ) {
+          setError('Please connect your Facebook account to access your reels');
+          setIsFacebookConnected(false);
+        } else {
+          setError(err.response?.data?.error || 'Failed to load reels');
+        }
       }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -52,7 +79,8 @@ const Reels = () => {
   const handleConnectFacebook = async () => {
     try {
       await loginWithFacebook();
-      // After successful connection, auth-context will update socialConnections.facebook to true
+      // After successful connection, fetch reels to verify connection
+      await fetchReels();
     } catch (err) {
       console.error('Error connecting to Facebook:', err);
       setError('Failed to connect to Facebook');
@@ -74,7 +102,7 @@ const Reels = () => {
     );
   }
 
-  if (!socialConnections.facebook) {
+  if (!isFacebookConnected) {
     return (
       <section className="p-10 bg-gray-100">
         <h2 className="text-3xl font-bold text-center mb-6">Real Estate Reels</h2>
@@ -131,38 +159,36 @@ const Reels = () => {
           </div>
           {reels.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-{reels.map((reel) => (
-  <div key={reel.id} className="bg-white p-6 rounded-lg shadow-lg">
-    {reel.embedHtml ? (
-      <div 
-        className="w-full h-64 mb-3" 
-        dangerouslySetInnerHTML={{ __html: reel.embedHtml }} 
-      />
-    ) : reel.video_url ? (
-      <video 
-        autoPlay 
-        muted 
-        loop 
-        playsInline 
-        controls 
-        className="w-full h-64 object-cover rounded-lg mb-3"
-      >
-        <source src={reel.video_url} type="video/mp4" />
-        Your browser does not support the video tag.
-      </video>
-    ) : (
-      <div className="w-full h-64 bg-gray-300 flex items-center justify-center rounded-lg mb-3">
-        <p className="text-gray-700">No video available</p>
-      </div>
-    )}
-    <h3 className="text-xl font-semibold">{reel.title || 'Untitled Reel'}</h3>
-    {reel.description && (
-      <p className="mt-2 text-gray-600">{reel.description}</p>
-    )}
-  </div>
-))}
-
-
+              {reels.map((reel) => (
+                <div key={reel.id} className="bg-white p-6 rounded-lg shadow-lg">
+                  {reel.embedHtml ? (
+                    <div 
+                      className="w-full h-64 mb-3" 
+                      dangerouslySetInnerHTML={{ __html: reel.embedHtml }} 
+                    />
+                  ) : reel.video_url ? (
+                    <video 
+                      autoPlay 
+                      muted 
+                      loop 
+                      playsInline 
+                      controls 
+                      className="w-full h-64 object-cover rounded-lg mb-3"
+                    >
+                      <source src={reel.video_url} type="video/mp4" />
+                      Your browser does not support the video tag.
+                    </video>
+                  ) : (
+                    <div className="w-full h-64 bg-gray-300 flex items-center justify-center rounded-lg mb-3">
+                      <p className="text-gray-700">No video available</p>
+                    </div>
+                  )}
+                  <h3 className="text-xl font-semibold">{reel.title || 'Untitled Reel'}</h3>
+                  {reel.description && (
+                    <p className="mt-2 text-gray-600">{reel.description}</p>
+                  )}
+                </div>
+              ))}
             </div>
           ) : (
             <div className="text-center p-8 bg-white rounded-lg shadow-md">

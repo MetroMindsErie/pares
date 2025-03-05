@@ -43,7 +43,6 @@ export default function Home({ featuredListings = [], heroContent }) {
   };
 
   return (
-    <Layout>
       <main className="pt-16"> {/* Main page content */}
         <div className="relative bg-gray-100 pb-16 border-b border-black">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12">
@@ -80,7 +79,6 @@ export default function Home({ featuredListings = [], heroContent }) {
           <Hero content={heroContent} />
         </div>
       </main>
-    </Layout>
   );
 }
 

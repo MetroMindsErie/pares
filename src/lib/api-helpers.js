@@ -43,3 +43,17 @@ export const authenticatedRequest = async (method, url, data = null) => {
     throw error;
   }
 };
+
+/**
+ * Check user's social connections status
+ */
+export const checkSocialConnections = async () => {
+  try {
+    const authConfig = await getAuthHeaders();
+    const response = await axios.get('/api/user/social-connections', authConfig);
+    return response.data || { facebook: false };
+  } catch (error) {
+    console.error('Error checking social connections:', error);
+    return { facebook: false };
+  }
+};
