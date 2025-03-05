@@ -3,7 +3,6 @@ import { useRouter } from 'next/router';
 import { ActiveProperty } from '../../components/ActiveProperty';
 import { SoldProperty } from '../../components/SoldProperty';
 import axios from 'axios';
-import Navbar from '../../components/Navbar'; // Import Navbar
 
 export async function getServerSideProps({ params }) {
   try {
