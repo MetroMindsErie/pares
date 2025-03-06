@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import supabase from '../lib/supabase-setup';
+// Use the correct supabase client import path
+import supabase from '../utils/supabaseClient';
 import { useAuth } from '../context/auth-context';
 
 const Login = ({ onLogin }) => {
