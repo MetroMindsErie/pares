@@ -6,7 +6,7 @@ import RecentActivity from '../components/Dashboard/RecentActivity';
 import supabase from '../lib/supabase-setup';
 import { useRouter } from 'next/router';
 import Reels from '../components/Reels';
-
+import Layout from '@/components/Layout';
 export default function DashboardPage() {
   const { user, isAuthenticated, loading } = useAuth();
   const [profile, setProfile] = useState(null);
@@ -68,10 +68,11 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {profile && <WelcomeBanner profile={profile} />}
-      
-      <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
+    <Layout>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {profile && <WelcomeBanner profile={profile} />}
+        
+        <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
         <StatsCard
           title="Profile Views"
           value="123"
@@ -92,16 +93,17 @@ export default function DashboardPage() {
       </div>
 
       <div className="mt-8 bg-white rounded-lg shadow p-6 mb-6">
-        {/* <h2 className="text-xl font-semibold mb-4">Your Facebook Reels</h2>
+        <h2 className="text-xl font-semibold mb-4">Your Facebook Reels</h2>
         <p className="text-gray-600 mb-6">
           Connect your Facebook account to display and manage your real estate reels.
-        </p> */}
+        </p>
         
         {/* Reels component */}
         <div className="bg-gray-50 rounded-lg">
           <Reels />
         </div>
+        </div>
       </div>
-    </div>
+    </Layout>
   );
 }

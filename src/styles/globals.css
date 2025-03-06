@@ -3,22 +3,29 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Global reset and box-sizing */
-* {
-  margin: 0;
+/* Reset and base styles */
+html,
+body {
   padding: 0;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
+    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+* {
   box-sizing: border-box;
 }
 
 /* Base styles for body */
 body {
-  font-family: 'Inter', sans-serif;
   background-color: #fff;
   color: #000;
   line-height: 1.6;
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
   overflow-x: hidden;
 }
 
@@ -80,3 +87,5 @@ header, footer {
 .leaflet-control-attribution {
   font-size: 0.7rem !important;
 }
+
+/* Add any additional global styles below */

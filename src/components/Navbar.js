@@ -1,235 +1,195 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Menu, X, Home, Building, Search, User, HeartIcon } from 'lucide-react';
-import { useAuth } from '../context/auth-context';
+import Image from 'next/image';
 import { useRouter } from 'next/router';
-import supabase from '../lib/supabase-setup';
+import { useAuth } from '../context/auth-context';
 
-const Navbar = ({ isAuthenticated, user, onLogout, onLogin, onRegister }) => {
-  const { logout } = useAuth();
-  const [scrolled, setScrolled] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+export default function Navbar() {
+  const [isOpen, setIsOpen] = useState(false);
+  const { user, isAuthenticated, logout } = useAuth(); // Changed from signOut to logout
   const router = useRouter();
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      router.push('/');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
-
-  // Handle user profile navigation based on profile status
-  const handleProfileNavigation = async () => {
-    console.log("Auth user object:", user);
-    
-    try {
-      // Query the users table to get the hasprofile value
-      const { data, error } = await supabase
-        .from('users')
-        .select('hasprofile')
-        .eq('id', user.id)
-        .single();
-      
-      console.log("User profile data:", data);
-      
-      if (error) {
-        console.error("Error fetching user profile:", error);
-        router.push('/profile');
-        return;
-      }
-      
-      // Check if the user has a profile and navigate accordingly
-      if (data && data.hasprofile === true) {
-        console.log("User has profile, navigating to dashboard");
-        router.push('/dashboard');
-      } else {
-        console.log("User doesn't have profile, navigating to profile page");
-        router.push('/profile');
-      }
-    } catch (err) {
-      console.error("Error in profile navigation:", err);
-      // Default to profile page on error
-      router.push('/profile');
-    }
-  };
-
-  // Handle scroll effect for navbar
+  // Close mobile menu when route changes
   useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 20) {
-        setScrolled(true);
-      } else {
-        setScrolled(false);
-      }
-    };
+    setIsOpen(false);
+  }, [router.pathname]);
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  // User actions for desktop
-  const renderUserActions = () => (
-    <div className="hidden md:flex items-center space-x-4">
-      {isAuthenticated ? (
-        <>
-          <button 
-            onClick={handleProfileNavigation} 
-            className="px-4 py-2 text-gray-600 hover:text-blue-600 flex items-center"
-          >
-            <User className="h-4 w-4 mr-2" />
-            {user?.email}
-          </button>
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Logout
-          </button>
-        </>
-      ) : (
-        <>
-          <button
-            onClick={onLogin}
-            className="px-4 py-2 text-blue-600 hover:text-blue-800"
-          >
-            Log In
-          </button>
-          <button
-            onClick={onRegister}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Sign Up
-          </button>
-        </>
-      )}
-    </div>
-  );
-
-  // Update renderMobileUserActions
-  const renderMobileUserActions = () => (
-    <div className="pt-4 border-t border-gray-200">
-      {isAuthenticated ? (
-        <>
-          <button 
-            onClick={handleProfileNavigation} 
-            className="block w-full px-3 py-2 text-center text-gray-600"
-          >
-            {user?.email}
-          </button>
-          <button
-            onClick={handleLogout}
-            className="block w-full mt-2 px-3 py-2 text-center bg-blue-600 text-white rounded"
-          >
-            Logout
-          </button>
-        </>
-      ) : (
-        <>
-          <button
-            onClick={onLogin}
-            className="block w-full px-3 py-2 text-center text-blue-600"
-          >
-            Log In
-          </button>
-          <button
-            onClick={onRegister}
-            className="block w-full mt-2 px-3 py-2 text-center bg-blue-600 text-white rounded"
-          >
-            Sign Up
-          </button>
-        </>
-      )}
-    </div>
-  );
-
-  // Return the navbar component
   return (
-    <nav className={`fixed w-full z-50 transition-all duration-300 ${
-      scrolled ? 'bg-white shadow-md py-2' : 'bg-white py-4'
-    }`}>
+    <nav className="bg-white shadow-md z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center">
-            <Link href="/" className="flex items-center">
-              <img src="/pares5.jpeg" alt="PaRes Logo" className="h-8 w-8 rounded-full" />
-              <span className="ml-2 text-xl font-bold text-blue-600">PARES</span>
-            </Link>
+        <div className="flex justify-between h-16">
+          <div className="flex">
+            <div className="flex-shrink-0 flex items-center">
+              <Link href="/" className="font-serif text-2xl text-blue-700 hover:text-blue-900 transition duration-300">
+                Pares
+              </Link>
+            </div>
+            <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+              <Link 
+                href="/" 
+                className={`inline-flex items-center px-1 pt-1 border-b-2 ${
+                  router.pathname === '/' 
+                    ? 'border-blue-500 text-gray-900' 
+                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                } text-sm font-medium`}
+              >
+                Home
+              </Link>
+              <Link 
+                href="/properties" 
+                className={`inline-flex items-center px-1 pt-1 border-b-2 ${
+                  router.pathname === '/properties' 
+                    ? 'border-blue-500 text-gray-900' 
+                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                } text-sm font-medium`}
+              >
+                Properties
+              </Link>
+              <Link 
+                href="/agents" 
+                className={`inline-flex items-center px-1 pt-1 border-b-2 ${
+                  router.pathname === '/agents' 
+                    ? 'border-blue-500 text-gray-900' 
+                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                } text-sm font-medium`}
+              >
+                Agents
+              </Link>
+            </div>
           </div>
-          
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            <Link href="/" className="text-gray-600 hover:text-blue-600 flex items-center">
-              <Home className="h-4 w-4 mr-1" />
-              <span>Home</span>
-            </Link>
-            <Link href="/properties" className="text-gray-600 hover:text-blue-600 flex items-center">
-              <Building className="h-4 w-4 mr-1" />
-              <span>Properties</span>
-            </Link>
-            <Link href="/search" className="text-gray-600 hover:text-blue-600 flex items-center">
-              <Search className="h-4 w-4 mr-1" />
-              <span>Search</span>
-            </Link>
-            <Link href="/favorites" className="text-gray-600 hover:text-blue-600 flex items-center">
-              <HeartIcon className="h-4 w-4 mr-1" />
-              <span>Favorites</span>
-            </Link>
+          <div className="hidden sm:ml-6 sm:flex sm:items-center">
+            {isAuthenticated ? (
+              <div className="ml-3 relative flex items-center space-x-4">
+                <Link 
+                  href="/dashboard" 
+                  className="text-gray-600 hover:text-gray-900"
+                >
+                  Dashboard
+                </Link>
+                <Link 
+                  href="/profile" 
+                  className="text-gray-600 hover:text-gray-900"
+                >
+                  Profile
+                </Link>
+                <button
+                  onClick={() => logout()} // Changed from signOut to logout
+                  className="text-gray-600 hover:text-gray-900"
+                >
+                  Sign out
+                </button>
+              </div>
+            ) : (
+              <div className="space-x-4">
+                <Link 
+                  href="/login" 
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-600 bg-white hover:bg-gray-50"
+                >
+                  Log in
+                </Link>
+                <Link 
+                  href="/register" 
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  Sign up
+                </Link>
+              </div>
+            )}
           </div>
-          
-          {renderUserActions()}
-          
-          {/* Mobile menu button */}
-          <div className="md:hidden flex items-center">
+          <div className="-mr-2 flex items-center sm:hidden">
             <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="text-gray-600 hover:text-blue-600 focus:outline-none"
+              onClick={() => setIsOpen(!isOpen)}
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
+              aria-expanded="false"
             >
-              {isMenuOpen ? (
-                <X className="h-6 w-6" />
+              <span className="sr-only">Open main menu</span>
+              {!isOpen ? (
+                <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
               ) : (
-                <Menu className="h-6 w-6" />
+                <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
               )}
             </button>
           </div>
         </div>
       </div>
-      
-      {/* Mobile Navigation */}
-      {isMenuOpen && (
-        <div className="md:hidden bg-white shadow-lg rounded-b-lg mt-2">
-          <div className="px-2 pt-2 pb-4 space-y-1">
-            <Link href="/" className="block px-3 py-2 rounded text-gray-600 hover:bg-blue-50 hover:text-blue-600">
-              <div className="flex items-center">
-                <Home className="h-5 w-5 mr-2" />
-                <span>Home</span>
-              </div>
-            </Link>
-            <Link href="/properties" className="block px-3 py-2 rounded text-gray-600 hover:bg-blue-50 hover:text-blue-600">
-              <div className="flex items-center">
-                <Building className="h-5 w-5 mr-2" />
-                <span>Properties</span>
-              </div>
-            </Link>
-            <Link href="/search" className="block px-3 py-2 rounded text-gray-600 hover:bg-blue-50 hover:text-blue-600">
-              <div className="flex items-center">
-                <Search className="h-5 w-5 mr-2" />
-                <span>Search</span>
-              </div>
-            </Link>
-            <Link href="/favorites" className="block px-3 py-2 rounded text-gray-600 hover:bg-blue-50 hover:text-blue-600">
-              <div className="flex items-center">
-                <HeartIcon className="h-5 w-5 mr-2" />
-                <span>Favorites</span>
-              </div>
-            </Link>
-            {renderMobileUserActions()}
-          </div>
+
+      {/* Mobile menu */}
+      <div className={`${isOpen ? 'block' : 'hidden'} sm:hidden`}>
+        <div className="pt-2 pb-3 space-y-1">
+          <Link 
+            href="/" 
+            className={`block pl-3 pr-4 py-2 border-l-4 ${
+              router.pathname === '/' 
+                ? 'border-blue-500 text-blue-700 bg-blue-50' 
+                : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+            } text-base font-medium`}
+          >
+            Home
+          </Link>
+          <Link 
+            href="/properties" 
+            className={`block pl-3 pr-4 py-2 border-l-4 ${
+              router.pathname === '/properties' 
+                ? 'border-blue-500 text-blue-700 bg-blue-50' 
+                : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+            } text-base font-medium`}
+          >
+            Properties
+          </Link>
+          <Link 
+            href="/agents" 
+            className={`block pl-3 pr-4 py-2 border-l-4 ${
+              router.pathname === '/agents' 
+                ? 'border-blue-500 text-blue-700 bg-blue-50' 
+                : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+            } text-base font-medium`}
+          >
+            Agents
+          </Link>
         </div>
-      )}
+        <div className="pt-4 pb-3 border-t border-gray-200">
+          {isAuthenticated ? (
+            <div className="space-y-1">
+              <Link 
+                href="/dashboard" 
+                className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 text-base font-medium"
+              >
+                Dashboard
+              </Link>
+              <Link 
+                href="/profile" 
+                className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 text-base font-medium"
+              >
+                Profile
+              </Link>
+              <button
+                onClick={() => logout()} // Changed from signOut to logout
+                className="block w-full text-left pl-3 pr-4 py-2 border-l-4 border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 text-base font-medium"
+              >
+                Sign out
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              <Link 
+                href="/login" 
+                className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 text-base font-medium"
+              >
+                Log in
+              </Link>
+              <Link 
+                href="/register" 
+                className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 text-base font-medium"
+              >
+                Sign up
+              </Link>
+            </div>
+          )}
+        </div>
+      </div>
     </nav>
   );
-};
-
-export default Navbar;
+}

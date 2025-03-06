@@ -3,8 +3,15 @@ import supabase from '../lib/supabase-setup';
 import axios from 'axios';
 import { loginWithFacebook } from '../lib/facebook-auth';
 import { fetchAndStoreFacebookProfilePicture } from '../lib/facebook-utils';
+import { useRouter } from 'next/router';
 
-const AuthContext = createContext();
+const AuthContext = createContext({
+  user: null,
+  isAuthenticated: false,
+  login: () => {},
+  logout: () => {},
+  loading: false
+});
 
 // Server API base URL
 const API_URL = process.env.NODE_ENV === 'production' 
@@ -19,6 +26,9 @@ export function AuthProvider({ children }) {
     facebook: false,
     google: false
   });
+  const [profile, setProfile] = useState(null);
+  const [hasProfile, setHasProfile] = useState(false);
+  const router = useRouter();
 
   // Configure axios
   axios.defaults.withCredentials = true;
@@ -69,10 +79,24 @@ export function AuthProvider({ children }) {
             console.error('Error checking social connections:', err);
             setSocialConnections(prev => ({...prev, facebook: false}));
           }
+
+          // Fetch user profile to determine if they have completed setup
+          const { data, error: profileError } = await supabase
+            .from('users')
+            .select('hasprofile')
+            .eq('id', session.user.id)
+            .single();
+            
+          if (!profileError && data) {
+            setHasProfile(data.hasprofile);
+            setProfile(data);
+          }
         } else {
           setUser(null);
           setIsAuthenticated(false);
           setSocialConnections({ facebook: false, google: false });
+          setHasProfile(false);
+          setProfile(null);
         }
       } catch (error) {
         console.error('Auth check error:', error);
@@ -80,6 +104,8 @@ export function AuthProvider({ children }) {
         setUser(null);
         setIsAuthenticated(false);
         setSocialConnections({ facebook: false, google: false });
+        setHasProfile(false);
+        setProfile(null);
       } finally {
         setLoading(false);
       }
@@ -120,6 +146,8 @@ export function AuthProvider({ children }) {
       setUser(null);
       setIsAuthenticated(false);
       setSocialConnections({ facebook: false, google: false });
+      setHasProfile(false);
+      setProfile(null);
       
       // Redirect to login page
       window.location.href = '/login';
@@ -150,7 +178,7 @@ export function AuthProvider({ children }) {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`
+          redirectTo: `${window.location.origin}/auth/callback?provider=${provider}`
         }
       });
       
@@ -191,6 +219,21 @@ export function AuthProvider({ children }) {
             session.provider_token
           );
         }
+
+        // Fetch user profile when auth state changes
+        const { data, error } = await supabase
+          .from('users')
+          .select('hasprofile')
+          .eq('id', session.user.id)
+          .single();
+          
+        if (!error && data) {
+          setHasProfile(data.hasprofile);
+          setProfile(data);
+        } else {
+          setHasProfile(false);
+          setProfile(null);
+        }
       }
     });
 
@@ -201,6 +244,7 @@ export function AuthProvider({ children }) {
 
   const value = {
     user,
+    profile,
     loading,
     isAuthenticated,
     socialConnections,
@@ -208,10 +252,18 @@ export function AuthProvider({ children }) {
     signup,
     logout,
     connectFacebook,
-    loginWithFacebook
+    loginWithFacebook,
+    hasProfile,
+    signInWithProvider: handleSignInWithProvider
   };
   
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};

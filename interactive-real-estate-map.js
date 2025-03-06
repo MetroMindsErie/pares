@@ -8,7 +8,6 @@ import {
 } from 'react-simple-maps';
 import { useRouter } from 'next/router';
 import { getPropertiesByFilter, getNextProperties } from './src/services/trestleServices';
-import HeatMapGraph from './src/components/HeatMapGraph';
 
 const PENNSYLVANIA_CENTER = [-77.5, 40.8];
 
@@ -160,7 +159,10 @@ const InteractiveRealEstateMap = () => {
   };
 
   const handlePropertyClick = (propertyId) => {
-    router.push(`/property/${propertyId}`);
+    router.push({
+      pathname: '/property/[id]',
+      query: { id: propertyId }
+    });
   };
 
   // Helper function to compute aggregated MLS data for the heat map graph.

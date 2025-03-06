@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { validateFacebookToken } from '../../../services/facebookServices';
+import { validateFacebookToken } from '../../services/facebookServices';
 
 // Create Supabase client with admin privileges
 const supabase = createClient(

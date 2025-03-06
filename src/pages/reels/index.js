@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { getCachedReels, processUserReels, getFacebookToken } from '../../../services/facebookServices';
+import { getCachedReels, processUserReels, getFacebookToken } from '../../services/facebookServices';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,

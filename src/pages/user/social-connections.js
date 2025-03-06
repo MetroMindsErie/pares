@@ -1,5 +1,5 @@
 import { getServerSession } from "next-auth/next";
-import supabase from "../../../lib/supabase-setup";
+import supabase from "../../lib/supabase-setup";
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {

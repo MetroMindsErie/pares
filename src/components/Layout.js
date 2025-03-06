@@ -1,7 +1,10 @@
+import React from 'react';
 import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
 import Navbar from './Navbar';
+import Footer from './Footer';
+import Head from 'next/head';
 
 const Layout = ({ children }) => {
   const { isAuthenticated, loading, user, signOut } = useAuth();
@@ -47,7 +50,13 @@ const Layout = ({ children }) => {
   }, [loading]);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="flex flex-col min-h-screen">
+      <Head>
+        <title>Pares - Real Estate Network</title>
+        <meta name="description" content="Connect and collaborate in real estate" />
+        <link rel="icon" href="/favicon.ico" />
+      </Head>
+      
       <Navbar 
         isAuthenticated={isAuthenticated}
         user={user}
@@ -55,15 +64,12 @@ const Layout = ({ children }) => {
         onLogin={handleLogin}
         onRegister={handleRegister}
       />
-      {loading ? (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
-        </div>
-      ) : (
-        <main className="flex-1 pt-16">
-          {children}
-        </main>
-      )}
+      
+      <main className="flex-grow">
+        {children}
+      </main>
+      
+      <Footer />
     </div>
   );
 };

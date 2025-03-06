@@ -1,40 +1,37 @@
-/** @type {import('next').NextConfig} */
 import path from 'path';
+import { fileURLToPath } from 'url';
 
+// Get directory name in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+/** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  experimental: {
-    turbo: false,
+  
+  // Removed the dir setting as it's causing issues
+  // Let Next.js use the default pages directory structure
+  
+  webpack: (config) => {
+    // Add paths for module resolution
+    config.resolve.modules.push(path.resolve(__dirname, './src'));
+    config.resolve.modules.push(path.resolve(__dirname, './node_modules'));
+    
+    return config;
   },
+  
+  pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
+  
+  // Other configurations
+  swcMinify: true,
   images: {
     domains: ['cdnjs.cloudflare.com', 'tiles.stadiamaps.com', 'api-trestle.corelogic.com']
-  },
-  webpack: (config) => {
-    const __dirname = path.dirname(new URL(import.meta.url).pathname);
-    config.resolve.modules.push(path.join(__dirname, 'node_modules'));
-    // Disable persistent caching to avoid large buffer allocations
-    config.cache = false;
-    // Replace url-loader rule with asset module configuration:
-    config.module.rules.push({
-      test: /\.(png|jpg|jpeg|gif|svg)$/i,
-      type: 'asset',
-      parser: {
-        dataUrlCondition: {
-          maxSize: 8192,
-        },
-      },
-      generator: {
-        publicPath: '/_next/static/images',
-        outputPath: 'static/images/',
-      },
-    });
-    return config;
   },
   env: {
     TRESTLE_TOKEN_URL: process.env.TRESTLE_TOKEN_URL,
     TRESTLE_CLIENT_ID: process.env.TRESTLE_CLIENT_ID,
     TRESTLE_CLIENT_SECRET: process.env.TRESTLE_CLIENT_SECRET,
-  },
+  }
 };
 
 export default nextConfig;

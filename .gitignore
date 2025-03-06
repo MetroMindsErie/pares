@@ -42,3 +42,8 @@ next-env.d.ts
 
 node_modules/
 .env
+
+# Add to your existing .gitignore
+/pages
+
+/dist
