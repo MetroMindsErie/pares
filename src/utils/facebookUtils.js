@@ -9,8 +9,15 @@ import axios from 'axios';
  */
 export async function getFacebookProfilePicture(facebookId, accessToken, size = 'large') {
   try {
+    // Input validation
     if (!facebookId || !accessToken) {
       console.warn('Missing Facebook ID or access token');
+      return null;
+    }
+
+    // Check if we're in a browser environment
+    if (typeof window === 'undefined') {
+      console.warn('Facebook API calls should be made client-side');
       return null;
     }
 
@@ -18,7 +25,10 @@ export async function getFacebookProfilePicture(facebookId, accessToken, size = 
     try {
       const response = await axios.get(
         `https://graph.facebook.com/v16.0/${facebookId}/picture?type=${size}&redirect=false`,
-        { headers: { Authorization: `Bearer ${accessToken}` } }
+        { 
+          headers: { Authorization: `Bearer ${accessToken}` },
+          timeout: 3000 // Add timeout to prevent hanging requests
+        }
       );
       
       if (response.data && response.data.data && !response.data.data.is_silhouette) {
@@ -30,20 +40,36 @@ export async function getFacebookProfilePicture(facebookId, accessToken, size = 
     }
     
     // Fallback: Try with fields parameter
-    const fieldsResponse = await axios.get(
-      `https://graph.facebook.com/v16.0/${facebookId}?fields=picture.type(${size})`,
-      { headers: { Authorization: `Bearer ${accessToken}` } }
-    );
-    
-    if (fieldsResponse.data && 
-        fieldsResponse.data.picture && 
-        fieldsResponse.data.picture.data && 
-        !fieldsResponse.data.picture.data.is_silhouette) {
-      console.log('Successfully retrieved Facebook profile image using fields param');
-      return fieldsResponse.data.picture.data.url;
+    try {
+      const fieldsResponse = await axios.get(
+        `https://graph.facebook.com/v16.0/${facebookId}?fields=picture.type(${size})`,
+        { 
+          headers: { Authorization: `Bearer ${accessToken}` },
+          timeout: 3000 // Add timeout
+        }
+      );
+      
+      if (fieldsResponse.data && 
+          fieldsResponse.data.picture && 
+          fieldsResponse.data.picture.data && 
+          !fieldsResponse.data.picture.data.is_silhouette) {
+        console.log('Successfully retrieved Facebook profile image using fields param');
+        return fieldsResponse.data.picture.data.url;
+      }
+    } catch (fieldsError) {
+      console.warn('Failed to get profile picture using fields:', fieldsError.message);
     }
     
-    console.warn('Facebook returned default silhouette image');
+    // Last resort: Try to get profile picture without authentication
+    try {
+      // This URL will work even without authentication but may return a default image
+      const publicUrl = `https://graph.facebook.com/${facebookId}/picture?type=${size}`;
+      console.log('Using public Facebook profile image URL as fallback');
+      return publicUrl;
+    } catch (publicError) {
+      console.warn('Failed to use public profile picture URL');
+    }
+    
     return null;
   } catch (error) {
     console.error('Error fetching Facebook profile picture:', error);
@@ -59,12 +85,49 @@ export async function getFacebookProfilePicture(facebookId, accessToken, size = 
 export async function validateImageUrl(url) {
   if (!url) return false;
   
+  // Skip validation if we're not in a browser environment
+  if (typeof window === 'undefined') return true;
+  
   try {
-    const response = await fetch(url, { method: 'HEAD' });
-    const contentType = response.headers.get('content-type');
-    return response.ok && contentType && contentType.startsWith('image/');
+    // Use a timeout to prevent hanging requests
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    
+    // Try a HEAD request first for efficiency
+    try {
+      const response = await fetch(url, { 
+        method: 'HEAD',
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      
+      const contentType = response.headers.get('content-type');
+      return response.ok && contentType && contentType.startsWith('image/');
+    } catch (headError) {
+      console.warn('HEAD request failed, falling back to image loading:', headError);
+    }
+    
+    // Fallback: Try loading the image
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        clearTimeout(timeoutId);
+        resolve(true);
+      };
+      img.onerror = () => {
+        clearTimeout(timeoutId);
+        resolve(false);
+      };
+      img.src = url;
+    });
   } catch (error) {
     console.warn('Image validation failed:', error);
     return false;
   }
+}
+
+// Add a safer way to get Facebook profile pictures that doesn't require API access
+export function getPublicFacebookProfilePicture(facebookId, size = 'large') {
+  if (!facebookId) return null;
+  return `https://graph.facebook.com/${facebookId}/picture?type=${size}`;
 }

@@ -1,42 +1,78 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Create a singleton Supabase client instance
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
 // Initialize client
 let supabase = null;
 
 try {
+  // Check for required variables
   if (!supabaseUrl || !supabaseAnonKey) {
     console.error('Missing Supabase environment variables. Authentication will not work.');
+    
+    // In development, provide more helpful error messages
+    if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+      console.error('Make sure your .env.local file contains:');
+      console.error('NEXT_PUBLIC_SUPABASE_URL=your-project-url');
+      console.error('NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key');
+    }
   } else {
-    // Create the Supabase client
-    supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    // Create the Supabase client with fallbacks for production issues
+    const clientOptions = {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true
+      },
+      // Add global error handler
+      global: {
+        fetch: (...args) => {
+          return fetch(...args).catch(error => {
+            console.error('Supabase fetch error:', error);
+            throw error;
+          });
+        }
       }
-    });
+    };
     
-    console.log('Supabase client created successfully');
+    console.log('Creating Supabase client...');
+    supabase = createClient(supabaseUrl, supabaseAnonKey, clientOptions);
     
-    // Verify the auth object exists
-    if (supabase.auth) {
-      console.log('Auth methods available:', Object.keys(supabase.auth));
+    // Verify the client was created successfully
+    if (supabase) {
+      console.log('Supabase client created successfully');
+      
+      // Verify the auth object exists
+      if (supabase.auth) {
+        console.log('Auth methods available');
+      } else {
+        console.error('Auth object not available on supabase client');
+      }
     } else {
-      console.error('Auth object not available on supabase client');
+      console.error('Failed to create Supabase client');
     }
   }
 } catch (error) {
   console.error('Error initializing Supabase client:', error);
 }
 
+// Check the auth state on initialization
+if (typeof window !== 'undefined' && supabase?.auth) {
+  try {
+    supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Supabase auth state changed:', event);
+    });
+  } catch (error) {
+    console.warn('Could not set up auth listener:', error);
+  }
+}
+
 // Export as both default and named export to support different import styles
 export const supabaseClient = supabase;
 
-// Helper function to log client info for debugging
+// Helper function to check Supabase client status
 export const checkSupabaseClient = () => {
   try {
     if (!supabase) {
@@ -49,9 +85,6 @@ export const checkSupabaseClient = () => {
     }
     
     const authMethods = Object.keys(supabase.auth || {});
-    console.log('Supabase client initialized:', !!supabase);
-    console.log('Auth object available:', !!supabase.auth);
-    console.log('Available auth methods:', authMethods);
     return {
       initialized: !!supabase,
       authAvailable: !!supabase.auth,
@@ -68,11 +101,11 @@ export const checkSupabaseClient = () => {
   }
 };
 
-// Create a version-agnostic wrapper for common auth methods
+// Version-agnostic auth methods with better error handling
 export const supabaseAuth = {
   getSession: async () => {
     try {
-      if (!supabase || !supabase.auth) return { data: { session: null }, error: new Error('Supabase auth not available') };
+      if (!supabase?.auth) return { data: { session: null }, error: new Error('Supabase auth not available') };
       
       if (typeof supabase.auth.getSession === 'function') {
         return await supabase.auth.getSession();
@@ -83,19 +116,21 @@ export const supabaseAuth = {
       }
       return { data: { session: null }, error: new Error('No compatible session method found') };
     } catch (error) {
+      console.error('getSession error:', error);
       return { data: { session: null }, error };
     }
   },
   
   signOut: async () => {
     try {
-      if (!supabase || !supabase.auth) return { error: new Error('Supabase auth not available') };
+      if (!supabase?.auth) return { error: new Error('Supabase auth not available') };
       
       if (typeof supabase.auth.signOut === 'function') {
         return await supabase.auth.signOut();
       }
       return { error: new Error('No compatible signOut method found') };
     } catch (error) {
+      console.error('signOut error:', error);
       return { error };
     }
   }
