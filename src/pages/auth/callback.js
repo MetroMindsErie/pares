@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../context/auth-context';
+import ensureAuthProviderSaved from '../../utils/ensureAuthProvider';
 
 export default function AuthCallback() {
   const router = useRouter();
@@ -45,6 +46,9 @@ export default function AuthCallback() {
           router.push('/login');
           return;
         }
+
+        // Ensure auth provider is saved before checking profile
+        await ensureAuthProviderSaved(authUser.id, 'facebook');
 
         // Check if user has completed their profile
         const { data, error } = await supabaseClient

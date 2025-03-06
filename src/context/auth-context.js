@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import ensureAuthProviderSaved from '../utils/ensureAuthProvider';
 
 const AuthContext = createContext({
   isAuthenticated: false,
@@ -81,6 +82,13 @@ export const AuthProvider = ({ children }) => {
             console.log('Auth state changed:', event);
             
             if (event === 'SIGNED_IN' && session) {
+              // Upsert provider record (for facebook, or others if needed)
+              try {
+                await ensureAuthProviderSaved(session.user.id, 'facebook');
+              } catch (err) {
+                console.error('Error updating auth provider:', err);
+              }
+              
               setUser(session.user);
               setIsAuthenticated(true);
               
