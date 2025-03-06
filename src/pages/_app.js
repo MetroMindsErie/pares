@@ -46,9 +46,7 @@ function MyApp({ Component, pageProps }) {
     <ErrorBoundary>
       <AuthProvider>
         <SupabaseProvider>
-          <Layout>
             <Component {...pageProps} />
-          </Layout>
         </SupabaseProvider>
       </AuthProvider>
     </ErrorBoundary>
