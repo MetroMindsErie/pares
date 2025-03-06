@@ -22,8 +22,6 @@ const nextConfig = {
     unoptimized: true,
   },
   webpack: (config, { isServer }) => {
-    const __dirname = path.dirname(new URL(import.meta.url).pathname);
-    config.resolve.modules.push(path.join(__dirname, 'node_modules'));
     // Disable persistent caching to avoid large buffer allocations
     config.cache = false;
     // Replace url-loader rule with asset module configuration:
