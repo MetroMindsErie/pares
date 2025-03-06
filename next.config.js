@@ -1,5 +1,5 @@
-const path = require('path');
-const { fileURLToPath } = require('url');
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 // Get directory name in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -50,5 +50,5 @@ const nextConfig = {
   }
 };
 
-// Use CommonJS export
-module.exports = nextConfig;
+// Use ES module export
+export default nextConfig;
