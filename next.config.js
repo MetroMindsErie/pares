@@ -8,10 +8,8 @@ const __dirname = path.dirname(__filename);
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Fix SSR issues
-  experimental: {
-    // Remove the runtime option that's causing warnings
-  },
+  // Clean up experimental section
+  experimental: {},
   // Fix hydration issues by enabling more strict React behaviors
   compiler: {
     styledComponents: true,
@@ -20,10 +18,16 @@ const nextConfig = {
     domains: ['cdnjs.cloudflare.com', 'tiles.stadiamaps.com', 'api-trestle.corelogic.com'],
     unoptimized: true,
   },
+  // Disable automatic static optimization for auth pages
+  unstable_excludeFiles: [
+    '**/src/pages/login.js',
+    '**/src/pages/register.js',
+    '**/src/pages/profile.js'
+  ],
   webpack: (config) => {
     // Disable persistent caching to avoid large buffer allocations
     config.cache = false;
-    // Replace url-loader rule with asset module configuration:
+    // Asset handling
     config.module.rules.push({
       test: /\.(png|jpg|jpeg|gif|svg)$/i,
       type: 'asset',

@@ -1,22 +1,38 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-// Use the correct supabase client import path
-import supabase from '../utils/supabaseClient';
 import { useAuth } from '../context/auth-context';
 
-const Login = ({ onLogin }) => {
+// Safe import of Supabase client only on client side
+let supabaseClient = null;
+
+const Login = () => {
   const { isAuthenticated, login, loginWithProvider, loading, error: authError } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const router = useRouter();
+  
+  // Initialize supabase client only on client side
+  useEffect(() => {
+    async function loadSupabase() {
+      try {
+        const { default: supabase } = await import('../utils/supabaseClient');
+        supabaseClient = supabase;
+      } catch (err) {
+        console.error('Error loading Supabase client:', err);
+      }
+    }
+    loadSupabase();
+  }, []);
 
+  // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
       router.push('/dashboard');
     }
   }, [isAuthenticated, router]);
 
+  // Handle form submission
   const handleLogin = async (e) => {
     e.preventDefault();
     setError(null);
@@ -31,11 +47,18 @@ const Login = ({ onLogin }) => {
       const { data: loginData, error } = await login(username, password);
       if (error) throw error;
 
-      const { data: profileData } = await supabase
+      // Skip profile check if supabase not loaded or no user data
+      if (!supabaseClient || !loginData?.user?.id) {
+        router.push('/dashboard');
+        return;
+      }
+
+      const { data: profileData } = await supabaseClient
         .from('users')
         .select('hasprofile')
-        .eq('id', loginData?.user?.id)
+        .eq('id', loginData.user.id)
         .single();
+
       if (!profileData?.hasprofile) {
         router.push('/profile?setup=true');
       } else {
@@ -47,11 +70,13 @@ const Login = ({ onLogin }) => {
     }
   };
 
+  // Social login handler
   const handleSocialLogin = async (provider) => {
     setError(null);
     await loginWithProvider(provider);
   };
 
+  // Return the form interface
   return (
     <div className="max-w-md mx-auto p-8 bg-white/80 backdrop-blur-md rounded-2xl shadow-xl mt-10">
       <h2 className="text-3xl font-semibold mb-6 text-center text-gray-800">Log In</h2>
@@ -61,34 +86,36 @@ const Login = ({ onLogin }) => {
         </div>
       )}
       
-        <div className="space-y-3 mb-6">
-          <button
-            onClick={() => handleSocialLogin('google')}
-            className="w-full flex items-center justify-center gap-2 bg-[#E85445] text-white p-3 rounded-lg hover:bg-[#C33D2E] transition-colors"
-          >
-            <img src="/google.png" alt="Google" className="w-5 h-5 rounded-full" style={{ marginRight: '8px', filter: 'drop-shadow(0 0 5px rgba(0,0,0,0.5))' }} />
-            Continue with Google
-          </button>
-          
-          <button
-            onClick={() => handleSocialLogin('facebook')}
-            className="w-full flex items-center justify-center gap-2 bg-[#1877F2] text-white p-3 rounded-lg hover:bg-[#1864D9] transition-colors"
-          >
-            <img src="/fb2.png" alt="Facebook" className="w-5 h-5" style={{ marginRight: '8px', filter: 'drop-shadow(0 0 5px rgba(0,0,0,0.5))' }} />
-            Continue with Facebook
-          </button>
-        </div>
+      {/* Social login buttons */}
+      <div className="space-y-3 mb-6">
+        <button
+          onClick={() => handleSocialLogin('google')}
+          className="w-full flex items-center justify-center gap-2 bg-[#E85445] text-white p-3 rounded-lg hover:bg-[#C33D2E] transition-colors"
+        >
+          <img src="/google.png" alt="Google" className="w-5 h-5 rounded-full" style={{ marginRight: '8px', filter: 'drop-shadow(0 0 5px rgba(0,0,0,0.5))' }} />
+          Continue with Google
+        </button>
+        
+        <button
+          onClick={() => handleSocialLogin('facebook')}
+          className="w-full flex items-center justify-center gap-2 bg-[#1877F2] text-white p-3 rounded-lg hover:bg-[#1864D9] transition-colors"
+        >
+          <img src="/fb2.png" alt="Facebook" className="w-5 h-5" style={{ marginRight: '8px', filter: 'drop-shadow(0 0 5px rgba(0,0,0,0.5))' }} />
+          Continue with Facebook
+        </button>
+      </div>
 
-        <div className="relative my-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-300"></div>
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white text-gray-500">Or continue with</span>
-          </div>
+      {/* Divider */}
+      <div className="relative my-6">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-gray-300"></div>
         </div>
+        <div className="relative flex justify-center text-sm">
+          <span className="px-2 bg-white text-gray-500">Or continue with</span>
+        </div>
+      </div>
 
-        {/* Existing Email/Password Form */}
+      {/* Email/Password form */}
       <form onSubmit={handleLogin} className="space-y-6">
         <input
           type="text"
