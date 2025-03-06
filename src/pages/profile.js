@@ -241,6 +241,30 @@ export default function ProfileSetup() {
         updated_at: new Date().toISOString()
       };
 
+      // Handle profile picture URL - process Facebook URL if necessary
+      let finalProfilePictureUrl = formData.profile_picture_url;
+      
+      // Check if the URL is a Facebook platform-lookaside URL that might cause CORS issues
+      if (finalProfilePictureUrl && finalProfilePictureUrl.includes('platform-lookaside.fbsbx.com')) {
+        try {
+          console.log('Detected Facebook platform URL, attempting to reprocess it');
+          // Import the utility to handle Facebook images
+          const { fetchAndStoreFacebookProfilePicture } = await import('../lib/facebook-utils');
+          
+          // Try to get a new Supabase-hosted URL
+          const supabaseUrl = await fetchAndStoreFacebookProfilePicture(user);
+          if (supabaseUrl) {
+            console.log('Successfully reprocessed Facebook image to Supabase storage');
+            finalProfilePictureUrl = supabaseUrl;
+          } else {
+            console.warn('Failed to process Facebook image, will try direct URL anyway');
+          }
+        } catch (picError) {
+          console.error('Error processing profile picture:', picError);
+          // Continue with original URL as fallback
+        }
+      }
+
       // Prepare all fields that exist in the users table
       const dataToSubmit = {
         first_name: formData.first_name,
@@ -255,8 +279,7 @@ export default function ProfileSetup() {
         title: formData.title,
         interests: formData.interests,
         roles: formData.roles,
-        // Keep the profile picture URL from form data
-        profile_picture_url: formData.profile_picture_url,
+        profile_picture_url: finalProfilePictureUrl,
         metadata: metadata,
         hasprofile: true,
         updated_at: new Date().toISOString()

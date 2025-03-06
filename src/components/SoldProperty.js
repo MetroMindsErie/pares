@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBed, faBath, faRuler, faCalendar, faTag, faHouse } from '@fortawesome/free-solid-svg-icons';
 import ImageGallery from './ImageGallery';
+import Layout from './Layout';
 
 export const SoldProperty = ({ property }) => {
   const [showRawDetails, setShowRawDetails] = useState(false);
@@ -24,6 +25,7 @@ export const SoldProperty = ({ property }) => {
   };
 
   return (
+    <Layout>
     <div className="container mx-auto px-4 py-8">
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">{property.UnparsedAddress}</h1>
@@ -158,6 +160,7 @@ export const SoldProperty = ({ property }) => {
         </div>
       </div>
     </div>
+    </Layout>
   );
 };
 

@@ -19,26 +19,24 @@ function PropertyDetail({ property, isSold }) {
   }
 
   return (
-    <Layout>
-      <div className="min-h-screen bg-white text-black">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {isSold ? (
-            <SoldProperty property={property} />
-          ) : (
-            <ActiveProperty property={property} />
-          )}
+    <div className="min-h-screen bg-white text-black">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {isSold ? (
+          <SoldProperty property={property} />
+        ) : (
+          <ActiveProperty property={property} />
+        )}
 
-          <div className="mt-8 text-center">
-            <button
-              onClick={() => router.back()}
-              className="bg-gray-100 text-black py-2 px-6 rounded-lg border border-black hover:bg-gray-200 transition-colors"
-            >
-              ← Back to Listings
-            </button>
-          </div>
+        <div className="mt-8 text-center">
+          <button
+            onClick={() => router.back()}
+            className="bg-gray-100 text-black py-2 px-6 rounded-lg border border-black hover:bg-gray-200 transition-colors"
+          >
+            ← Back to Listings
+          </button>
         </div>
       </div>
-    </Layout>
+    </div>
   );
 }
 
