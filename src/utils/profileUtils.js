@@ -26,11 +26,11 @@ export const checkUserHasProfile = async (userId) => {
     
     // Consider a profile complete if it exists at all
     // You can add more specific checks based on your data model
-    const hasProfile = Boolean(data && Object.keys(data).length > 0);
+    const hasprofile = Boolean(data && Object.keys(data).length > 0);
     
-    console.log('Has profile:', hasProfile);
+    console.log('Has profile:', hasprofile);
     
-    return hasProfile;
+    return hasprofile;
   } catch (err) {
     console.error('Error in checkUserHasProfile:', err);
     return false;
@@ -48,9 +48,9 @@ export const handleProfileNavigation = async (user, router) => {
   console.log('Handling profile navigation for user:', user.id);
   
   try {
-    const hasProfile = await checkUserHasProfile(user.id);
+    const hasprofile = await checkUserHasProfile(user.id);
     
-    if (hasProfile) {
+    if (hasprofile) {
       console.log('User has profile, redirecting to dashboard');
       router.push('/dashboard');
     } else {

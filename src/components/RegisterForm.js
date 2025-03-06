@@ -36,7 +36,7 @@ const RegisterForm = () => {
           // Check if user has a profile
           const { data, error } = await supabaseClient
             .from('users')
-            .select('hasProfile')
+            .select('hasprofile')
             .eq('id', user.id)
             .single();
           
@@ -45,7 +45,7 @@ const RegisterForm = () => {
           console.log('User profile status:', data);
           
           // Redirect based on profile status
-          if (data && data.hasProfile) {
+          if (data && data.hasprofile) {
             console.log('User has profile, redirecting to dashboard');
             router.push('/dashboard');
           } else {

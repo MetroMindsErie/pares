@@ -49,13 +49,13 @@ export default function AuthCallback() {
         // Check if user has completed their profile
         const { data, error } = await supabaseClient
           .from('users')
-          .select('hasProfile')
+          .select('hasprofile')
           .eq('id', authUser.id)
           .single();
 
         if (error) throw error;
 
-        if (data && data.hasProfile) {
+        if (data && data.hasprofile) {
           console.log("User has profile, redirecting to dashboard");
           router.push('/dashboard');
         } else {

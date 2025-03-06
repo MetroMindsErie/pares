@@ -4,7 +4,7 @@ const AuthContext = createContext({
   isAuthenticated: false,
   user: null,
   loading: false, // Make sure this is false by default
-  hasProfile: null,
+  hasprofile: null,
   login: async () => {},
   logout: async () => {},
   signup: async () => {},
@@ -16,7 +16,7 @@ export const AuthProvider = ({ children }) => {
   // Initialize loading to false
   const [loading, setLoading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [hasProfile, setHasProfile] = useState(null);
+  const [hasprofile, setHasProfile] = useState(null);
   const [error, setError] = useState(null);
   const [isBrowser, setIsBrowser] = useState(false);
   
@@ -230,7 +230,7 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated,
     user,
     loading,
-    hasProfile,
+    hasprofile,
     error,
     login,
     // Use the stable reference to ensure it's always a function
