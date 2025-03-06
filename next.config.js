@@ -8,9 +8,14 @@ const __dirname = path.dirname(__filename);
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Exclude problematic pages from SSR
   experimental: {
-    // removed turbo flag to fix invalid option error
-    // ...existing experimental options if any...
+    // This can be enabled if you want to debug SSR issues
+    runtime: 'nodejs',
+  },
+  // Fix hydration issues by enabling more strict React behaviors
+  compiler: {
+    styledComponents: true,
   },
   images: {
     domains: ['cdnjs.cloudflare.com', 'tiles.stadiamaps.com', 'api-trestle.corelogic.com'],

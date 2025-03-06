@@ -4,7 +4,7 @@ import supabase from '../lib/supabase-setup';
 import { useAuth } from '../context/auth-context';
 
 const Login = ({ onLogin }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, login, loginWithProvider, loading, error: authError } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
@@ -18,25 +18,27 @@ const Login = ({ onLogin }) => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setError(null);
+    
+    if (!username || !password) {
+      setError('Please enter both email and password');
+      return;
+    }
+    
     try {
       console.log('Attempting login with:', username);
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: username,
-        password: password,
-      });
+      const { error } = await login(username, password);
       if (error) throw error;
 
-      if (data?.user) {
-        const { data: profileData } = await supabase
-          .from('users')
-          .select('hasprofile')
-          .eq('id', data.user.id)
-          .single();
-        if (!profileData?.hasprofile) {
-          router.push('/profile?setup=true');
-        } else {
-          router.push('/dashboard');
-        }
+      const { data: profileData } = await supabase
+        .from('users')
+        .select('hasprofile')
+        .eq('id', data.user.id)
+        .single();
+      if (!profileData?.hasprofile) {
+        router.push('/profile?setup=true');
+      } else {
+        router.push('/dashboard');
       }
     } catch (err) {
       console.error('Login error:', err);
@@ -45,47 +47,16 @@ const Login = ({ onLogin }) => {
   };
 
   const handleSocialLogin = async (provider) => {
-    try {
-      setError(null);
-      const redirectTo = `${window.location.origin}/auth/callback?provider=${provider}`;
-      console.log("Redirect URI:", redirectTo);
-      
-      // Add proper scopes for user_videos when authenticating with Facebook
-      const scopes = provider === 'facebook' 
-        ? 'email,public_profile,user_videos' 
-        : (provider === 'google' ? 'profile email' : undefined);
-      
-      // Add response_type=token to get token in URL hash
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo,
-          scopes,
-          queryParams: provider === 'facebook' 
-            ? {
-                response_type: 'token',
-                // Other Facebook-specific params can be added here
-              } 
-            : (provider === 'google' ? {
-                prompt: 'select_account',
-                access_type: 'offline',
-              } : undefined),
-        }
-      });
-      
-      if (error) throw error;
-    } catch (error) {
-      console.error(`${provider} login error:`, error);
-      setError(error.message);
-    }
+    setError(null);
+    await loginWithProvider(provider);
   };
 
   return (
     <div className="max-w-md mx-auto p-8 bg-white/80 backdrop-blur-md rounded-2xl shadow-xl mt-10">
       <h2 className="text-3xl font-semibold mb-6 text-center text-gray-800">Log In</h2>
-      {error && (
+      {(error || authError) && (
         <div className="mb-4 p-3 bg-red-100 text-red-700 rounded text-center">
-          {error}
+          {error || authError}
         </div>
       )}
       
@@ -134,9 +105,10 @@ const Login = ({ onLogin }) => {
         />
         <button
           type="submit"
-          className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white py-3 rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-colors"
+          disabled={loading}
+          className={`w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white py-3 rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-colors ${loading ? 'bg-indigo-400' : ''}`}
         >
-          Login
+          {loading ? 'Signing in...' : 'Login'}
         </button>
       </form>
     </div>
