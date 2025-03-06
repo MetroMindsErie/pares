@@ -8,7 +8,8 @@ import SupabaseProvider from '../components/SupabaseProvider';
 import validateEnvironmentVariables from '../utils/validateEnv';
 import { useRouter } from 'next/router';
 import { UserProvider, useUser } from '@supabase/auth-helpers-react';
-import { supabaseClient } from '../utils/supabaseClient';
+// Fix the import by using the default export
+import supabaseClient from '../utils/supabaseClient';
 import { getFacebookProfilePicture, validateImageUrl } from '../utils/facebookUtils';
 
 function MyApp({ Component, pageProps }) {

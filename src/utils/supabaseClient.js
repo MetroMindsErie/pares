@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+// Initialize client
 let supabase = null;
 
 try {
@@ -31,6 +32,9 @@ try {
 } catch (error) {
   console.error('Error initializing Supabase client:', error);
 }
+
+// Export as both default and named export to support different import styles
+export const supabaseClient = supabase;
 
 // Helper function to log client info for debugging
 export const checkSupabaseClient = () => {
