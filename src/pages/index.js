@@ -292,8 +292,7 @@ export async function getStaticProps() {
       props: {
         heroContent: heroContent || null,
         featuredListings: featuredListings || []
-      },
-      revalidate: 60
+      }
     };
   } catch (error) {
     console.error('Error fetching content:', error);
