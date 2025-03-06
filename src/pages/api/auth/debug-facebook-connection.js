@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-import { corsMiddleware } from '../cors-middleware';
 
 export default async function handler(req, res) {
   // Apply CORS middleware
