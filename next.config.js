@@ -11,7 +11,6 @@ const nextConfig = {
   // Fix SSR issues
   experimental: {
     // Remove the runtime option that's causing warnings
-    appDir: false,
   },
   // Fix hydration issues by enabling more strict React behaviors
   compiler: {

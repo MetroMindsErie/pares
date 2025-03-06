@@ -28,13 +28,13 @@ const Login = ({ onLogin }) => {
     
     try {
       console.log('Attempting login with:', username);
-      const { error } = await login(username, password);
+      const { data: loginData, error } = await login(username, password);
       if (error) throw error;
 
       const { data: profileData } = await supabase
         .from('users')
         .select('hasprofile')
-        .eq('id', data.user.id)
+        .eq('id', loginData?.user?.id)
         .single();
       if (!profileData?.hasprofile) {
         router.push('/profile?setup=true');
