@@ -179,14 +179,18 @@ function MyApp({ Component, pageProps }) {
           {supabaseClient ? (
             <UserProvider supabaseClient={supabaseClient}>
               <UserProfileHandler />
-              <Component {...pageProps} />
+              <Layout>
+                <Component {...pageProps} />
+              </Layout>
             </UserProvider>
           ) : (
             <>
               <div style={{padding: '10px', backgroundColor: '#FFFFA0', textAlign: 'center', fontSize: '14px'}}>
                 Running in limited mode: Authentication is not available
               </div>
-              <Component {...pageProps} />
+              <Layout>
+                <Component {...pageProps} />
+              </Layout>
             </>
           )}
         </SupabaseProvider>
