@@ -18,6 +18,12 @@ const nextConfig = {
     domains: ['cdnjs.cloudflare.com', 'tiles.stadiamaps.com', 'api-trestle.corelogic.com'],
     unoptimized: true,
   },
+  // NextJS 15+ configuration to prevent prerendering issue
+  output: 'standalone',  // More stable build output for Netlify
+  
+  // Tell Next.js not to attempt to render these paths at build time
+  excludeDefaultMomentLocales: true, // Reduce bundle size
+  
   // Disable automatic static optimization for auth pages
   unstable_excludeFiles: [
     '**/src/pages/login.js',
@@ -47,6 +53,7 @@ const nextConfig = {
     NEXT_PUBLIC_TRESTLE_TOKEN_URL: process.env.NEXT_PUBLIC_TRESTLE_TOKEN_URL,
     NEXT_PUBLIC_TRESTLE_CLIENT_ID: process.env.NEXT_PUBLIC_TRESTLE_CLIENT_ID,
     NEXT_PUBLIC_TRESTLE_CLIENT_SECRET: process.env.NEXT_PUBLIC_TRESTLE_CLIENT_SECRET,
+    IS_NETLIFY: 'true', // Signal that we're building for Netlify
   },
   eslint: {
     ignoreDuringBuilds: true

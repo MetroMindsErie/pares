@@ -6,8 +6,4 @@
   package = "@netlify/plugin-nextjs"
 
 [build.environment]
-  NEXT_DISABLE_PRERENDER_AUTH = "true"
-
-# Skip prerendering of auth pages
-[[plugins.inputs.skipPrerender]]
-  patterns = ["/login", "/register", "/profile"]
+  NEXT_DISABLE_PRERENDER = "true"
