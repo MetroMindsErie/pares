@@ -12,6 +12,7 @@ import Blog from '../components/Blog';
 import Stablecoin from '../components/Stablecoin';
 import { useAuth } from '../context/auth-context';
 import { handleProfileNavigation } from '../utils/profileUtils';
+import Layout from '../components/Layout';
 import '../styles/animations.css';
 
 const HomePage = ({ featuredListings = [], heroContent }) => {
