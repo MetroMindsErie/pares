@@ -141,15 +141,31 @@ export const AuthProvider = ({ children }) => {
     setError(null);
     
     try {
+      console.log(`Initiating ${provider} login flow`);
       const { default: supabaseClient } = await import('../utils/supabaseClient');
+      
+      if (!supabaseClient?.auth?.signInWithOAuth) {
+        console.error(`Auth method signInWithOAuth not available`);
+        throw new Error('Authentication method not available');
+      }
+      
+      // Use proper options format for Supabase OAuth
       const { data, error } = await supabaseClient.auth.signInWithOAuth({ 
-        provider 
+        provider,
+        options: {
+          redirectTo: typeof window !== 'undefined' 
+            ? `${window.location.origin}/auth/callback` 
+            : undefined
+        }
       });
       
+      console.log(`${provider} auth result:`, { hasData: !!data, hasError: !!error });
       if (error) throw error;
+      
       return { data };
     } catch (err) {
-      setError(err.message);
+      console.error(`${provider} auth error:`, err);
+      setError(err.message || `Failed to authenticate with ${provider}`);
       return { error: err };
     } finally {
       setLoading(false);

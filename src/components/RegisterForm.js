@@ -66,10 +66,36 @@ const RegisterForm = () => {
   const handleProviderSignup = async (provider) => {
     setFormError(null);
     setLocalLoading(true);
+    
     try {
-      await loginWithProvider(provider);
+      console.log(`Starting ${provider} signup process`);
+      
+      // Check if loginWithProvider is a function
+      if (typeof loginWithProvider !== 'function') {
+        throw new Error(`Authentication method for ${provider} is not available`);
+      }
+      
+      const result = await loginWithProvider(provider);
+      
+      // Handle potential errors in the result
+      if (result?.error) {
+        throw result.error;
+      }
+      
+      // Success case will usually redirect via OAuth, but handle the non-redirect case
+      console.log(`${provider} authentication succeeded`);
     } catch (err) {
-      setFormError(`Error signing up with ${provider}: ${err.message}`);
+      console.error(`${provider} signup error:`, err);
+      setFormError(`Error signing up with ${provider}: ${err.message || 'Unknown error'}`);
+      
+      // If it's the specific "p is not a function" error, provide more debugging info
+      if (err.message?.includes('p is not a function')) {
+        console.error('Detected "p is not a function" error - detailed info:', {
+          providerType: typeof provider,
+          loginWithProviderType: typeof loginWithProvider,
+          error: err
+        });
+      }
     } finally {
       setLocalLoading(false);
     }
