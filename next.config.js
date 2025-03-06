@@ -23,7 +23,6 @@ const nextConfig = {
   pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
   
   // Other configurations
-  swcMinify: true,
   images: {
     domains: ['cdnjs.cloudflare.com', 'tiles.stadiamaps.com', 'api-trestle.corelogic.com']
   },
