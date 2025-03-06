@@ -1,10 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-// Create the auth context with default values
 const AuthContext = createContext({
   isAuthenticated: false,
   user: null,
-  loading: true,
+  loading: false, // Make sure this is false by default
   hasProfile: null,
   login: async () => {},
   logout: async () => {},
@@ -13,17 +12,27 @@ const AuthContext = createContext({
 });
 
 export const AuthProvider = ({ children }) => {
-  // Always initialize these state values
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Initialize loading to false
+  const [loading, setLoading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [hasProfile, setHasProfile] = useState(null);
   const [error, setError] = useState(null);
   const [isBrowser, setIsBrowser] = useState(false);
-
-  // Detect if we're in a browser environment
+  
+  // Reset loading state if it's still true after component mount
   useEffect(() => {
     setIsBrowser(true);
+    
+    // Reset loading state if it persisted incorrectly
+    const timer = setTimeout(() => {
+      if (loading) {
+        console.warn('Auth loading state persisted too long, resetting');
+        setLoading(false);
+      }
+    }, 5000);
+    
+    return () => clearTimeout(timer);
   }, []);
 
   // Only import supabase client on the client-side to avoid SSR issues
@@ -154,6 +163,7 @@ export const AuthProvider = ({ children }) => {
     setError(null);
     
     try {
+      // Dynamic import of supabaseClient
       const { default: supabaseClient } = await import('../utils/supabaseClient');
       const { data, error } = await supabaseClient.auth.signUp({ 
         email, 
@@ -166,6 +176,7 @@ export const AuthProvider = ({ children }) => {
       setError(err.message);
       return { error: err };
     } finally {
+      // Always set loading to false when done
       setLoading(false);
     }
   };
@@ -210,5 +221,4 @@ export const AuthProvider = ({ children }) => {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-// Hook for accessing auth context
 export const useAuth = () => useContext(AuthContext);

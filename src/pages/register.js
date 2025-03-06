@@ -1,19 +1,34 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import NoSSR from '../components/NoSSR';
 import Layout from '../components/Layout';
-import RegisterForm from '../components/RegisterForm';
-import RegisterRedirect from '../components/RegisterRedirect';
+import { useAuth } from '../context/auth-context';
 
-// Completely disable SSR for this page to avoid hook ordering issues
-export default function Register() {
+// Import with error fallback
+const RegisterForm = dynamic(() => import('../components/RegisterForm'), {
+  ssr: false,
+  loading: () => <div className="p-4 text-center">Loading registration form...</div>,
+});
+
+const RegisterRedirect = dynamic(() => import('../components/RegisterRedirect'), {
+  ssr: false,
+});
+
+function Register() {
+  // Add logging to debug production issues
+  const { loading } = useAuth();
+  
+  useEffect(() => {
+    console.log('Register page loaded, auth loading state:', loading);
+  }, [loading]);
+  
   return (
     <Layout>
       <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8">
-          {/* Render the auth components only on the client */}
-          <NoSSR fallback={<div>Loading registration components...</div>}>
+          <NoSSR>
             <RegisterRedirect />
-            <RegisterForm />
+            <RegisterForm key="register-form" />
           </NoSSR>
         </div>
       </div>
@@ -21,9 +36,9 @@ export default function Register() {
   );
 }
 
-// Tell Next.js to treat this as a static page (no server-side props)
-export async function getStaticProps() {
-  return {
-    props: {},
-  };
+// Force server-side rendering instead of static generation
+export async function getServerSideProps() {
+  return { props: {} };
 }
+
+export default Register;

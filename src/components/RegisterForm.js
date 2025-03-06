@@ -1,16 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../context/auth-context';
 
-// Change from named function to const assignment with arrow function
 const RegisterForm = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [formError, setFormError] = useState(null);
+  const [localLoading, setLocalLoading] = useState(false);
   
-  const { signup, loginWithProvider, loading, error: authError } = useAuth();
+  const { signup, loginWithProvider, loading: authLoading, error: authError } = useAuth();
   const router = useRouter();
+  
+  // Check if loading is incorrectly persisting
+  useEffect(() => {
+    console.log('RegisterForm mounted, authLoading state:', authLoading);
+    // Force authLoading to false after a delay if it's still true
+    if (authLoading) {
+      const timer = setTimeout(() => {
+        console.log('Forcing loading state reset');
+        // Note: We can't directly modify authLoading, but this helps for debugging
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [authLoading]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,19 +46,42 @@ const RegisterForm = () => {
       return;
     }
     
-    const { error } = await signup(email, password);
-    
-    if (error) {
-      setFormError(error.message || 'Failed to sign up');
-    } else {
-      // Registration successful, redirect to profile setup
-      router.push('/profile?setup=true');
+    setLocalLoading(true);
+    try {
+      const { error } = await signup(email, password);
+      
+      if (error) {
+        setFormError(error.message || 'Failed to sign up');
+      } else {
+        // Registration successful, redirect to profile setup
+        router.push('/profile?setup=true');
+      }
+    } catch (err) {
+      setFormError(err.message || 'An unexpected error occurred');
+    } finally {
+      setLocalLoading(false);
     }
   };
 
   const handleProviderSignup = async (provider) => {
     setFormError(null);
-    await loginWithProvider(provider);
+    setLocalLoading(true);
+    try {
+      await loginWithProvider(provider);
+    } catch (err) {
+      setFormError(`Error signing up with ${provider}: ${err.message}`);
+    } finally {
+      setLocalLoading(false);
+    }
+  };
+
+  // Use our local loading state or auth loading state, whichever is active
+  const isLoading = localLoading || authLoading;
+  
+  // Add explicit onClick handler to ensure clicks are processed
+  const handleButtonClick = (e) => {
+    console.log('Sign up button clicked');
+    // The form's onSubmit will handle the actual submission
   };
 
   return (
@@ -57,6 +93,7 @@ const RegisterForm = () => {
       </div>
 
       <form className="space-y-6 mt-8" onSubmit={handleSubmit}>
+        {/* Display any errors */}
         {(formError || authError) && (
           <div className="rounded-md bg-red-50 p-4">
             <div className="text-sm text-red-700">
@@ -65,6 +102,7 @@ const RegisterForm = () => {
           </div>
         )}
         
+        {/* Email field */}
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-gray-700">
             Email address
@@ -79,10 +117,12 @@ const RegisterForm = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              disabled={isLoading}
             />
           </div>
         </div>
 
+        {/* Password field */}
         <div>
           <label htmlFor="password" className="block text-sm font-medium text-gray-700">
             Password
@@ -97,10 +137,12 @@ const RegisterForm = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              disabled={isLoading}
             />
           </div>
         </div>
 
+        {/* Confirm password field */}
         <div>
           <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700">
             Confirm Password
@@ -115,23 +157,27 @@ const RegisterForm = () => {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              disabled={isLoading}
             />
           </div>
         </div>
 
+        {/* Submit button with explicit onClick handler */}
         <div>
           <button
             type="submit"
-            disabled={loading}
+            disabled={isLoading}
+            onClick={handleButtonClick}
             className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
-              loading ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700'
+              isLoading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 cursor-pointer'
             } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
           >
-            {loading ? 'Signing up...' : 'Sign up'}
+            {isLoading ? 'Signing up...' : 'Sign up'}
           </button>
         </div>
       </form>
 
+      {/* Social sign up options */}
       <div className="mt-6">
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
@@ -146,7 +192,7 @@ const RegisterForm = () => {
           <div>
             <button
               onClick={() => handleProviderSignup('facebook')}
-              disabled={loading}
+              disabled={isLoading}
               className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
             >
               <span className="sr-only">Sign up with Facebook</span>
@@ -163,7 +209,7 @@ const RegisterForm = () => {
           <div>
             <button
               onClick={() => handleProviderSignup('google')}
-              disabled={loading}
+              disabled={isLoading}
               className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
             >
               <span className="sr-only">Sign up with Google</span>
@@ -204,5 +250,4 @@ const RegisterForm = () => {
   );
 };
 
-// Export the component
 export default RegisterForm;
