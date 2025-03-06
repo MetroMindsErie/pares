@@ -11,7 +11,6 @@ import Reels from '../components/Reels';
 import Blog from '../components/Blog';
 import Stablecoin from '../components/Stablecoin';
 import { useAuth } from '../context/auth-context';
-import Layout from '../components/Layout';
 import { handleProfileNavigation } from '../utils/profileUtils';
 import '../styles/animations.css';
 

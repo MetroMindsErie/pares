@@ -6,7 +6,7 @@ import RecentActivity from '../components/Dashboard/RecentActivity';
 import supabase from '../lib/supabase-setup';
 import { useRouter } from 'next/router';
 import Reels from '../components/Reels';
-import Layout from '@/components/Layout';
+import Layout from '../components/Layout';
 export default function DashboardPage() {
   const { user, isAuthenticated, loading } = useAuth();
   const [profile, setProfile] = useState(null);

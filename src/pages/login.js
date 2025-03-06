@@ -2,8 +2,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import LoginForm from '../components/LoginForm';
 import { useAuth } from '../context/auth-context';
-import Layout from '@/components/Layout';
-
+import Layout from '../components/Layout';
 export default function LoginPage() {
   const { isAuthenticated, hasProfile } = useAuth();
   const router = useRouter();
