@@ -9,7 +9,7 @@ const RegisterForm = () => {
   const [formError, setFormError] = useState(null);
   const [localLoading, setLocalLoading] = useState(false);
   
-  const { signup, loginWithProvider, loading: authLoading, error: authError } = useAuth();
+  const { signup, loginWithProvider, loading: authLoading, error: authError, user } = useAuth();
   const router = useRouter();
   
   // Check if loading is incorrectly persisting
@@ -24,6 +24,46 @@ const RegisterForm = () => {
       return () => clearTimeout(timer);
     }
   }, [authLoading]);
+
+  // Check user profile status and redirect accordingly
+  useEffect(() => {
+    const checkProfileAndRedirect = async () => {
+      if (user) {
+        try {
+          // Import Supabase directly
+          const { default: supabaseClient } = await import('../utils/supabaseClient');
+          
+          // Check if user has a profile
+          const { data, error } = await supabaseClient
+            .from('users')
+            .select('hasProfile')
+            .eq('id', user.id)
+            .single();
+          
+          if (error) throw error;
+          
+          console.log('User profile status:', data);
+          
+          // Redirect based on profile status
+          if (data && data.hasProfile) {
+            console.log('User has profile, redirecting to dashboard');
+            router.push('/dashboard');
+          } else {
+            console.log('User needs to create profile');
+            router.push('/profile?setup=true');
+          }
+        } catch (err) {
+          console.error('Error checking profile status:', err);
+          // Default to profile creation if there's an error
+          router.push('/profile?setup=true');
+        }
+      }
+    };
+    
+    if (user) {
+      checkProfileAndRedirect();
+    }
+  }, [user, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -63,7 +103,7 @@ const RegisterForm = () => {
     }
   };
 
-  // Add a direct login function as a fallback
+  // Improved Facebook login with proper auth provider saving
   const directFacebookLogin = async () => {
     try {
       console.log('Attempting direct Facebook login');
@@ -77,12 +117,14 @@ const RegisterForm = () => {
 
       // Get the current URL for the redirect
       const origin = window.location.origin;
-      const redirectUrl = `${origin}/auth/callback`;
       
+      // Explicitly include redirectTo to handle the callback properly
       const { data, error } = await supabaseClient.auth.signInWithOAuth({
         provider: 'facebook',
         options: {
-          redirectTo: redirectUrl
+          redirectTo: `${origin}/auth/callback`,
+          // Ensure scopes include what we need for proper auth
+          scopes: 'public_profile,email',
         }
       });
       
@@ -97,7 +139,7 @@ const RegisterForm = () => {
     }
   };
 
-  // Add an improved provider signup handler
+  // Improved provider signup handler
   const handleProviderSignup = async (provider) => {
     setFormError(null);
     setLocalLoading(true);
@@ -105,28 +147,23 @@ const RegisterForm = () => {
     try {
       console.log(`Starting ${provider} signup process`);
       
-      // Try both approaches - first via context, then direct
+      if (provider === 'facebook') {
+        // Use direct method for Facebook since we need to ensure provider is saved
+        return await directFacebookLogin();
+      } 
+      
+      // For other providers, try context method first
       if (typeof loginWithProvider === 'function') {
         console.log(`Using context loginWithProvider for ${provider}`);
         const result = await loginWithProvider(provider);
         
         if (result?.error) {
-          console.warn(`Context ${provider} login failed, trying direct method`);
-          if (provider === 'facebook') {
-            return await directFacebookLogin();
-          } else {
-            throw result.error;
-          }
+          throw result.error;
         }
         
         return result;
       } else {
-        console.warn(`Context loginWithProvider not available for ${provider}, using direct method`);
-        if (provider === 'facebook') {
-          return await directFacebookLogin();
-        } else {
-          throw new Error(`Authentication method for ${provider} is not available`);
-        }
+        throw new Error(`Authentication method for ${provider} is not available`);
       }
     } catch (err) {
       console.error(`${provider} signup error:`, err);

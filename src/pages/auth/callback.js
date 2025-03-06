@@ -1,50 +1,83 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
+import { useAuth } from '../../context/auth-context';
 
 export default function AuthCallback() {
   const router = useRouter();
+  const { user } = useAuth();
 
   useEffect(() => {
-    // Handle auth callback
-    const handleCallback = async () => {
+    const handleAuthCallback = async () => {
       try {
-        console.log('Processing OAuth callback...');
+        // Import Supabase client
+        const { default: supabaseClient } = await import('../../utils/supabaseClient');
         
-        const { default: supabase } = await import('../../utils/supabaseClient');
-        
-        // Let Supabase handle the auth session
-        const { error } = await supabase.auth.getSession();
+        // Process the auth callback - this is important for OAuth flows
+        const { data, error } = await supabaseClient.auth.getSession();
         
         if (error) {
-          console.error('Error getting auth session:', error);
-          router.push('/login?error=auth-callback-failed');
-        } else {
-          console.log('Successfully authenticated');
-          router.push('/profile?setup=true');
+          throw error;
         }
-      } catch (err) {
-        console.error('Error in auth callback:', err);
-        router.push('/login?error=unknown-callback-error');
+
+        // If we have a session but no user context yet, wait briefly
+        if (data?.session && !user) {
+          console.log("Session found but waiting for user context to update");
+          setTimeout(() => checkUserProfile(), 1000);
+          return;
+        }
+        
+        checkUserProfile();
+      } catch (error) {
+        console.error("Error in auth callback:", error);
+        router.push('/login?error=callback');
       }
     };
 
-    handleCallback();
-  }, [router]);
+    const checkUserProfile = async () => {
+      try {
+        const { default: supabaseClient } = await import('../../utils/supabaseClient');
+        
+        // Get current user
+        const { data: { user: authUser } } = await supabaseClient.auth.getUser();
+        
+        if (!authUser) {
+          console.log("No user found, redirecting to login");
+          router.push('/login');
+          return;
+        }
 
-  // Show a loading state
+        // Check if user has completed their profile
+        const { data, error } = await supabaseClient
+          .from('users')
+          .select('hasProfile')
+          .eq('id', authUser.id)
+          .single();
+
+        if (error) throw error;
+
+        if (data && data.hasProfile) {
+          console.log("User has profile, redirecting to dashboard");
+          router.push('/dashboard');
+        } else {
+          console.log("User needs to complete profile setup");
+          router.push('/profile?setup=true');
+        }
+      } catch (error) {
+        console.error("Error checking user profile:", error);
+        router.push('/profile?setup=true');
+      }
+    };
+
+    handleAuthCallback();
+  }, [router, user]);
+
+  // Show a simple loading state
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Completing authentication...
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Please wait while we complete the sign-in process.
-          </p>
-        </div>
-        <div className="flex justify-center">
-          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-xl font-medium">Completing authentication...</h1>
+        <div className="mt-4 flex justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
       </div>
     </div>

@@ -141,59 +141,32 @@ export const AuthProvider = ({ children }) => {
   };
 
   const loginWithProvider = async (provider) => {
-    if (!isBrowser) return { error: 'Cannot login during server rendering' };
-    
     setLoading(true);
     setError(null);
     
     try {
-      console.log(`Initiating ${provider} login flow`);
-      
-      // Import the Supabase client with better error handling
-      let supabaseClient;
-      try {
-        const module = await import('../utils/supabaseClient');
-        supabaseClient = module.default;
-        if (!supabaseClient) {
-          console.error('Failed to load Supabase client');
-          throw new Error('Authentication service unavailable');
-        }
-      } catch (importError) {
-        console.error('Failed to import Supabase client:', importError);
-        throw new Error('Authentication service unavailable');
-      }
-      
-      // Check if the signInWithOAuth method exists
-      if (!supabaseClient.auth || typeof supabaseClient.auth.signInWithOAuth !== 'function') {
-        console.error('Auth method signInWithOAuth not available');
-        throw new Error('Authentication method not available');
-      }
-      
-      // Get the current URL for the redirect
-      const origin = typeof window !== 'undefined' 
-        ? window.location.origin 
-        : 'https://parealestatesolutions.com';
-      
-      // Configure redirectTo with fallback
+      const origin = window.location.origin;
       const redirectUrl = `${origin}/auth/callback`;
-      console.log('Using redirect URL:', redirectUrl);
       
-      // Use proper options format for Supabase OAuth
-      const { data, error } = await supabaseClient.auth.signInWithOAuth({ 
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: redirectUrl
+          redirectTo: redirectUrl,
+          // For Facebook, include necessary scopes
+          ...(provider === 'facebook' ? {
+            scopes: 'public_profile,email'
+          } : {})
         }
       });
       
       if (error) throw error;
       
-      // Log successful OAuth initialization
-      console.log(`${provider} auth flow started successfully`);
+      // The OAuth flow will redirect the user, so we don't need to handle 
+      // the redirect here as it will be handled by the callback page
       return { data };
     } catch (err) {
-      console.error(`${provider} auth error:`, err);
-      setError(err.message || `Failed to authenticate with ${provider}`);
+      console.error(`Error during ${provider} signin:`, err);
+      setError(err.message);
       return { error: err };
     } finally {
       setLoading(false);
