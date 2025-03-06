@@ -38,9 +38,9 @@ const nextConfig = {
     return config;
   },
   env: {
-    TRESTLE_TOKEN_URL: process.env.TRESTLE_TOKEN_URL,
-    TRESTLE_CLIENT_ID: process.env.TRESTLE_CLIENT_ID,
-    TRESTLE_CLIENT_SECRET: process.env.TRESTLE_CLIENT_SECRET,
+    NEXT_PUBLIC_TRESTLE_TOKEN_URL: process.env.NEXT_PUBLIC_TRESTLE_TOKEN_URL,
+    NEXT_PUBLIC_TRESTLE_CLIENT_ID: process.env.NEXT_PUBLIC_TRESTLE_CLIENT_ID,
+    NEXT_PUBLIC_TRESTLE_CLIENT_SECRET: process.env.NEXT_PUBLIC_TRESTLE_CLIENT_SECRET,
   },
   eslint: {
     ignoreDuringBuilds: true

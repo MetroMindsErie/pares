@@ -1,167 +1,206 @@
-import PropTypes from 'prop-types';
-import { ActiveProperty } from './ActiveProperty';
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faBed, faBath, faRuler, faCalendar, faTag, faHouse } from '@fortawesome/free-solid-svg-icons';
+import ImageGallery from './ImageGallery';
 
 export const SoldProperty = ({ property }) => {
   const [showRawDetails, setShowRawDetails] = useState(false);
 
-  return (
-    <div className="max-w-7xl mx-auto p-6 bg-white rounded-xl shadow-lg mb-8">
-      <div className="bg-red-600 text-white px-4 py-2 rounded-t-xl">
-        Sold for ${property.soldPrice.toLocaleString()} on {property.soldDate}
-      </div>
+  // Format price as currency
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 0
+    }).format(price);
+  };
 
-      <div className="mt-4">
-        <div className="flex items-baseline gap-2">
-          <span className="text-2xl text-gray-500 line-through">
-            ${property.price.toLocaleString()}
-          </span>
-          <span className="text-3xl font-bold text-gray-900">
-            ${property.soldPrice.toLocaleString()}
-          </span>
-        </div>
-        <p className="text-sm text-gray-600">
-          Closed on {property.soldDate}
+  // Format date
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold mb-2">{property.UnparsedAddress}</h1>
+        <p className="text-xl text-gray-700">
+          {property.City}, {property.StateOrProvince} {property.PostalCode}
         </p>
       </div>
 
-      <ActiveProperty property={property} />
-      
-      <div className="mt-6 p-4 bg-yellow-50 rounded-lg">
-        <h3 className="font-medium">Sale Details</h3>
-        <div className="grid grid-cols-2 gap-4 mt-2">
-          <div>
-            <p className="text-sm">Closing Date</p>
-            <p className="font-medium">{property.soldDate}</p>
-          </div>
-          {property.buyerAgent && (
-            <div>
-              <p className="text-sm">Buyer's Agent</p>
-              <p className="font-medium">{property.buyerAgent}</p>
-            </div>
-          )}
+      {/* Image Gallery */}
+      <div className="mb-8">
+        <ImageGallery images={property.mediaUrls || []} address={property.UnparsedAddress} />
+      </div>
+
+      {/* Sold Banner */}
+      <div className="bg-gray-800 text-white p-4 rounded-lg mb-8 flex flex-wrap justify-between items-center">
+        <div>
+          <h2 className="text-xl font-bold">This Property Has Been Sold</h2>
+          <p className="text-sm opacity-80">Closed on {formatDate(property.CloseDate)}</p>
+        </div>
+        <div className="text-2xl font-bold mt-2 md:mt-0">
+          {formatPrice(property.ClosePrice || property.ListPrice)}
         </div>
       </div>
 
-      {/* Raw Property Information */}
-      <div className="mt-12 p-6 bg-gray-50 rounded-lg">
-        <h3 className="text-lg font-bold mb-4">Additional Property Information</h3>
-        <button
-          className="text-blue-600 text-sm mb-4"
-          onClick={() => setShowRawDetails(!showRawDetails)}
-        >
-          {showRawDetails ? 'Hide Details' : 'Show Details'}
-        </button>
-        {showRawDetails && (
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm">Water Source</p>
-              <p className="font-medium">{property.waterSource}</p>
-            </div>
-            <div>
-              <p className="text-sm">Sewer</p>
-              <p className="font-medium">{property.sewer}</p>
-            </div>
-            <div>
-              <p className="text-sm">Property Type</p>
-              <p className="font-medium">{property.propertyType}</p>
-            </div>
-            <div>
-              <p className="text-sm">Zoning Description</p>
-              <p className="font-medium">{property.zoningDescription}</p>
-            </div>
-            <div>
-              <p className="text-sm">Days on Market</p>
-              <p className="font-medium">{property.daysOnMarket}</p>
-            </div>
-            <div>
-              <p className="text-sm">Flooring</p>
-              <p className="font-medium">{property.flooring}</p>
-            </div>
-            <div>
-              <p className="text-sm">Cooling</p>
-              <p className="font-medium">{property.cooling}</p>
-            </div>
-            <div>
-              <p className="text-sm">Heating</p>
-              <p className="font-medium">{property.heating}</p>
-            </div>
-            <div>
-              <p className="text-sm">Interior Features</p>
-              <p className="font-medium">{property.interiorFeatures}</p>
-            </div>
-            <div>
-              <p className="text-sm">Exterior Features</p>
-              <p className="font-medium">{property.exteriorFeatures}</p>
-            </div>
-            <div>
-              <p className="text-sm">Appliances</p>
-              <p className="font-medium">{property.appliances}</p>
-            </div>
-            <div>
-              <p className="text-sm">Lot Size Dimensions</p>
-              <p className="font-medium">{property.lotsizedimension}</p>
-            </div>
-            <div>
-              <p className="text-sm">Fireplace Features</p>
-              <p className="font-medium">{property.fireplacefeatures}</p>
-            </div>
-            <div>
-              <p className="text-sm">Pool</p>
-              <p className="font-medium">{property.pool}</p>
-            </div>
-            <div>
-              <p className="text-sm">View</p>
-              <p className="font-medium">{property.view}</p>
-            </div>
-            <div>
-              <p className="text-sm">Construction</p>
-              <p className="font-medium">{property.construction}</p>
-            </div>
-            <div>
-              <p className="text-sm">Roof</p>
-              <p className="font-medium">{property.roof}</p>
-            </div>
-            <div>
-              <p className="text-sm">Style</p>
-              <p className="font-medium">{property.style}</p>
-            </div>
-            <div>
-              <p className="text-sm">High School</p>
-              <p className="font-medium">{property.highschool}</p>
-            </div>
-            <div>
-              <p className="text-sm">Middle School</p>
-              <p className="font-medium">{property.middleschool}</p>
-            </div>
-            <div>
-              <p className="text-sm">Parking Features</p>
-              <p className="font-medium">{property.parkingFeatures}</p>
-            </div>
-            <div>
-              <p className="text-sm">Foundation Details</p>
-              <p className="font-medium">{property.foundationDetails}</p>
-            </div>
-            <div>
-              <p className="text-sm">Basement</p>
-              <p className="font-medium">{property.basement}</p>
-            </div>
-            <div>
-              <p className="text-sm">Utilities</p>
-              <p className="font-medium">{property.utilities}</p>
-            </div>
+      {/* Property Overview */}
+      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h2 className="text-2xl font-bold mb-6">Property Details</h2>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div className="bg-gray-50 p-4 rounded-lg text-center">
+            <FontAwesomeIcon icon={faBed} className="text-blue-500 text-xl mb-2" />
+            <p className="text-sm text-gray-500">Bedrooms</p>
+            <p className="font-bold">{property.BedroomsTotal || 'N/A'}</p>
           </div>
-        )}
+          <div className="bg-gray-50 p-4 rounded-lg text-center">
+            <FontAwesomeIcon icon={faBath} className="text-blue-500 text-xl mb-2" />
+            <p className="text-sm text-gray-500">Bathrooms</p>
+            <p className="font-bold">{property.BathroomsTotalInteger || 'N/A'}</p>
+          </div>
+          <div className="bg-gray-50 p-4 rounded-lg text-center">
+            <FontAwesomeIcon icon={faRuler} className="text-blue-500 text-xl mb-2" />
+            <p className="text-sm text-gray-500">Living Area</p>
+            <p className="font-bold">{property.LivingArea ? `${property.LivingArea.toLocaleString()} sq ft` : 'N/A'}</p>
+          </div>
+          <div className="bg-gray-50 p-4 rounded-lg text-center">
+            <FontAwesomeIcon icon={faCalendar} className="text-blue-500 text-xl mb-2" />
+            <p className="text-sm text-gray-500">Year Built</p>
+            <p className="font-bold">{property.YearBuilt || 'N/A'}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div>
+            <h3 className="text-lg font-semibold mb-3">Sale Information</h3>
+            <ul className="space-y-2">
+              <li className="flex items-start">
+                <FontAwesomeIcon icon={faTag} className="text-gray-500 mr-3 mt-1" />
+                <div>
+                  <span className="font-medium">Original List Price:</span>{' '}
+                  <span className="text-gray-700">{formatPrice(property.OriginalListPrice || property.ListPrice)}</span>
+                </div>
+              </li>
+              <li className="flex items-start">
+                <FontAwesomeIcon icon={faTag} className="text-gray-500 mr-3 mt-1" />
+                <div>
+                  <span className="font-medium">Final Sale Price:</span>{' '}
+                  <span className="text-gray-700">{formatPrice(property.ClosePrice || property.ListPrice)}</span>
+                </div>
+              </li>
+              <li className="flex items-start">
+                <FontAwesomeIcon icon={faCalendar} className="text-gray-500 mr-3 mt-1" />
+                <div>
+                  <span className="font-medium">Days on Market:</span>{' '}
+                  <span className="text-gray-700">{property.DaysOnMarket || 'N/A'}</span>
+                </div>
+              </li>
+              <li className="flex items-start">
+                <FontAwesomeIcon icon={faCalendar} className="text-gray-500 mr-3 mt-1" />
+                <div>
+                  <span className="font-medium">Closing Date:</span>{' '}
+                  <span className="text-gray-700">{formatDate(property.CloseDate)}</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold mb-3">Property Information</h3>
+            <ul className="space-y-2">
+              <li className="flex items-start">
+                <FontAwesomeIcon icon={faHouse} className="text-gray-500 mr-3 mt-1" />
+                <div>
+                  <span className="font-medium">Property Type:</span>{' '}
+                  <span className="text-gray-700">{property.PropertyType || 'Residential'}</span>
+                </div>
+              </li>
+              <li>
+                <span className="font-medium">Lot Size:</span>{' '}
+                <span className="text-gray-700">
+                  {property.LotSizeArea
+                    ? `${property.LotSizeArea.toLocaleString()} ${property.LotSizeUnits || 'sq ft'}`
+                    : 'N/A'}
+                </span>
+              </li>
+              <li>
+                <span className="font-medium">Heating:</span>{' '}
+                <span className="text-gray-700">{property.Heating || 'N/A'}</span>
+              </li>
+              <li>
+                <span className="font-medium">Cooling:</span>{' '}
+                <span className="text-gray-700">{property.Cooling || 'N/A'}</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold mb-3">Description</h3>
+          <p className="text-gray-700 whitespace-pre-line">
+            {property.PublicRemarks || 'No description provided.'}
+          </p>
+        </div>
+      </div>
+
+      {/* Similar Properties Section - Placeholder */}
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h2 className="text-xl font-bold mb-4">Similar Properties</h2>
+        <p className="text-gray-500">Check out other properties in this area</p>
+        {/* Here you would map through similar properties */}
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="bg-gray-100 p-4 rounded flex items-center justify-center h-40">
+            <p className="text-gray-400">Similar properties coming soon</p>
+          </div>
+        </div>
       </div>
     </div>
   );
 };
 
+// Define independent PropTypes instead of referencing ActiveProperty's PropTypes
 SoldProperty.propTypes = {
   property: PropTypes.shape({
-    ...ActiveProperty.propTypes.property,
-    soldPrice: PropTypes.number.isRequired,
-    soldDate: PropTypes.string.isRequired,
-    buyerAgent: PropTypes.string,
+    // Basic details
+    ListingKey: PropTypes.string,
+    UnparsedAddress: PropTypes.string,
+    City: PropTypes.string,
+    StateOrProvince: PropTypes.string,
+    PostalCode: PropTypes.string,
+    
+    // Measurements
+    BedroomsTotal: PropTypes.number,
+    BathroomsTotalInteger: PropTypes.number,
+    LivingArea: PropTypes.number,
+    
+    // Prices
+    ListPrice: PropTypes.number,
+    ClosePrice: PropTypes.number,
+    OriginalListPrice: PropTypes.number,
+    
+    // Dates
+    CloseDate: PropTypes.string,
+    
+    // Features
+    PropertyType: PropTypes.string,
+    YearBuilt: PropTypes.number,
+    LotSizeArea: PropTypes.number,
+    LotSizeUnits: PropTypes.string,
+    Heating: PropTypes.string,
+    Cooling: PropTypes.string,
+    HasBasement: PropTypes.bool,
+    HasFireplace: PropTypes.bool,
+    HasGarage: PropTypes.bool,
+    HasPool: PropTypes.bool,
+    DaysOnMarket: PropTypes.number,
+    
+    // Media
+    mediaUrls: PropTypes.arrayOf(PropTypes.string),
+    
+    // Description
+    PublicRemarks: PropTypes.string,
   }).isRequired,
 };

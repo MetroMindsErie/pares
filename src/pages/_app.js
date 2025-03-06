@@ -4,6 +4,8 @@ import '../styles/propertyTemplates.css';
 import { ErrorBoundary } from '@/components/ErrorBoundry';
 import Layout from '../components/Layout';
 import { AuthProvider } from '../context/auth-context';
+import SupabaseProvider from '../components/SupabaseProvider';
+import validateEnvironmentVariables from '../utils/validateEnv';
 
 function MyApp({ Component, pageProps }) {
   const [isClient, setIsClient] = useState(false);
@@ -11,6 +13,13 @@ function MyApp({ Component, pageProps }) {
   // Set isClient to true when we're in the browser
   useEffect(() => {
     setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    // Validate environment variables on startup
+    if (process.env.NODE_ENV !== 'production') {
+      validateEnvironmentVariables();
+    }
   }, []);
 
   // Add a custom getInitialProps to prevent automatic static optimization
@@ -36,9 +45,11 @@ function MyApp({ Component, pageProps }) {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <Layout>
-          <Component {...pageProps} />
-        </Layout>
+        <SupabaseProvider>
+          <Layout>
+            <Component {...pageProps} />
+          </Layout>
+        </SupabaseProvider>
       </AuthProvider>
     </ErrorBoundary>
   );
