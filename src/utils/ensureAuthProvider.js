@@ -3,12 +3,12 @@
  * This helps fix cases where the auth provider record might not be properly saved
  */
 
-import { supabase } from './supabaseClient';
+import supabaseClient from './supabaseClient';
 
 export async function ensureAuthProviderSaved(userId, provider = 'facebook') {
   try {
     // Get current user auth identities
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await supabaseClient.auth.getUser();
     
     if (!user) {
       console.error('No authenticated user found');
@@ -26,7 +26,7 @@ export async function ensureAuthProviderSaved(userId, provider = 'facebook') {
     }
     
     // Update user record to ensure provider is recorded
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('user_providers')
       .upsert({
         user_id: userId || user.id,
