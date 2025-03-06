@@ -22,8 +22,19 @@ export const fetchToken = async () => {
     }
 
     console.log('Fetching new Trestle token...');
-    const response = await axios.post('/api/token', {}, {
+    
+    // Include detailed logging for troubleshooting production issues
+    const tokenEndpoint = '/api/token';
+    console.log(`Calling token endpoint: ${tokenEndpoint}`);
+    
+    const response = await axios.post(tokenEndpoint, {}, {
       headers: { 'Content-Type': 'application/json' }
+    });
+    
+    console.log('Token response received:', {
+      status: response.status,
+      hasData: !!response.data,
+      hasToken: !!(response.data && response.data.access_token)
     });
     
     if (!response.data || !response.data.access_token) {
@@ -41,7 +52,14 @@ export const fetchToken = async () => {
     // Increment retry count
     tokenRetryCount++;
     
-    console.error(`Error fetching Trestle token (attempt ${tokenRetryCount}/${MAX_TOKEN_RETRIES}):`, error);
+    // Enhanced error logging for better debugging
+    console.error(`Error fetching Trestle token (attempt ${tokenRetryCount}/${MAX_TOKEN_RETRIES}):`, {
+      message: error.message,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      headers: error.response?.headers
+    });
     
     // Clear the cache on error
     tokenCache = null;

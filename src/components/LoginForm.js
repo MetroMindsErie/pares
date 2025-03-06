@@ -52,7 +52,7 @@ const Login = ({ onLogin }) => {
       
       // Add proper scopes for user_videos when authenticating with Facebook
       const scopes = provider === 'facebook' 
-        ? 'email,public_profile,user_videos,pages_show_list' 
+        ? 'email,public_profile,user_videos' 
         : (provider === 'google' ? 'profile email' : undefined);
       
       // Add response_type=token to get token in URL hash
