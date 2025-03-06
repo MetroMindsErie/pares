@@ -63,6 +63,41 @@ const RegisterForm = () => {
     }
   };
 
+  // Add a direct login function as a fallback
+  const directFacebookLogin = async () => {
+    try {
+      console.log('Attempting direct Facebook login');
+      
+      // Import Supabase directly
+      const { default: supabaseClient } = await import('../utils/supabaseClient');
+      
+      if (!supabaseClient?.auth?.signInWithOAuth) {
+        throw new Error('Supabase auth methods not available');
+      }
+
+      // Get the current URL for the redirect
+      const origin = window.location.origin;
+      const redirectUrl = `${origin}/auth/callback`;
+      
+      const { data, error } = await supabaseClient.auth.signInWithOAuth({
+        provider: 'facebook',
+        options: {
+          redirectTo: redirectUrl
+        }
+      });
+      
+      if (error) throw error;
+      
+      console.log('Facebook auth initiated successfully');
+      return { data };
+    } catch (err) {
+      console.error('Direct Facebook login error:', err);
+      setFormError(`Error with Facebook login: ${err.message}`);
+      return { error: err };
+    }
+  };
+
+  // Add an improved provider signup handler
   const handleProviderSignup = async (provider) => {
     setFormError(null);
     setLocalLoading(true);
@@ -70,32 +105,42 @@ const RegisterForm = () => {
     try {
       console.log(`Starting ${provider} signup process`);
       
-      // Check if loginWithProvider is a function
-      if (typeof loginWithProvider !== 'function') {
-        throw new Error(`Authentication method for ${provider} is not available`);
+      // Try both approaches - first via context, then direct
+      if (typeof loginWithProvider === 'function') {
+        console.log(`Using context loginWithProvider for ${provider}`);
+        const result = await loginWithProvider(provider);
+        
+        if (result?.error) {
+          console.warn(`Context ${provider} login failed, trying direct method`);
+          if (provider === 'facebook') {
+            return await directFacebookLogin();
+          } else {
+            throw result.error;
+          }
+        }
+        
+        return result;
+      } else {
+        console.warn(`Context loginWithProvider not available for ${provider}, using direct method`);
+        if (provider === 'facebook') {
+          return await directFacebookLogin();
+        } else {
+          throw new Error(`Authentication method for ${provider} is not available`);
+        }
       }
-      
-      const result = await loginWithProvider(provider);
-      
-      // Handle potential errors in the result
-      if (result?.error) {
-        throw result.error;
-      }
-      
-      // Success case will usually redirect via OAuth, but handle the non-redirect case
-      console.log(`${provider} authentication succeeded`);
     } catch (err) {
       console.error(`${provider} signup error:`, err);
       setFormError(`Error signing up with ${provider}: ${err.message || 'Unknown error'}`);
       
-      // If it's the specific "p is not a function" error, provide more debugging info
-      if (err.message?.includes('p is not a function')) {
-        console.error('Detected "p is not a function" error - detailed info:', {
-          providerType: typeof provider,
-          loginWithProviderType: typeof loginWithProvider,
-          error: err
-        });
-      }
+      // Add detailed logging
+      console.error('Detailed error info:', {
+        providerType: typeof provider,
+        provider: provider,
+        loginWithProviderType: typeof loginWithProvider,
+        authContextAvailable: !!useAuth,
+        windowLocation: window?.location?.href,
+        error: err
+      });
     } finally {
       setLocalLoading(false);
     }
@@ -219,6 +264,7 @@ const RegisterForm = () => {
             <button
               onClick={() => handleProviderSignup('facebook')}
               disabled={isLoading}
+              data-provider="facebook" // Add data attribute for debugging
               className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
             >
               <span className="sr-only">Sign up with Facebook</span>

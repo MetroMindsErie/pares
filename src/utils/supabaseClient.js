@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Create a singleton Supabase client instance
+// Get environment variables with fallbacks for production
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
@@ -46,7 +46,14 @@ try {
       
       // Verify the auth object exists
       if (supabase.auth) {
-        console.log('Auth methods available');
+        console.log('Auth methods available:', Object.keys(supabase.auth));
+        
+        // Check if OAuth is available
+        if (typeof supabase.auth.signInWithOAuth === 'function') {
+          console.log('OAuth sign in method available');
+        } else {
+          console.error('OAuth sign in method NOT available');
+        }
       } else {
         console.error('Auth object not available on supabase client');
       }

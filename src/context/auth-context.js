@@ -20,6 +20,12 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const [isBrowser, setIsBrowser] = useState(false);
   
+  // Create a stable reference to loginWithProvider to prevent undefined errors
+  const loginWithProviderRef = React.useRef(async (provider) => {
+    console.log('Default loginWithProvider called before initialization');
+    return { error: 'Authentication not initialized yet' };
+  });
+  
   // Reset loading state if it's still true after component mount
   useEffect(() => {
     setIsBrowser(true);
@@ -142,26 +148,48 @@ export const AuthProvider = ({ children }) => {
     
     try {
       console.log(`Initiating ${provider} login flow`);
-      const { default: supabaseClient } = await import('../utils/supabaseClient');
       
-      if (!supabaseClient?.auth?.signInWithOAuth) {
-        console.error(`Auth method signInWithOAuth not available`);
+      // Import the Supabase client with better error handling
+      let supabaseClient;
+      try {
+        const module = await import('../utils/supabaseClient');
+        supabaseClient = module.default;
+        if (!supabaseClient) {
+          console.error('Failed to load Supabase client');
+          throw new Error('Authentication service unavailable');
+        }
+      } catch (importError) {
+        console.error('Failed to import Supabase client:', importError);
+        throw new Error('Authentication service unavailable');
+      }
+      
+      // Check if the signInWithOAuth method exists
+      if (!supabaseClient.auth || typeof supabaseClient.auth.signInWithOAuth !== 'function') {
+        console.error('Auth method signInWithOAuth not available');
         throw new Error('Authentication method not available');
       }
+      
+      // Get the current URL for the redirect
+      const origin = typeof window !== 'undefined' 
+        ? window.location.origin 
+        : 'https://parealestatesolutions.com';
+      
+      // Configure redirectTo with fallback
+      const redirectUrl = `${origin}/auth/callback`;
+      console.log('Using redirect URL:', redirectUrl);
       
       // Use proper options format for Supabase OAuth
       const { data, error } = await supabaseClient.auth.signInWithOAuth({ 
         provider,
         options: {
-          redirectTo: typeof window !== 'undefined' 
-            ? `${window.location.origin}/auth/callback` 
-            : undefined
+          redirectTo: redirectUrl
         }
       });
       
-      console.log(`${provider} auth result:`, { hasData: !!data, hasError: !!error });
       if (error) throw error;
       
+      // Log successful OAuth initialization
+      console.log(`${provider} auth flow started successfully`);
       return { data };
     } catch (err) {
       console.error(`${provider} auth error:`, err);
@@ -171,6 +199,9 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   };
+
+  // Update the reference when the function is defined
+  loginWithProviderRef.current = loginWithProvider;
 
   const signup = async (email, password) => {
     if (!isBrowser) return { error: 'Cannot signup during server rendering' };
@@ -229,7 +260,8 @@ export const AuthProvider = ({ children }) => {
     hasProfile,
     error,
     login,
-    loginWithProvider,
+    // Use the stable reference to ensure it's always a function
+    loginWithProvider: (...args) => loginWithProviderRef.current(...args),
     logout,
     signup
   };
