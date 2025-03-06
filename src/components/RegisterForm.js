@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../context/auth-context';
 
-export default function RegisterForm() {
+// Change from named function to const assignment with arrow function
+const RegisterForm = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -201,4 +202,7 @@ export default function RegisterForm() {
       </div>
     </div>
   );
-}
+};
+
+// Export the component
+export default RegisterForm;
