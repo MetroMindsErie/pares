@@ -1,10 +1,15 @@
-import Layout from '../components/Layout';
-import SignupForm from '../components/SignupForm';
+import React from 'react';
+import MainLayout from '../../layouts/MainLayout';
 
-export default function RegisterPage() {
+const Register = () => {
   return (
-      <div className="max-w-md mx-auto mt-16">
+    <MainLayout>
+      <div className="register-content">
+        <h1>Register</h1>
         <SignupForm />
       </div>
+    </MainLayout>
   );
-}
+};
+
+export default Register;
