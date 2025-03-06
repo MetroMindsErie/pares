@@ -1,10 +1,11 @@
 import React from 'react';
+import dynamic from 'next/dynamic';
 import NoSSR from '../components/NoSSR';
 import Layout from '../components/Layout';
 import LoginForm from '../components/LoginForm';
 import LoginRedirect from '../components/LoginRedirect';
 
-export default function LoginPage() {
+function LoginPage() {
   return (
     <Layout>
       <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -20,9 +21,5 @@ export default function LoginPage() {
   );
 }
 
-// Tell Next.js to treat this as a static page (no server-side props)
-export async function getStaticProps() {
-  return {
-    props: {},
-  };
-}
+// Disable SSR for the entire page
+export default dynamic(() => Promise.resolve(LoginPage), { ssr: false });
