@@ -1,5 +1,5 @@
-import path from 'path';
-import { fileURLToPath } from 'url';
+const path = require('path');
+const { fileURLToPath } = require('url');
 
 // Get directory name in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -8,10 +8,10 @@ const __dirname = path.dirname(__filename);
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Exclude problematic pages from SSR
+  // Fix SSR issues
   experimental: {
-    // This can be enabled if you want to debug SSR issues
-    runtime: 'nodejs',
+    // Remove the runtime option that's causing warnings
+    appDir: false,
   },
   // Fix hydration issues by enabling more strict React behaviors
   compiler: {
@@ -21,7 +21,7 @@ const nextConfig = {
     domains: ['cdnjs.cloudflare.com', 'tiles.stadiamaps.com', 'api-trestle.corelogic.com'],
     unoptimized: true,
   },
-  webpack: (config, { isServer }) => {
+  webpack: (config) => {
     // Disable persistent caching to avoid large buffer allocations
     config.cache = false;
     // Replace url-loader rule with asset module configuration:
@@ -50,5 +50,5 @@ const nextConfig = {
   }
 };
 
-// Change from module.exports to export default for ES modules
-export default nextConfig;
+// Use CommonJS export
+module.exports = nextConfig;

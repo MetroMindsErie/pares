@@ -1,40 +1,27 @@
 import React from 'react';
-import dynamic from 'next/dynamic';
-import MainLayout from '../../layouts/MainLayout';
+import NoSSR from '../components/NoSSR';
+import Layout from '../components/Layout';
+import RegisterForm from '../components/RegisterForm';
+import RegisterRedirect from '../components/RegisterRedirect';
 
-// Import SignupForm with SSR disabled
-const SignupForm = dynamic(() => import('@/components/SignupForm'), {
-  ssr: false,
-  loading: () => (
-    <div className="flex justify-center">
-      <div className="p-4 text-center">
-        Loading registration form...
-      </div>
-    </div>
-  ),
-});
-
-// Simple wrapper component to avoid hooks in the main component
-const RegisterRedirect = dynamic(() => import('@/components/RegisterRedirect'), {
-  ssr: false,
-});
-
+// Completely disable SSR for this page to avoid hook ordering issues
 export default function Register() {
   return (
-    <MainLayout>
+    <Layout>
       <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8">
-          {/* Auth redirect logic is now inside this component */}
-          <RegisterRedirect />
-          <SignupForm />
+          {/* Render the auth components only on the client */}
+          <NoSSR>
+            <RegisterRedirect />
+            <RegisterForm />
+          </NoSSR>
         </div>
       </div>
-    </MainLayout>
+    </Layout>
   );
 }
 
-// Tell Next.js to export this page as a static HTML page
-// This helps avoid SSR issues while still allowing prerendering
+// Tell Next.js to treat this as a static page (no server-side props)
 export async function getStaticProps() {
   return {
     props: {},
