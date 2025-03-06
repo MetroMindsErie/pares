@@ -1,42 +1,52 @@
-import { useState, useEffect } from 'react';
-import { createBrowserSupabaseClient } from '@supabase/auth-helpers-nextjs';
-import { SessionContextProvider } from '@supabase/auth-helpers-react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import supabaseClient, { checkSupabaseClient } from '../utils/supabaseClient';
+
+const SupabaseContext = createContext({
+  supabase: null,
+  initialized: false,
+  ready: false,
+  error: null
+});
 
 const SupabaseProvider = ({ children }) => {
-  const [supabaseClient] = useState(() => createBrowserSupabaseClient());
-  const [isReady, setIsReady] = useState(false);
-  
+  // Always initialize these state values
+  const [initialized, setInitialized] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Always call this effect
   useEffect(() => {
-    // Check if Supabase client is properly initialized
-    const checkSupabase = async () => {
-      try {
-        const { data, error } = await supabaseClient.auth.getSession();
-        console.log('Supabase auth ready:', !!supabaseClient.auth);
-        console.log('Initial session:', !!data.session);
-        if (error) console.error('Error checking session:', error);
-      } catch (err) {
-        console.error('Failed to initialize Supabase client:', err);
-      } finally {
-        setIsReady(true);
+    try {
+      // Check if supabase is initialized
+      const status = checkSupabaseClient();
+      
+      setInitialized(status.initialized);
+      setReady(status.initialized && status.authAvailable);
+      
+      if (status.error) {
+        console.error('Supabase client error:', status.error);
+        setError(status.error);
       }
-    };
-    
-    checkSupabase();
-  }, [supabaseClient]);
-  
-  if (!isReady) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
+    } catch (err) {
+      console.error('Error initializing SupabaseProvider:', err);
+      setError(err.message);
+    }
+  }, []);
+
+  // Provide consistent value shape regardless of initialization state
+  const value = {
+    supabase: supabaseClient,
+    initialized,
+    ready,
+    error
+  };
 
   return (
-    <SessionContextProvider supabaseClient={supabaseClient}>
+    <SupabaseContext.Provider value={value}>
       {children}
-    </SessionContextProvider>
+    </SupabaseContext.Provider>
   );
 };
 
+export const useSupabase = () => useContext(SupabaseContext);
 export default SupabaseProvider;

@@ -6,41 +6,134 @@ import Layout from '../components/Layout';
 import { AuthProvider } from '../context/auth-context';
 import SupabaseProvider from '../components/SupabaseProvider';
 import validateEnvironmentVariables from '../utils/validateEnv';
-import { useRouter } from 'next/router';
-import { UserProvider, useUser } from '@supabase/auth-helpers-react';
+import { UserProvider } from '@supabase/auth-helpers-react';
 import supabaseClient from '../utils/supabaseClient';
-
-// Import Facebook utils conditionally to prevent crashes
-let getFacebookProfilePicture, validateImageUrl;
-try {
-  const facebookUtils = require('../utils/facebookUtils');
-  getFacebookProfilePicture = facebookUtils.getFacebookProfilePicture;
-  validateImageUrl = facebookUtils.validateImageUrl;
-} catch (error) {
-  console.warn('Facebook utils could not be loaded:', error);
-  // Create dummy functions as fallbacks
-  getFacebookProfilePicture = async () => null;
-  validateImageUrl = async () => false;
-}
 
 // Add global error handler for uncaught exceptions
 if (typeof window !== 'undefined') {
   window.addEventListener('error', function(event) {
     console.error('Global error caught:', event.error);
-    // Optionally report to analytics service
   });
   
   window.addEventListener('unhandledrejection', function(event) {
     console.error('Unhandled promise rejection:', event.reason);
-    // Optionally report to analytics service
   });
+}
+
+// Safe import check without conditional execution
+const facebookUtils = {
+  getFacebookProfilePicture: async () => null,
+  validateImageUrl: async () => false
+};
+
+// Only try to override if we're in a browser environment
+if (typeof window !== 'undefined') {
+  try {
+    const importedUtils = require('../utils/facebookUtils');
+    if (importedUtils.getFacebookProfilePicture) {
+      facebookUtils.getFacebookProfilePicture = importedUtils.getFacebookProfilePicture;
+    }
+    if (importedUtils.validateImageUrl) {
+      facebookUtils.validateImageUrl = importedUtils.validateImageUrl;
+    }
+  } catch (error) {
+    console.warn('Facebook utils could not be loaded:', error);
+  }
+}
+
+// Separate this component to avoid hooks ordering issues
+function FacebookProfileUpdater({ user }) {
+  useEffect(() => {
+    if (!user) return;
+    
+    const updateFacebookProfilePicture = async () => {
+      try {
+        console.log('Auth state change detected:', 'SIGNED_IN');
+        
+        // Check if this is a Facebook user
+        const isFacebookUser = user.app_metadata?.provider === 'facebook';
+        if (!isFacebookUser) return;
+        
+        console.log('Facebook user detected, attempting to fetch profile picture');
+        
+        // Safely attempt to get Facebook data
+        const { data: providerData, error } = await supabaseClient
+          .from('auth_providers')
+          .select('provider_user_id, access_token')
+          .eq('user_id', user.id)
+          .eq('provider', 'facebook')
+          .single();
+          
+        if (error) {
+          console.warn('Could not fetch auth provider data:', error);
+          return;
+        }
+          
+        if (providerData?.provider_user_id && providerData?.access_token) {
+          console.log('Got Facebook credentials, fetching profile picture');
+          await updateProfilePicture(
+            user.id, 
+            providerData.provider_user_id, 
+            providerData.access_token
+          );
+        }
+      } catch (error) {
+        // Don't let Facebook errors crash the app
+        console.error('Error handling Facebook profile:', error);
+      }
+    };
+    
+    updateFacebookProfilePicture();
+  }, [user]);
+  
+  return null;
+}
+
+// Separate function to update profile picture
+async function updateProfilePicture(userId, fbId, accessToken) {
+  try {
+    // Fetch profile picture using our utility with timeout
+    const picturePromise = facebookUtils.getFacebookProfilePicture(fbId, accessToken);
+    const pictureUrl = await Promise.race([
+      picturePromise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
+    ]);
+    
+    // Skip update if no valid URL
+    if (!pictureUrl) {
+      console.warn('No valid picture URL obtained');
+      return;
+    }
+    
+    // Validate the URL is accessible
+    const isValid = await facebookUtils.validateImageUrl(pictureUrl);
+    
+    if (isValid) {
+      // Update the user's avatar_url if we have a valid picture
+      const { error } = await supabaseClient
+        .from('profiles')
+        .update({ avatar_url: pictureUrl })
+        .eq('id', userId);
+        
+      if (error) {
+        console.error('Failed to update profile with Facebook picture:', error);
+      } else {
+        console.log('Successfully updated profile with Facebook picture');
+      }
+    } else {
+      console.warn('Could not validate Facebook profile image URL');
+    }
+  } catch (error) {
+    console.error('Error updating profile picture:', error);
+  }
 }
 
 function MyApp({ Component, pageProps }) {
   const [isClient, setIsClient] = useState(false);
   const [initError, setInitError] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
 
-  // Set isClient to true when we're in the browser
+  // Set isClient to true when we're in the browser - always call this hook
   useEffect(() => {
     try {
       setIsClient(true);
@@ -56,6 +149,30 @@ function MyApp({ Component, pageProps }) {
       // Validate environment variables on startup
       if (process.env.NODE_ENV !== 'production') {
         validateEnvironmentVariables();
+      }
+      
+      // Check for Supabase auth session
+      if (supabaseClient?.auth) {
+        const checkAuth = async () => {
+          const { data } = await supabaseClient.auth.getSession();
+          setCurrentUser(data?.session?.user || null);
+          
+          // Set up auth state change listener
+          const { data: authListener } = supabaseClient.auth.onAuthStateChange(
+            (event, session) => {
+              setCurrentUser(session?.user || null);
+            }
+          );
+          
+          // Clean up listener on unmount
+          return () => {
+            if (authListener?.subscription?.unsubscribe) {
+              authListener.subscription.unsubscribe();
+            }
+          };
+        };
+        
+        checkAuth();
       }
     } catch (error) {
       console.error('Error during app initialization:', error);
@@ -74,125 +191,33 @@ function MyApp({ Component, pageProps }) {
     );
   }
 
-  // If we have skipServerRender in props, only render on client side
-  if (pageProps.skipServerRender && !isClient) {
-    return <div>Loading...</div>;
-  }
-
-  // User profile component that handles Facebook profile image
-  function UserProfileHandler() {
-    const { user } = useUser();
-
-    useEffect(() => {
-      // Wrap in a try-catch to prevent app crashes
-      try {
-        async function handleUserSession() {
-          if (!user) return;
-          console.log('Auth state change detected:', user ? 'SIGNED_IN' : 'SIGNED_OUT');
-          
-          // Check if this is a Facebook user
-          const isFacebookUser = user.app_metadata?.provider === 'facebook';
-          if (isFacebookUser && typeof getFacebookProfilePicture === 'function') {
-            console.log('Facebook user detected, attempting to fetch profile picture');
-            
-            try {
-              // Safely attempt to get Facebook data
-              const { data: providerData, error } = await supabaseClient
-                .from('auth_providers')
-                .select('provider_user_id, access_token')
-                .eq('user_id', user.id)
-                .eq('provider', 'facebook')
-                .single();
-                
-              if (error) {
-                console.warn('Could not fetch auth provider data:', error);
-                return;
-              }
-                
-              if (providerData?.provider_user_id && providerData?.access_token) {
-                console.log('Got Facebook credentials, fetching profile picture');
-                await updateProfilePicture(
-                  user.id, 
-                  providerData.provider_user_id, 
-                  providerData.access_token
-                );
-              }
-            } catch (error) {
-              // Don't let Facebook errors crash the app
-              console.error('Error handling Facebook profile:', error);
-            }
-          }
-        }
-        
-        handleUserSession();
-      } catch (error) {
-        console.error('Error in UserProfileHandler:', error);
-      }
-    }, [user]);
-
-    // Separate function to update profile picture
-    async function updateProfilePicture(userId, fbId, accessToken) {
-      try {
-        // Fetch profile picture using our utility with timeout
-        const picturePromise = getFacebookProfilePicture(fbId, accessToken);
-        const pictureUrl = await Promise.race([
-          picturePromise,
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
-        ]);
-        
-        // Skip update if no valid URL
-        if (!pictureUrl) {
-          console.warn('No valid picture URL obtained');
-          return;
-        }
-        
-        // Validate the URL is accessible
-        const isValid = await validateImageUrl(pictureUrl);
-        
-        if (isValid) {
-          // Update the user's avatar_url if we have a valid picture
-          const { error } = await supabaseClient
-            .from('profiles')
-            .update({ avatar_url: pictureUrl })
-            .eq('id', userId);
-            
-          if (error) {
-            console.error('Failed to update profile with Facebook picture:', error);
-          } else {
-            console.log('Successfully updated profile with Facebook picture');
-          }
-        } else {
-          console.warn('Could not validate Facebook profile image URL');
-        }
-      } catch (error) {
-        console.error('Error updating profile picture:', error);
-      }
-    }
-
-    return null; // This component doesn't render anything
-  }
-
+  // Always render with the same component structure to maintain hook order
   return (
     <ErrorBoundary>
       <AuthProvider>
         <SupabaseProvider>
-          {supabaseClient ? (
-            <UserProvider supabaseClient={supabaseClient}>
-              <UserProfileHandler />
-              <Layout>
-                <Component {...pageProps} />
-              </Layout>
-            </UserProvider>
-          ) : (
-            <>
+          {/* Always render UserProvider, with a fallback value if needed */}
+          <UserProvider supabaseClient={supabaseClient || {}}>
+            {/* Only render the FacebookProfileUpdater if we have a user */}
+            {currentUser && <FacebookProfileUpdater user={currentUser} />}
+            
+            {/* Conditionally show auth warning banner if needed */}
+            {!supabaseClient && (
               <div style={{padding: '10px', backgroundColor: '#FFFFA0', textAlign: 'center', fontSize: '14px'}}>
                 Running in limited mode: Authentication is not available
               </div>
-              <Layout>
+            )}
+            
+            {/* Always render Layout to maintain component hierarchy */}
+            <Layout>
+              {/* Skip server render if needed */}
+              {(pageProps.skipServerRender && !isClient) ? (
+                <div>Loading...</div>
+              ) : (
                 <Component {...pageProps} />
-              </Layout>
-            </>
-          )}
+              )}
+            </Layout>
+          </UserProvider>
         </SupabaseProvider>
       </AuthProvider>
     </ErrorBoundary>
