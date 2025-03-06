@@ -50,7 +50,7 @@ const Layout = ({ children }) => {
   }, [loading]);
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="min-h-screen">
       <Head>
         <title>Pares - Real Estate Network</title>
         <meta name="description" content="Connect and collaborate in real estate" />
@@ -65,9 +65,7 @@ const Layout = ({ children }) => {
         onRegister={handleRegister}
       />
       
-      <main className="flex-grow">
-        {children}
-      </main>
+      {children}
       
       <Footer />
     </div>
