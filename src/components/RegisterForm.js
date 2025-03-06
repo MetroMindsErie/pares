@@ -103,7 +103,7 @@ const RegisterForm = () => {
     }
   };
 
-  // Improved Facebook login with proper auth provider saving
+  // Simplified Facebook login
   const directFacebookLogin = async () => {
     try {
       console.log('Attempting direct Facebook login');
@@ -118,13 +118,11 @@ const RegisterForm = () => {
       // Get the current URL for the redirect
       const origin = window.location.origin;
       
-      // Explicitly include redirectTo to handle the callback properly
       const { data, error } = await supabaseClient.auth.signInWithOAuth({
         provider: 'facebook',
         options: {
           redirectTo: `${origin}/auth/callback`,
-          // Ensure scopes include what we need for proper auth
-          scopes: 'public_profile,email',
+          scopes: 'public_profile,email'
         }
       });
       
@@ -136,6 +134,8 @@ const RegisterForm = () => {
       console.error('Direct Facebook login error:', err);
       setFormError(`Error with Facebook login: ${err.message}`);
       return { error: err };
+    } finally {
+      setLocalLoading(false); // Always reset loading state
     }
   };
 

@@ -1,11 +1,8 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { useAuth } from '../../context/auth-context';
-import ensureAuthProviderSaved from '../../utils/ensureAuthProvider';
 
 export default function AuthCallback() {
   const router = useRouter();
-  const { user } = useAuth();
 
   useEffect(() => {
     const handleAuthCallback = async () => {
@@ -13,43 +10,20 @@ export default function AuthCallback() {
         // Import Supabase client
         const { default: supabaseClient } = await import('../../utils/supabaseClient');
         
-        // Process the auth callback - this is important for OAuth flows
-        const { data, error } = await supabaseClient.auth.getSession();
+        // Process the auth callback
+        const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
         
-        if (error) {
-          throw error;
-        }
-
-        // If we have a session but no user context yet, wait briefly
-        if (data?.session && !user) {
-          console.log("Session found but waiting for user context to update");
-          setTimeout(() => checkUserProfile(), 1000);
-          return;
-        }
+        if (sessionError) throw sessionError;
         
-        checkUserProfile();
-      } catch (error) {
-        console.error("Error in auth callback:", error);
-        router.push('/login?error=callback');
-      }
-    };
-
-    const checkUserProfile = async () => {
-      try {
-        const { default: supabaseClient } = await import('../../utils/supabaseClient');
-        
-        // Get current user
-        const { data: { user: authUser } } = await supabaseClient.auth.getUser();
-        
-        if (!authUser) {
-          console.log("No user found, redirecting to login");
+        if (!sessionData?.session) {
+          console.log('No session found, redirecting to login');
           router.push('/login');
           return;
         }
-
-        // Ensure auth provider is saved before checking profile
-        await ensureAuthProviderSaved(authUser.id, 'facebook');
-
+        
+        const { user: authUser } = sessionData.session;
+        console.log('Auth callback: User authenticated', authUser.id);
+        
         // Check if user has completed their profile
         const { data, error } = await supabaseClient
           .from('users')
@@ -57,23 +31,29 @@ export default function AuthCallback() {
           .eq('id', authUser.id)
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching user profile:', error);
+          // Default to profile creation on error
+          router.push('/profile?setup=true');
+          return;
+        }
 
+        // Redirect based on profile status
         if (data && data.hasprofile) {
-          console.log("User has profile, redirecting to dashboard");
+          console.log('User has profile, redirecting to dashboard');
           router.push('/dashboard');
         } else {
-          console.log("User needs to complete profile setup");
+          console.log('User needs to complete profile setup');
           router.push('/profile?setup=true');
         }
       } catch (error) {
-        console.error("Error checking user profile:", error);
-        router.push('/profile?setup=true');
+        console.error("Error in auth callback:", error);
+        router.push('/login?error=callback');
       }
     };
 
     handleAuthCallback();
-  }, [router, user]);
+  }, [router]);
 
   // Show a simple loading state
   return (

@@ -1,10 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import ensureAuthProviderSaved from '../utils/ensureAuthProvider';
 
 const AuthContext = createContext({
   isAuthenticated: false,
   user: null,
-  loading: false, // Make sure this is false by default
+  loading: false,
   hasprofile: null,
   login: async () => {},
   logout: async () => {},
@@ -14,24 +13,20 @@ const AuthContext = createContext({
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  // Initialize loading to false
   const [loading, setLoading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [hasprofile, setHasProfile] = useState(null);
   const [error, setError] = useState(null);
   const [isBrowser, setIsBrowser] = useState(false);
   
-  // Create a stable reference to loginWithProvider to prevent undefined errors
   const loginWithProviderRef = React.useRef(async (provider) => {
     console.log('Default loginWithProvider called before initialization');
     return { error: 'Authentication not initialized yet' };
   });
   
-  // Reset loading state if it's still true after component mount
   useEffect(() => {
     setIsBrowser(true);
     
-    // Reset loading state if it persisted incorrectly
     const timer = setTimeout(() => {
       if (loading) {
         console.warn('Auth loading state persisted too long, resetting');
@@ -42,22 +37,18 @@ export const AuthProvider = ({ children }) => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Only import supabase client on the client-side to avoid SSR issues
   useEffect(() => {
     if (isBrowser) {
       const initializeAuth = async () => {
         try {
-          // Dynamically import supabaseClient to avoid SSR issues
           const { default: supabaseClient } = await import('../utils/supabaseClient');
           
-          // Skip if no supabase client
           if (!supabaseClient?.auth) {
             console.warn('Supabase client not available');
             setLoading(false);
             return;
           }
           
-          // Get initial session
           const { data, error } = await supabaseClient.auth.getSession();
           
           if (error) {
@@ -67,39 +58,41 @@ export const AuthProvider = ({ children }) => {
             setUser(data.session.user);
             setIsAuthenticated(true);
             
-            // Check if user has a profile
-            const { data: profileData } = await supabaseClient
-              .from('profiles')
-              .select('*')
-              .eq('id', data.session.user.id)
-              .single();
-              
-            setHasProfile(!!profileData);
+            try {
+              const { data: userData, error: userError } = await supabaseClient
+                .from('users')
+                .select('hasprofile')
+                .eq('id', data.session.user.id)
+                .single();
+                
+              if (!userError && userData) {
+                setHasProfile(!!userData.hasprofile);
+              }
+            } catch (err) {
+              console.error('Error checking profile status:', err);
+            }
           }
           
-          // Set up auth state change listener
           const { data: listener } = supabaseClient.auth.onAuthStateChange(async (event, session) => {
             console.log('Auth state changed:', event);
             
             if (event === 'SIGNED_IN' && session) {
-              // Upsert provider record (for facebook, or others if needed)
-              try {
-                await ensureAuthProviderSaved(session.user.id, 'facebook');
-              } catch (err) {
-                console.error('Error updating auth provider:', err);
-              }
-              
               setUser(session.user);
               setIsAuthenticated(true);
               
-              // Check profile status on sign-in
-              const { data: profileData } = await supabaseClient
-                .from('profiles')
-                .select('*')
-                .eq('id', session.user.id)
-                .single();
-                
-              setHasProfile(!!profileData);
+              try {
+                const { data: userData, error: userError } = await supabaseClient
+                  .from('users')
+                  .select('hasprofile')
+                  .eq('id', session.user.id)
+                  .single();
+                  
+                if (!userError && userData) {
+                  setHasProfile(!!userData.hasprofile);
+                }
+              } catch (err) {
+                console.error('Error checking profile status:', err);
+              }
             } else if (event === 'SIGNED_OUT') {
               setUser(null);
               setIsAuthenticated(false);
@@ -107,7 +100,6 @@ export const AuthProvider = ({ children }) => {
             }
           });
           
-          // Store listener for cleanup
           return () => {
             if (listener?.subscription?.unsubscribe) {
               listener.subscription.unsubscribe();
@@ -124,7 +116,6 @@ export const AuthProvider = ({ children }) => {
     }
   }, [isBrowser]);
 
-  // Auth methods that safely handle errors - these will be properly initialized in client side
   const login = async (email, password) => {
     if (!isBrowser) return { error: 'Cannot login during server rendering' };
     
@@ -149,28 +140,26 @@ export const AuthProvider = ({ children }) => {
   };
 
   const loginWithProvider = async (provider) => {
+    if (!isBrowser) return { error: 'Cannot login during server rendering' };
+    
     setLoading(true);
     setError(null);
     
     try {
+      const { default: supabaseClient } = await import('../utils/supabaseClient');
       const origin = window.location.origin;
       const redirectUrl = `${origin}/auth/callback`;
       
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabaseClient.auth.signInWithOAuth({
         provider,
         options: {
           redirectTo: redirectUrl,
-          // For Facebook, include necessary scopes
-          ...(provider === 'facebook' ? {
-            scopes: 'public_profile,email'
-          } : {})
+          scopes: provider === 'facebook' ? 'public_profile,email' : undefined
         }
       });
       
       if (error) throw error;
       
-      // The OAuth flow will redirect the user, so we don't need to handle 
-      // the redirect here as it will be handled by the callback page
       return { data };
     } catch (err) {
       console.error(`Error during ${provider} signin:`, err);
@@ -181,7 +170,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Update the reference when the function is defined
   loginWithProviderRef.current = loginWithProvider;
 
   const signup = async (email, password) => {
@@ -191,7 +179,6 @@ export const AuthProvider = ({ children }) => {
     setError(null);
     
     try {
-      // Dynamic import of supabaseClient
       const { default: supabaseClient } = await import('../utils/supabaseClient');
       const { data, error } = await supabaseClient.auth.signUp({ 
         email, 
@@ -204,7 +191,6 @@ export const AuthProvider = ({ children }) => {
       setError(err.message);
       return { error: err };
     } finally {
-      // Always set loading to false when done
       setLoading(false);
     }
   };
@@ -233,7 +219,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Prepare values object with all methods and state
   const value = {
     isAuthenticated,
     user,
@@ -241,7 +226,6 @@ export const AuthProvider = ({ children }) => {
     hasprofile,
     error,
     login,
-    // Use the stable reference to ensure it's always a function
     loginWithProvider: (...args) => loginWithProviderRef.current(...args),
     logout,
     signup
