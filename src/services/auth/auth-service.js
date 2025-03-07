@@ -88,9 +88,37 @@ export const storeProviderData = async (session) => {
     
     if (!provider) return { error: 'No provider information' };
     
+    console.log(`Storing ${provider} provider data for user ${userId}`);
+    
     // Get provider identity
     const identityData = session.user.identities?.find(i => i.provider === provider);
-    if (!identityData) return { error: 'No identity data found' };
+    if (!identityData) {
+      console.error('No identity data found in session:', session.user);
+      return { error: 'No identity data found' };
+    }
+    
+    console.log('Identity data:', identityData.id);
+    console.log('Provider token available:', !!session.provider_token);
+    
+    // First check if the user exists in our users table
+    const { data: existingUser, error: userCheckError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('id', userId)
+      .single();
+      
+    if (userCheckError && userCheckError.code === 'PGRST116') {
+      // User doesn't exist, create them
+      await supabase.from('users').insert({
+        id: userId,
+        email: session.user.email,
+        first_name: session.user.user_metadata?.full_name?.split(' ')[0] || '',
+        last_name: session.user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
+        avatar_url: session.user.user_metadata?.avatar_url,
+        hasprofile: false,
+        created_at: new Date().toISOString()
+      });
+    }
     
     // Store in auth_providers table
     await supabase.from('auth_providers').upsert({
@@ -105,7 +133,7 @@ export const storeProviderData = async (session) => {
     }, { onConflict: 'user_id,provider' });
     
     // For Facebook, ensure token is also stored in users table for backward compatibility
-    if (provider === 'facebook') {
+    if (provider === 'facebook' && session.provider_token) {
       await supabase.from('users').update({
         facebook_access_token: session.provider_token,
         facebook_user_id: identityData.id,
@@ -207,30 +235,36 @@ export const getCurrentUser = async () => {
       return { user: null, error: null };
     }
 
-    // Get user data from our custom table with profile type and roles
+    // Get user data from our custom users table
     const { data: userData, error: userError } = await supabase
       .from('users')
-      .select('hasprofile')
+      .select('*')  // Select all fields, not just hasprofile
       .eq('id', session.user.id)
       .single();
       
-    if (userError) throw userError;
-    
-    const { data: profileData, error: profileError } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('id', session.user.id)
-      .single();
-      
-    if (profileError) throw profileError;
-    
-    if (!profileData) {
-      return { user: null, error: 'User not found' };
+    if (userError) {
+      // If user doesn't exist in our table yet, return the auth user
+      if (userError.code === 'PGRST116') {
+        return { 
+          user: { 
+            ...session.user, 
+            hasprofile: false 
+          }, 
+          error: null 
+        };
+      }
+      throw userError;
     }
     
-    return { user: { ...profileData, hasprofile: userData.hasprofile }, error: null };
+    return { 
+      user: { 
+        ...session.user,
+        ...userData
+      }, 
+      error: null 
+    };
   } catch (error) {
-    console.error('Get current user error:', error);
+    console.error('Error getting current user:', error);
     return { user: null, error };
   }
 };

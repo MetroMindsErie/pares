@@ -15,6 +15,7 @@ export const getFacebookToken = async (userId) => {
       .single();
     
     if (!error && data?.access_token) {
+      console.log('Found Facebook token in auth_providers table');
       return {
         accessToken: data.access_token,
         providerId: data.provider_user_id
@@ -22,20 +23,23 @@ export const getFacebookToken = async (userId) => {
     }
 
     // Fall back to users table
+    console.log('Checking users table for Facebook token');
     const { data: userData, error: userError } = await supabase
       .from('users')
       .select('facebook_access_token, facebook_user_id')
       .eq('id', userId)
       .single();
     
-    if (userError || !userData?.facebook_access_token) {
-      return null;
+    if (!userError && userData?.facebook_access_token) {
+      console.log('Found Facebook token in users table');
+      return {
+        accessToken: userData.facebook_access_token,
+        providerId: userData.facebook_user_id
+      };
     }
     
-    return {
-      accessToken: userData.facebook_access_token,
-      providerId: userData.facebook_user_id
-    };
+    console.log('No Facebook token found');
+    return null;
   } catch (error) {
     console.error('Error in getFacebookToken:', error);
     return null;
@@ -47,40 +51,56 @@ export const getFacebookToken = async (userId) => {
  */
 export const validateFacebookToken = async (accessToken) => {
   try {
-    // Check token debug info from Facebook
+    console.log('Validating Facebook token...');
+    
+    // First try a simple me request as it's more reliable
+    try {
+      const meResponse = await axios.get('https://graph.facebook.com/me', {
+        params: {
+          access_token: accessToken,
+          fields: 'id,name'
+        }
+      });
+      
+      if (meResponse.data?.id) {
+        console.log('Token validated successfully via /me endpoint:', meResponse.data.id);
+        return { 
+          valid: true, 
+          userId: meResponse.data.id,
+          name: meResponse.data.name
+        };
+      }
+    } catch (meError) {
+      console.warn('Failed to validate via /me endpoint:', meError.message);
+    }
+    
+    // Fall back to debug_token if /me fails
     const debugResponse = await axios.get('https://graph.facebook.com/debug_token', {
       params: {
         input_token: accessToken,
-        access_token: accessToken
+        access_token: accessToken 
       }
     });
     
     if (!debugResponse.data?.data?.is_valid) {
+      console.error('Token validation failed in debug_token:', debugResponse.data);
       return { 
         valid: false, 
         error: 'Token is invalid or expired'
       };
     }
     
-    // Verify we can access basic profile data
-    const response = await axios.get('https://graph.facebook.com/me', {
-      params: {
-        access_token: accessToken,
-        fields: 'id,name'
-      }
-    });
-    
     return { 
       valid: true, 
-      userId: response.data?.id,
-      name: response.data?.name
+      userId: debugResponse.data?.data?.user_id,
     };
   } catch (error) {
+    console.error('Facebook token validation error:', error.response?.data || error.message);
     const errorMsg = error.response?.data?.error?.message || 
-                     error.response?.data?.error_description || 
-                     error.message || 
-                     'Unknown token validation error';
-                     
+                   error.response?.data?.error_description || 
+                   error.message || 
+                   'Unknown token validation error';
+                   
     return { 
       valid: false, 
       error: errorMsg
