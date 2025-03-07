@@ -5,7 +5,8 @@ import supabase from '../lib/supabase-setup';
 import ProfileForm from '../components/Profile/ProfileForm';
 import RoleSelector from '../components/Profile/RoleSelector';
 import InterestPicker from '../components/Profile/InterestPicker';
-import ProfileTypeSelector from '../components/Profile/ProfileTypeSelector';
+// Remove or comment out the unused import
+// import ProfileTypeSelector from '../components/Profile/ProfileTypeSelector';
 import ProfileProgressBar from '../components/Profile/ProfileProgressBar';
 import { getFacebookToken, getFacebookProfilePicture } from '../services/facebookService';
 
