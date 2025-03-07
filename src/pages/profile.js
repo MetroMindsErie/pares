@@ -2,35 +2,12 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../context/auth-context';
 import supabase from '../lib/supabase-setup';
-
-// Import Profile components
-import ProgressStepper from '../components/Profile/ProgressStepper';
 import ProfileForm from '../components/Profile/ProfileForm';
 import RoleSelector from '../components/Profile/RoleSelector';
 import InterestPicker from '../components/Profile/InterestPicker';
-import ProfileView from '../components/Profile/ProfileView';
-
-// Define profile steps
-const steps = [
-  { id: 'basic', title: 'Basic Info' },
-  { id: 'location', title: 'Location' },
-  { id: 'contact', title: 'Contact' },
-  { id: 'roles', title: 'Roles' },
-  { id: 'interests', title: 'Interests' }
-];
-
-// Define profile types for dropdown selection
-const profileTypes = [
-  { id: 1, name: 'Agent' },
-  { id: 2, name: 'Broker' },
-  { id: 3, name: 'Team Lead' },
-  { id: 4, name: 'Admin' }
-];
-
-// Define available roles for selection
-const availableRoles = [
-  'user', 'agent', 'broker', 'admin', 'team-lead'
-];
+import ProfileTypeSelector from '../components/Profile/ProfileTypeSelector';
+import ProfileProgressBar from '../components/Profile/ProfileProgressBar';
+import { getFacebookToken, getFacebookProfilePicture } from '../services/facebookService';
 
 export default function ProfileSetup() {
   const { user, isAuthenticated, loading } = useAuth();
@@ -71,20 +48,22 @@ export default function ProfileSetup() {
   const [isSetup] = useState(!!router.query.setup);
   const [profilePictureFetched, setProfilePictureFetched] = useState(false);
 
+  // Redirect if not authenticated
   useEffect(() => {
-    // Redirect if not authenticated
     if (!loading && !isAuthenticated) {
       router.push('/login');
     }
-    
-    // Prefill email from user account
+  }, [loading, isAuthenticated, router]);
+
+  // Prefill email from user account
+  useEffect(() => {
     if (user?.email && !formData.email) {
       setFormData(prev => ({...prev, email: user.email}));
     }
-  }, [loading, isAuthenticated, user, router, formData.email]);
+  }, [user, formData.email]);
 
+  // Load existing profile data
   useEffect(() => {
-    // Load existing profile data if available
     const loadProfile = async () => {
       if (!user) return;
       
@@ -98,7 +77,7 @@ export default function ProfileSetup() {
         if (error) throw error;
         
         if (data) {
-          // Initialize form with existing user data, preserving defaults for missing fields
+          // Initialize form with existing user data
           const updatedData = {
             ...formData,
             ...Object.fromEntries(
@@ -106,7 +85,7 @@ export default function ProfileSetup() {
             )
           };
           
-          // Make sure arrays and objects are handled correctly
+          // Make sure arrays are handled correctly
           updatedData.interests = data.interests ? 
             (Array.isArray(data.interests) ? data.interests : [data.interests]) : 
             [];
@@ -125,48 +104,39 @@ export default function ProfileSetup() {
     if (user) {
       loadProfile();
     }
-  }, [user]);
+  }, [user, formData]);
 
-  // Enhanced check for existing profile picture
+  // Try to get profile picture from Facebook if available
   useEffect(() => {
-    if (user && user.id) {
-      const checkForProfilePicture = async () => {
-        try {
-          console.log("Checking for existing profile picture");
-          // Check if user already has a profile picture in Supabase
-          const { data, error } = await supabase
-            .from('users')
-            .select('profile_picture_url')
-            .eq('id', user.id)
-            .single();
-            
-          if (!error && data && data.profile_picture_url) {
-            console.log("Found existing profile picture:", data.profile_picture_url);
-            // We have a profile picture in the database
-            setFormData(prev => ({
-              ...prev,
-              profile_picture_url: data.profile_picture_url
-            }));
-          } else if (user.identities || user.user_metadata?.identities) {
-            // If no picture found but we have identities, try to fetch from Facebook
-            console.log("No profile picture found, attempting to fetch from Facebook");
-            
-            // If we have a session object in localStorage, try to use its provider token
-            const savedSession = localStorage.getItem('supabase.auth.token');
-            let providerToken = null;
-            
-            if (savedSession) {
-              try {
-                const parsedSession = JSON.parse(savedSession);
-                providerToken = parsedSession?.currentSession?.provider_token;
-              } catch (e) {
-                console.error("Error parsing saved session:", e);
-              }
-            }
-            
-            // Import and use the utility directly
-            const { fetchAndStoreFacebookProfilePicture } = await import('../lib/facebook-utils');
-            const pictureUrl = await fetchAndStoreFacebookProfilePicture(user, providerToken);
+    const fetchProfilePicture = async () => {
+      if (!user || !user.id || profilePictureFetched) return;
+      
+      try {
+        // Check if user already has a profile picture
+        const { data } = await supabase
+          .from('users')
+          .select('profile_picture_url')
+          .eq('id', user.id)
+          .single();
+          
+        if (data?.profile_picture_url) {
+          setFormData(prev => ({
+            ...prev,
+            profile_picture_url: data.profile_picture_url
+          }));
+          setProfilePictureFetched(true);
+          return;
+        }
+        
+        // If the user signed up with Facebook, get their profile picture
+        if (user.app_metadata?.provider === 'facebook') {
+          const tokenData = await getFacebookToken(user.id);
+          
+          if (tokenData?.accessToken) {
+            const pictureUrl = await getFacebookProfilePicture(
+              tokenData.accessToken, 
+              tokenData.providerId
+            );
             
             if (pictureUrl) {
               setFormData(prev => ({
@@ -175,14 +145,17 @@ export default function ProfileSetup() {
               }));
             }
           }
-        } catch (error) {
-          console.error('Error checking for profile picture:', error);
         }
-      };
-      
-      checkForProfilePicture();
-    }
-  }, [user]);
+        
+        setProfilePictureFetched(true);
+      } catch (error) {
+        console.error('Error fetching profile picture:', error);
+        setProfilePictureFetched(true);
+      }
+    };
+    
+    fetchProfilePicture();
+  }, [user, profilePictureFetched]);
 
   const handleProfileFormSubmit = (data) => {
     setFormData(prev => ({
@@ -237,35 +210,10 @@ export default function ProfileSetup() {
           sms: formData.notification_sms
         },
         years_experience: formData.years_experience,
-        title: formData.title,
-        updated_at: new Date().toISOString()
+        title: formData.title
       };
 
-      // Handle profile picture URL - process Facebook URL if necessary
-      let finalProfilePictureUrl = formData.profile_picture_url;
-      
-      // Check if the URL is a Facebook platform-lookaside URL that might cause CORS issues
-      if (finalProfilePictureUrl && finalProfilePictureUrl.includes('platform-lookaside.fbsbx.com')) {
-        try {
-          console.log('Detected Facebook platform URL, attempting to reprocess it');
-          // Import the utility to handle Facebook images
-          const { fetchAndStoreFacebookProfilePicture } = await import('../lib/facebook-utils');
-          
-          // Try to get a new Supabase-hosted URL
-          const supabaseUrl = await fetchAndStoreFacebookProfilePicture(user);
-          if (supabaseUrl) {
-            console.log('Successfully reprocessed Facebook image to Supabase storage');
-            finalProfilePictureUrl = supabaseUrl;
-          } else {
-            console.warn('Failed to process Facebook image, will try direct URL anyway');
-          }
-        } catch (picError) {
-          console.error('Error processing profile picture:', picError);
-          // Continue with original URL as fallback
-        }
-      }
-
-      // Prepare all fields that exist in the users table
+      // Save to database
       const dataToSubmit = {
         first_name: formData.first_name,
         last_name: formData.last_name,
@@ -276,18 +224,14 @@ export default function ProfileSetup() {
         state: formData.state,
         zip_code: formData.zip_code,
         profile_type_id: formData.profile_type_id,
-        title: formData.title,
         interests: formData.interests,
         roles: formData.roles,
-        profile_picture_url: finalProfilePictureUrl,
+        profile_picture_url: formData.profile_picture_url,
         metadata: metadata,
         hasprofile: true,
         updated_at: new Date().toISOString()
       };
 
-      console.log('Submitting profile with picture URL:', dataToSubmit.profile_picture_url);
-
-      // Update the user profile
       const { error } = await supabase
         .from('users')
         .update(dataToSubmit)
@@ -357,35 +301,48 @@ export default function ProfileSetup() {
             <h1 className="text-2xl font-bold text-gray-900">
               {isSetup ? 'Complete Your Profile' : 'Edit Your Profile'}
             </h1>
-            <p className="mt-2 text-gray-600">
-              Let's get to know you better
+            <p className="mt-2 text-sm text-gray-500">
+              {isSetup 
+                ? 'Please provide your information to get started.' 
+                : 'Update your profile information below.'}
             </p>
           </div>
-          
-          {/* Progress Stepper */}
-          <ProgressStepper 
-            steps={steps}
-            currentStep={currentStep} 
-            onStepClick={handleStepClick}
-          />
-          
-          {/* Error message */}
+
           {error && (
-            <div className="mb-6 p-3 bg-red-50 text-red-700 border border-red-200 rounded-md text-sm">
-              {error}
+            <div className="rounded-md bg-red-50 p-4">
+              <div className="flex">
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800">Error</h3>
+                  <div className="mt-2 text-sm text-red-700">
+                    <p>{error}</p>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
-          
-          {/* Step content */}
-          {renderCurrentStepContent()}
-          
-          {/* Preview profile at the bottom for reference */}
-          {formData.first_name && formData.last_name && (
-            <div className="mt-12 pt-6 border-t border-gray-200">
-              <h2 className="text-lg font-medium text-gray-900 mb-4">Profile Preview</h2>
-              <ProfileView profile={formData} />
+
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="px-4 py-5 sm:p-6">
+              {/* Profile Setup Progress */}
+              <ProfileProgressBar 
+                steps={5} 
+                currentStep={currentStep}
+                onStepClick={handleStepClick}
+              />
+              
+              {/* Current Step Content */}
+              <div className="mt-6">
+                {renderCurrentStepContent()}
+              </div>
+              
+              {/* Loading State */}
+              {isSubmitting && (
+                <div className="absolute inset-0 bg-white/75 flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent"></div>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>

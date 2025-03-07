@@ -60,11 +60,12 @@ export const signInWithProvider = async (provider) => {
       provider,
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
-        scopes: provider === 'google' ? 'profile email' : 'email,public_profile',
-        queryParams: provider === 'google' ? {
-          access_type: 'offline',
-          prompt: 'consent',
-        } : undefined
+        scopes: provider === 'facebook' 
+          ? 'email,public_profile,user_videos,user_posts'
+          : 'profile email',
+        queryParams: provider === 'facebook' 
+          ? { auth_type: 'rerequest', response_type: 'token' } 
+          : { access_type: 'offline', prompt: 'consent' }
       }
     });
     
@@ -72,6 +73,51 @@ export const signInWithProvider = async (provider) => {
   } catch (error) {
     console.error(`Sign in with ${provider} error:`, error);
     return { data: null, error };
+  }
+};
+
+/**
+ * Store provider-specific information after successful authentication
+ */
+export const storeProviderData = async (session) => {
+  if (!session?.user) return { error: 'No user in session' };
+
+  try {
+    const userId = session.user.id;
+    const provider = session.user.app_metadata?.provider;
+    
+    if (!provider) return { error: 'No provider information' };
+    
+    // Get provider identity
+    const identityData = session.user.identities?.find(i => i.provider === provider);
+    if (!identityData) return { error: 'No identity data found' };
+    
+    // Store in auth_providers table
+    await supabase.from('auth_providers').upsert({
+      user_id: userId,
+      provider,
+      provider_user_id: identityData.id,
+      access_token: session.provider_token,
+      refresh_token: session.provider_refresh_token,
+      token_expiry: session.expires_at ? new Date(session.expires_at * 1000).toISOString() : null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id,provider' });
+    
+    // For Facebook, ensure token is also stored in users table for backward compatibility
+    if (provider === 'facebook') {
+      await supabase.from('users').update({
+        facebook_access_token: session.provider_token,
+        facebook_user_id: identityData.id,
+        facebook_token_valid: true,
+        facebook_token_updated_at: new Date().toISOString()
+      }).eq('id', userId);
+    }
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error storing provider data:', error);
+    return { error };
   }
 };
 

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
+import { storeProviderData, getCurrentUser } from '../../services/auth/auth-service';
 
 export default function AuthCallback() {
   const router = useRouter();
@@ -7,39 +8,44 @@ export default function AuthCallback() {
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
-        // Import Supabase client
-        const { default: supabaseClient } = await import('../../utils/supabaseClient');
+        console.log('Processing auth callback...');
         
-        // Process the auth callback
-        const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+        // Import supabase client dynamically to avoid SSR issues
+        const { default: supabase } = await import('../../lib/supabase-setup');
         
-        if (sessionError) throw sessionError;
+        // Get the current session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
-        if (!sessionData?.session) {
-          console.log('No session found, redirecting to login');
-          router.push('/login');
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          router.push('/login?error=session');
           return;
         }
         
-        const { user: authUser } = sessionData.session;
-        console.log('Auth callback: User authenticated', authUser.id);
+        if (!session) {
+          console.error('No session found in callback');
+          router.push('/login?error=no-session');
+          return;
+        }
         
-        // Check if user has completed their profile
-        const { data, error } = await supabaseClient
-          .from('users')
-          .select('hasprofile')
-          .eq('id', authUser.id)
-          .single();
-
-        if (error) {
-          console.error('Error fetching user profile:', error);
-          // Default to profile creation on error
+        console.log('Auth provider:', session.user.app_metadata?.provider);
+        
+        // Store provider data (especially important for Facebook)
+        if (session.user.app_metadata?.provider) {
+          await storeProviderData(session);
+        }
+        
+        // Check if user has a profile
+        const { user, error: userError } = await getCurrentUser();
+        
+        if (userError) {
+          console.error('Error getting user data:', userError);
           router.push('/profile?setup=true');
           return;
         }
 
         // Redirect based on profile status
-        if (data && data.hasprofile) {
+        if (user?.hasprofile) {
           console.log('User has profile, redirecting to dashboard');
           router.push('/dashboard');
         } else {
@@ -55,7 +61,6 @@ export default function AuthCallback() {
     handleAuthCallback();
   }, [router]);
 
-  // Show a simple loading state
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
