@@ -18,6 +18,7 @@ export const AuthProvider = ({ children }) => {
   const [hasprofile, setHasProfile] = useState(null);
   const [error, setError] = useState(null);
   const [isBrowser, setIsBrowser] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
   
   const loginWithProviderRef = React.useRef(async (provider) => {
     console.log('Default loginWithProvider called before initialization');
@@ -31,6 +32,7 @@ export const AuthProvider = ({ children }) => {
       if (loading) {
         console.warn('Auth loading state persisted too long, resetting');
         setLoading(false);
+        setAuthChecked(true);
       }
     }, 5000);
     
@@ -41,11 +43,14 @@ export const AuthProvider = ({ children }) => {
     if (isBrowser) {
       const initializeAuth = async () => {
         try {
+          console.log('Initializing auth context');
+          setLoading(true);
           const { default: supabaseClient } = await import('../utils/supabaseClient');
           
           if (!supabaseClient?.auth) {
             console.warn('Supabase client not available');
             setLoading(false);
+            setAuthChecked(true);
             return;
           }
           
@@ -55,6 +60,7 @@ export const AuthProvider = ({ children }) => {
             console.error('Error getting auth session:', error);
             setError(error.message);
           } else if (data && data.session) {
+            console.log('Found existing session, user authenticated');
             setUser(data.session.user);
             setIsAuthenticated(true);
             
@@ -71,12 +77,15 @@ export const AuthProvider = ({ children }) => {
             } catch (err) {
               console.error('Error checking profile status:', err);
             }
+          } else {
+            console.log('No active session found');
           }
           
           const { data: listener } = supabaseClient.auth.onAuthStateChange(async (event, session) => {
             console.log('Auth state changed:', event);
             
             if (event === 'SIGNED_IN' && session) {
+              console.log('User signed in:', session.user.id);
               setUser(session.user);
               setIsAuthenticated(true);
               
@@ -94,11 +103,15 @@ export const AuthProvider = ({ children }) => {
                 console.error('Error checking profile status:', err);
               }
             } else if (event === 'SIGNED_OUT') {
+              console.log('User signed out');
               setUser(null);
               setIsAuthenticated(false);
               setHasProfile(null);
             }
           });
+
+          setAuthChecked(true);          
+          setLoading(false);
           
           return () => {
             if (listener?.subscription?.unsubscribe) {
@@ -107,7 +120,7 @@ export const AuthProvider = ({ children }) => {
           };
         } catch (err) {
           console.error('Error initializing auth:', err);
-        } finally {
+          setAuthChecked(true);
           setLoading(false);
         }
       };
@@ -225,6 +238,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     hasprofile,
     error,
+    authChecked,
     login,
     loginWithProvider: (...args) => loginWithProviderRef.current(...args),
     logout,

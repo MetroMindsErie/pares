@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { initClient } from '../lib/setup-client';
 import '../styles/globals.css';
 import '../styles/propertyTemplates.css';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -12,6 +13,11 @@ function SafeHydrate({ children }) {
 }
 
 function MyApp({ Component, pageProps }) {
+  useEffect(() => {
+    // Initialize client on app load
+    initClient().catch(console.error);
+  }, []);
+
   // Use the layout defined at the page level, if available
   const getLayout = Component.getLayout || ((page) => page);
   

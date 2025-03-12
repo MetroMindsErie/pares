@@ -2,20 +2,51 @@ import axios from 'axios';
 import supabase from './supabase-setup';
 
 /**
- * Gets authenticated headers for API requests
- * @returns {Promise<{headers: {Authorization: string, Content-Type: string}, withCredentials: boolean}>}
+ * Get authorization headers for authenticated API requests
+ * @returns {Promise<Object>} Headers object with authorization token
  */
 export async function getAuthHeaders() {
-  // Get the current session
-  const { data: { session } } = await supabase.auth.getSession();
+  try {
+    const { data } = await supabase.auth.getSession();
+    const token = data?.session?.access_token;
+    
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
+    
+    return {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    };
+  } catch (error) {
+    console.error('Error getting auth headers:', error);
+    return { headers: {} };
+  }
+}
+
+/**
+ * Helper function to handle API errors
+ * @param {Error} error - The caught error
+ * @param {string} defaultMessage - Default message to show
+ * @returns {Object} Error object with message and code
+ */
+export function handleApiError(error, defaultMessage = 'An error occurred') {
+  console.error('API error:', error);
   
-  // Set up headers with the access token
+  // Extract error message from various error formats
+  const message = 
+    error.response?.data?.message ||
+    error.response?.data?.error ||
+    error.message ||
+    defaultMessage;
+    
+  // Extract status code
+  const statusCode = error.response?.status || 500;
+  
   return {
-    headers: {
-      Authorization: session?.access_token ? `Bearer ${session.access_token}` : '',
-      'Content-Type': 'application/json',
-    },
-    withCredentials: true
+    message,
+    statusCode
   };
 }
 

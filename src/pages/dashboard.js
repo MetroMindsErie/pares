@@ -7,44 +7,165 @@ import supabase from '../lib/supabase-setup';
 import { useRouter } from 'next/router';
 import Reels from '../components/Reels';
 import Layout from '../components/Layout';
+import { checkFacebookConnection } from '../services/facebookService';
+
 export default function DashboardPage() {
-  const { user, isAuthenticated, loading } = useAuth();
+  const { user, isAuthenticated, loading, authChecked } = useAuth();
   const [profile, setProfile] = useState(null);
   const [activities, setActivities] = useState([]);
+  const [localLoading, setLocalLoading] = useState(true);
+  const [hasFacebookConnection, setHasFacebookConnection] = useState(false);
+  const [userId, setUserId] = useState(null); // Add dedicated state for userId
   const router = useRouter();
 
-  // Simple redirect if not authenticated
+  // Get user ID from multiple sources to ensure we have one
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      router.push('/login');
-    }
-  }, [isAuthenticated, loading, router]);
+    const getUserId = async () => {
+      // First try from auth context
+      if (user?.id) {
+        console.log("Setting user ID from auth context:", user.id);
+        setUserId(user.id);
+        return;
+      }
 
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (!user?.id) return;
-      
+      // If not in auth context, try from session
       try {
-        const { data, error } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-
-        if (error) {
-          console.error('Error fetching profile:', error);
+        const { data } = await supabase.auth.getSession();
+        const sessionUserId = data?.session?.user?.id;
+        
+        if (sessionUserId) {
+          console.log("Setting user ID from session:", sessionUserId);
+          setUserId(sessionUserId);
           return;
         }
-
-        console.log('Fetched profile:', data); // Debug log
-        setProfile(data);
       } catch (err) {
-        console.error('Error:', err);
+        console.error('Error getting session:', err);
       }
+      
+      // No user ID available
+      console.warn("No user ID available from auth context or session");
+    };
+    
+    getUserId();
+  }, [user]);
+
+  // Improved redirect logic with session verification and better loading state
+  useEffect(() => {
+    const verifySession = async () => {
+      if (!loading && authChecked && !isAuthenticated) {
+        console.log('No authentication detected in dashboard, checking session directly');
+        
+        try {
+          // Double-check session before redirecting
+          const { data: { session } } = await supabase.auth.getSession();
+          
+          if (session?.user) {
+            console.log('Found session despite auth context reporting not authenticated');
+            return; // Don't redirect if we have a session
+          }
+          
+          console.log('No session found, redirecting to login');
+          router.replace('/login?redirect=/dashboard');
+        } catch (err) {
+          console.error('Session verification error:', err);
+        }
+      }
+    };
+    
+    verifySession();
+  }, [authChecked, isAuthenticated, loading, router]);
+
+  // Debug logging
+  useEffect(() => {
+    console.log('Dashboard auth state:', { 
+      isAuthenticated, 
+      loading, 
+      authChecked,
+      hasUser: !!user,
+      userId: user?.id,
+      storedUserId: userId
+    });
+  }, [isAuthenticated, loading, authChecked, user, userId]);
+
+  // Fetch user profile with enhanced error handling and retries
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      // Don't try to fetch if we don't have a user ID
+      if (!userId) {
+        console.log("Waiting for user ID before fetching profile...");
+        return;
+      }
+      
+      setLocalLoading(true);
+      let retryCount = 0;
+      const MAX_RETRIES = 3;
+      
+      const attemptFetch = async () => {
+        try {
+          console.log('Fetching profile for user:', userId);
+          
+          // Also check for Facebook connection
+          const fbConnected = await checkFacebookConnection(userId);
+          setHasFacebookConnection(fbConnected);
+          console.log('User has Facebook connection:', fbConnected);
+          
+          // Fetch user profile with additional debug
+          const { data, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', userId)
+            .single();
+
+          if (error) {
+            console.error('Error fetching profile:', error);
+            setLocalLoading(false);
+            return;
+          }
+
+          console.log('Fetched profile with these fields:', Object.keys(data));
+          console.log('Profile picture URL from database:', data.profile_picture_url);
+          
+          // If no profile picture in database but user has one in metadata, use that
+          if (!data.profile_picture_url && user?.user_metadata?.avatar_url) {
+            console.log('Using avatar URL from auth metadata:', user.user_metadata.avatar_url);
+            
+            // Update the database with this URL
+            const { error: updateError } = await supabase
+              .from('users')
+              .update({ 
+                profile_picture_url: user.user_metadata.avatar_url,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', userId);
+            
+            if (updateError) {
+              console.error('Error updating profile picture:', updateError);
+            } else {
+              // Update local data copy with picture URL
+              data.profile_picture_url = user.user_metadata.avatar_url;
+            }
+          }
+          
+          setProfile(data);
+          setLocalLoading(false);
+        } catch (err) {
+          console.error('Profile fetch error:', err);
+          if (retryCount < MAX_RETRIES) {
+            retryCount++;
+            console.log(`Error fetching profile, retrying (${retryCount}/${MAX_RETRIES})...`);
+            setTimeout(attemptFetch, 1000); // Retry after 1 second
+          } else {
+            console.log('Max retries reached, giving up');
+            setLocalLoading(false);
+          }
+        }
+      };
+
+      attemptFetch();
     };
 
     fetchUserProfile();
-  }, [user]);
+  }, [userId, user]);
 
   const fetchRecentActivities = async () => {
     // Implement your activity fetching logic here
@@ -59,10 +180,13 @@ export default function DashboardPage() {
     fetchRecentActivities();
   }, []);
 
-  if (loading) {
+  if (loading || localLoading || !userId) {
     return (
       <div className="min-h-screen flex justify-center items-center">
-        <div className="animate-spin h-10 w-10 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+        <div className="flex flex-col items-center">
+          <div className="animate-spin h-10 w-10 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+        </div>
       </div>
     );
   }
@@ -95,12 +219,18 @@ export default function DashboardPage() {
       <div className="mt-8 bg-white rounded-lg shadow p-6 mb-6">
         <h2 className="text-xl font-semibold mb-4">Your Facebook Reels</h2>
         <p className="text-gray-600 mb-6">
-          Connect your Facebook account to display and manage your real estate reels.
+          {hasFacebookConnection 
+            ? 'Here are your real estate reels from Facebook.' 
+            : 'Connect your Facebook account to display and manage your real estate reels.'}
         </p>
         
-        {/* Reels component */}
+        {/* Reels component with userId and connection status passed explicitly */}
         <div className="bg-gray-50 rounded-lg">
-          <Reels />
+          <Reels 
+            userId={userId} 
+            hasFacebookConnection={hasFacebookConnection}
+            autofetch={true}
+          />
         </div>
         </div>
       </div>

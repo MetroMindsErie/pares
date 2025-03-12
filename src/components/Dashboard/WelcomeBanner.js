@@ -1,7 +1,59 @@
 import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
 
 const WelcomeBanner = ({ profile }) => {
-  const profileImage = profile?.profile_picture_url || '/default-avatar.png';
+  const [profileImage, setProfileImage] = useState('/default-avatar.png');
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [loadAttempted, setLoadAttempted] = useState(false);
+  
+  // Set profile picture immediately when profile loads or changes
+  useEffect(() => {
+    if (!profile) return;
+    
+    console.log('WelcomeBanner profile data:', profile);
+    setLoadAttempted(false);
+    setImageLoaded(false);
+    
+    // Try multiple sources for the profile picture
+    if (profile.profile_picture_url) {
+      console.log('Setting profile picture to:', profile.profile_picture_url);
+      setProfileImage(profile.profile_picture_url);
+    } else if (profile.avatar_url) {
+      console.log('Using avatar URL instead:', profile.avatar_url);
+      setProfileImage(profile.avatar_url);
+    } else if (profile.metadata?.avatar_url) {
+      console.log('Using avatar URL from metadata:', profile.metadata.avatar_url);
+      setProfileImage(profile.metadata.avatar_url);
+    } else {
+      console.log('No profile picture available, using default');
+      setProfileImage('/default-avatar.png');
+      // For default image, we can consider it loaded
+      setImageLoaded(true);
+    }
+  }, [profile]);
+  
+  // Handle image loading error
+  const handleImageError = () => {
+    console.error('Profile image failed to load:', profileImage);
+    
+    // If we haven't tried Facebook yet, try to construct a Facebook profile picture URL
+    if (!loadAttempted && profile?.facebook_user_id) {
+      setLoadAttempted(true);
+      const fbPictureUrl = `https://graph.facebook.com/${profile.facebook_user_id}/picture?type=large`;
+      console.log('Trying Facebook picture URL:', fbPictureUrl);
+      setProfileImage(fbPictureUrl);
+    } else {
+      // If all attempts fail, use default
+      setProfileImage('/default-avatar.png');
+      setImageLoaded(true);
+    }
+  };
+  
+  // Handle successful image load
+  const handleImageLoad = () => {
+    console.log('Profile image loaded successfully');
+    setImageLoaded(true);
+  };
 
   return (
     <motion.div
@@ -19,22 +71,33 @@ const WelcomeBanner = ({ profile }) => {
             Welcome back, {profile?.first_name || 'User'}!
           </h1>
           <p className="mt-2 text-primary-50 opacity-90">
-              "Let's explore what's new today"
+            "Let's explore what's new today"
           </p>
         </motion.div>
         
-        {/* Profile Image */}
+        {/* Profile Image with loading state and error handling */}
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ delay: 0.3, type: "spring" }}
           className="hidden md:block"
         >
-          <img
-            src={profile?.profile_picture_url || '/default-avatar.png'}
-            alt="Profile"
-            className="h-20 w-20 rounded-full border-4 border-white/20 shadow-xl"
-          />
+          <div className="relative h-20 w-20">
+            {!imageLoaded && (
+              <div className="absolute inset-0 flex items-center justify-center bg-primary-500 rounded-full">
+                <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            )}
+            <img
+              src={profileImage}
+              alt={`${profile?.first_name || 'User'}'s profile`}
+              className={`h-20 w-20 rounded-full border-4 border-white/20 shadow-xl object-cover ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+              onError={handleImageError}
+              onLoad={handleImageLoad}
+              referrerPolicy="no-referrer"
+              crossOrigin="anonymous"
+            />
+          </div>
         </motion.div>
       </div>
     </motion.div>

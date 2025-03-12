@@ -1,24 +1,48 @@
-import React from 'react';
-import { useAuth } from '../context/auth-context';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { useEffect } from 'react';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import Head from 'next/head';
+import { supabase } from '../utils/supabaseClient';
 
 const Layout = ({ children }) => {
-  const { isAuthenticated, loading, user, signOut } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
   const router = useRouter();
 
-  // Add console log for debugging
   useEffect(() => {
-    console.log('Layout loading state:', loading);
-    console.log('Layout auth state:', isAuthenticated);
-  }, [loading, isAuthenticated]);
+    // Check for existing session on component mount
+    const getInitialSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setUser(session?.user || null);
+      } catch (error) {
+        console.error('Error getting session:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    getInitialSession();
+
+    // Set up auth listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log('Auth state change in Layout:', event);
+        setUser(session?.user || null);
+        setLoading(false);
+      }
+    );
+
+    // Cleanup
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, []);
 
   const handleLogout = async () => {
     try {
-      await signOut();
+      await supabase.auth.signOut();
       router.push('/login');
     } catch (error) {
       console.error('Error logging out:', error);
@@ -33,21 +57,8 @@ const Layout = ({ children }) => {
     router.push('/register');
   };
 
-  // Only show loading spinner for a maximum of 2 seconds
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (loading) {
-        console.log('Forcing loading state to false after timeout');
-        // Force render content after timeout
-        const mainContent = document.getElementById('main-content');
-        if (mainContent) {
-          mainContent.style.display = 'block';
-        }
-      }
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, [loading]);
+  console.log('Layout loading state:', loading);
+  console.log('Layout auth state:', !!user);
 
   return (
     <div className="min-h-screen">
@@ -58,14 +69,14 @@ const Layout = ({ children }) => {
       </Head>
       
       <Navbar 
-        isAuthenticated={isAuthenticated}
+        isAuthenticated={!!user}
         user={user}
         onLogout={handleLogout}
         onLogin={handleLogin}
         onRegister={handleRegister}
       />
       
-      {children}
+      {loading ? <div>Loading...</div> : children}
       
       <Footer />
     </div>

@@ -59,7 +59,25 @@ export const handleProfileNavigation = async (user, router) => {
     }
   } catch (err) {
     console.error('Navigation error:', err);
-    // Default to dashboard on error
+    // Default to dashboard on error - NEVER redirect to login
     router.push('/dashboard');
   }
+};
+
+/**
+ * Check if user is authenticated and redirect accordingly
+ * @param {object} user - The user object
+ * @param {function} router - Next.js router or navigation function
+ * @param {string} destination - Where to redirect authenticated users
+ * @returns {boolean} - Whether the user is authenticated
+ */
+export const ensureAuthenticated = (user, router, destination = '/dashboard') => {
+  // If we have a user, they're authenticated - no redirect needed
+  if (user) {
+    return true;
+  }
+  
+  // Don't redirect to login - this prevents loops
+  // The lack of a return value (undefined) indicates no authenticated user
+  return false;
 };

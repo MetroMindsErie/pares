@@ -1,18 +1,71 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { useAuth } from '../context/auth-context';
+import supabase from '../lib/supabase-setup';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
-  const { user, isAuthenticated, logout } = useAuth(); // Changed from signOut to logout
+  const { user, isAuthenticated, logout } = useAuth();
   const router = useRouter();
-  // Close mobile menu when route changes
+  const [isClient, setIsClient] = useState(false);
+  const [authState, setAuthState] = useState({ isAuthenticated: false, user: null });
+  
+  // Set isClient to true when component mounts (client-side only)
   useEffect(() => {
-    setIsOpen(false);
-  }, [router.pathname]);
+    setIsClient(true);
+  }, []);
+  
+  // Update local auth state when auth context changes
+  useEffect(() => {
+    if (isClient) {
+      setAuthState({ isAuthenticated, user });
+      console.log('Navbar auth state updated:', { 
+        isAuthenticated, 
+        hasUser: !!user,
+        userId: user?.id,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }, [isAuthenticated, user, isClient]);
 
+  // Force check auth status on route changes
+  const checkAuthStatus = useCallback(async () => {
+    if (!isClient) return;
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setAuthState({ 
+          isAuthenticated: true, 
+          user: session.user 
+        });
+      }
+    } catch (err) {
+      console.error('Error checking session in Navbar:', err);
+    }
+  }, [isClient]);
+
+  // Check auth on route changes
+  useEffect(() => {
+    checkAuthStatus();
+    setIsOpen(false);
+  }, [router.pathname, checkAuthStatus]);
+  
+  const handleLogout = async () => {
+    try {
+      console.log('Logout clicked');
+      await logout();
+      setAuthState({ isAuthenticated: false, user: null });
+      router.push('/');
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
+  };
+
+  // Generate a key that changes when auth state changes to force re-render
+  const authStateKey = `${authState.isAuthenticated ? 'auth' : 'unauth'}-${authState.user?.id || 'nouser'}-${Date.now()}`;
+  
   return (
     <nav className="bg-white shadow-md z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -56,24 +109,29 @@ export default function Navbar() {
               </Link>
             </div>
           </div>
-          <div className="hidden sm:ml-6 sm:flex sm:items-center">
-            {isAuthenticated ? (
-              <div className="ml-3 relative flex items-center space-x-4">
+          
+          {/* Desktop auth links - key attribute forces re-render when auth state changes */}
+          <div 
+            className="hidden sm:ml-6 sm:flex sm:items-center"
+            key={`desktop-auth-${authStateKey}`}
+          >
+            {isClient && authState.isAuthenticated ? (
+              <div className="space-x-4">
                 <Link 
                   href="/dashboard" 
-                  className="text-gray-600 hover:text-gray-900"
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-800"
                 >
                   Dashboard
                 </Link>
                 <Link 
                   href="/profile" 
-                  className="text-gray-600 hover:text-gray-900"
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-800"
                 >
                   Profile
                 </Link>
                 <button
-                  onClick={() => logout()} // Changed from signOut to logout
-                  className="text-gray-600 hover:text-gray-900"
+                  onClick={handleLogout}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
                 >
                   Sign out
                 </button>
@@ -95,6 +153,8 @@ export default function Navbar() {
               </div>
             )}
           </div>
+          
+          {/* Mobile menu button */}
           <div className="-mr-2 flex items-center sm:hidden">
             <button
               onClick={() => setIsOpen(!isOpen)}
@@ -150,8 +210,11 @@ export default function Navbar() {
             Agents
           </Link>
         </div>
-        <div className="pt-4 pb-3 border-t border-gray-200">
-          {isAuthenticated ? (
+        <div 
+          className="pt-4 pb-3 border-t border-gray-200"
+          key={`mobile-auth-${authStateKey}`}
+        >
+          {isClient && authState.isAuthenticated ? (
             <div className="space-y-1">
               <Link 
                 href="/dashboard" 
@@ -166,7 +229,7 @@ export default function Navbar() {
                 Profile
               </Link>
               <button
-                onClick={() => logout()} // Changed from signOut to logout
+                onClick={handleLogout}
                 className="block w-full text-left pl-3 pr-4 py-2 border-l-4 border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 text-base font-medium"
               >
                 Sign out
