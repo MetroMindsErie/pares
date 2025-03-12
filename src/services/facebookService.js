@@ -818,3 +818,47 @@ export const checkFacebookConnection = async (userId) => {
     return false;
   }
 };
+
+/**
+ * Ensure a user record exists for the given user ID
+ * This is critical for production where user records might not be created
+ * automatically during OAuth flows
+ */
+export const ensureUserRecord = async (userId) => {
+  if (!userId) return false;
+  
+  try {
+    // Check if user record exists
+    const { data: existingUser, error: checkError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('id', userId)
+      .maybeSingle();
+    
+    // If user doesn't exist, create a minimal record
+    if (checkError || !existingUser) {
+      console.log('Creating initial user record for:', userId);
+      
+      const { error: createError } = await supabase
+        .from('users')
+        .insert({
+          id: userId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          hasprofile: false
+        });
+      
+      if (createError) {
+        console.error('Error creating user record:', createError);
+        return false;
+      }
+      
+      return true;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error ensuring user record:', error);
+    return false;
+  }
+};

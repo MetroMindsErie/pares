@@ -88,27 +88,79 @@ const InteractiveRealEstateMap = () => {
         setError(null);
         try {
           const countyName = COUNTY_STYLES[selectedCounty].name;
+          
+          const getDemoPropertiesForCounty = (count, countyName, status) => {
+            return Array(count).fill().map((_, i) => ({
+              ListingKey: `demo-${countyName}-${status}-${i}`,
+              UnparsedAddress: `${100 + i} Main St, ${countyName}, PA`,
+              ListPrice: status === 'Active' ? 
+                Math.round(250000 + Math.random() * 500000) :
+                Math.round(200000 + Math.random() * 450000),
+              BedroomsTotal: Math.floor(2 + Math.random() * 4),
+              BathroomsTotalInteger: Math.floor(1 + Math.random() * 3),
+              LivingArea: Math.floor(1000 + Math.random() * 2000),
+              media: '/properties.jpg',
+              demoProperty: true
+            }));
+          };
 
-          const [activeProperties, closedProperties] = await Promise.all([
-            getPropertiesByFilter(
-              `$filter=CountyOrParish eq '${countyName}' and StandardStatus eq 'Active' and PropertyType eq 'Residential'`
-            ),
-            getPropertiesByFilter(
-              `$filter=CountyOrParish eq '${countyName}' and StandardStatus eq 'Closed' and PropertyType eq 'Residential'`
-            )
-          ]);
+          try {
+            const [activeProperties, closedProperties] = await Promise.all([
+              getPropertiesByFilter(
+                `$filter=CountyOrParish eq '${countyName}' and StandardStatus eq 'Active' and PropertyType eq 'Residential'`
+              ),
+              getPropertiesByFilter(
+                `$filter=CountyOrParish eq '${countyName}' and StandardStatus eq 'Closed' and PropertyType eq 'Residential'`
+              )
+            ]);
 
+            setPropertiesByCounty(prev => ({
+              ...prev,
+              [selectedCounty]: { 
+                active: activeProperties.properties, 
+                closed: closedProperties.properties 
+              }
+            }));
+            setNextLink(activeProperties.nextLink);
+          } catch (err) {
+            console.error('Failed to fetch properties from Trestle API:', err);
+            
+            // Use demo data when API fails
+            const activeDemoProperties = getDemoPropertiesForCounty(6, countyName, 'Active');
+            const closedDemoProperties = getDemoPropertiesForCounty(4, countyName, 'Closed');
+            
+            setPropertiesByCounty(prev => ({
+              ...prev,
+              [selectedCounty]: { 
+                active: activeDemoProperties,
+                closed: closedDemoProperties
+              }
+            }));
+            
+            setError('Using demo data - property service unavailable');
+          }
+        } catch (err) {
+          setError('Failed to load properties - using demo data');
+          console.error(err);
+          
+          // Provide demo data when errors occur
+          const countyName = COUNTY_STYLES[selectedCounty]?.name || 'Unknown';
           setPropertiesByCounty(prev => ({
             ...prev,
             [selectedCounty]: { 
-              active: activeProperties.properties, 
-              closed: closedProperties.properties 
+              active: Array(5).fill().map((_, i) => ({
+                ListingKey: `demo-${i}`,
+                UnparsedAddress: `${i+100} Demo St, ${countyName}, PA`,
+                ListPrice: 350000 + (i * 50000),
+                BedroomsTotal: 3,
+                BathroomsTotalInteger: 2,
+                LivingArea: 2000,
+                media: '/properties.jpg',
+                demoProperty: true
+              })),
+              closed: []
             }
           }));
-          setNextLink(activeProperties.nextLink);
-        } catch (err) {
-          setError('Failed to load properties');
-          console.error(err);
         } finally {
           setLoading(false);
         }
@@ -444,6 +496,13 @@ const InteractiveRealEstateMap = () => {
       {/* County Details Section */}
       <div className="county-details-section bg-white">
         {renderCountyDetails()}
+        {error && (
+          <div className="mx-4 mb-4 p-3 bg-yellow-50 border border-yellow-300 rounded-md text-sm">
+            <p className="text-yellow-800">
+              <span className="font-medium">Note:</span> {error}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

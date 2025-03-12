@@ -1,144 +1,77 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://api-trestle.corelogic.com';
-let tokenCache = null;
-let tokenExpiry = null;
-let tokenRetryCount = 0;
-const MAX_TOKEN_RETRIES = 3;
+// Cache token to avoid excessive requests
+let cachedToken = null;
+let tokenExpiration = null;
 
-export const fetchToken = async () => {
+// Configurable retry settings
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // ms
+
+/**
+ * Fetches a Trestle API token with retry logic
+ */
+const getTrestleToken = async (retryCount = 0) => {
   try {
-    // Check if we have a cached token that's still valid (with 5-minute buffer)
-    const now = Date.now();
-    if (tokenCache && tokenExpiry && now < tokenExpiry - 300000) {
-      console.log('Using cached Trestle token');
-      return tokenCache;
-    }
-    
-    // Reset retry count when requesting a new token
-    if (tokenRetryCount >= MAX_TOKEN_RETRIES) {
-      console.error(`Maximum token retry attempts (${MAX_TOKEN_RETRIES}) reached. Resetting counter.`);
-      tokenRetryCount = 0;
+    // Return cached token if valid
+    if (cachedToken && tokenExpiration && new Date() < tokenExpiration) {
+      return cachedToken;
     }
 
-    console.log('Fetching new Trestle token...');
+    // Fetch new token
+    // Use absolute URL in production for reliability
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? process.env.NEXT_PUBLIC_API_BASE_URL || window.location.origin 
+      : '';
     
-    // Include detailed logging for troubleshooting production issues
-    const tokenEndpoint = '/api/token';
-    console.log(`Calling token endpoint: ${tokenEndpoint}`);
-    
-    const response = await axios.post(tokenEndpoint, {}, {
-      headers: { 'Content-Type': 'application/json' }
+    const response = await axios.post(`${baseUrl}/api/token`, null, {
+      headers: {
+      'Cache-Control': 'no-cache',
+      },
+      // Add timeout for better error handling
+      timeout: 8000
     });
     
-    console.log('Token response received:', {
-      status: response.status,
-      hasData: !!response.data,
-      hasToken: !!(response.data && response.data.access_token)
-    });
-    
-    if (!response.data || !response.data.access_token) {
-      throw new Error('Token response did not contain an access_token');
+    if (response.status === 200 && response.data?.access_token) {
+      cachedToken = response.data.access_token;
+      // Set expiration 1 hour from now or based on expires_in
+      const expiresInMs = (response.data.expires_in || 3600) * 1000;
+      tokenExpiration = new Date(Date.now() + expiresInMs - 60000); // 1 minute buffer
+      return cachedToken;
     }
     
-    // Cache the token with a default expiry of 1 hour if not specified
-    tokenCache = response.data.access_token;
-    tokenExpiry = now + (response.data.expires_in || 3600) * 1000;
-    tokenRetryCount = 0; // Reset retry count on success
-    
-    console.log('Token retrieved successfully. Expires in:', response.data.expires_in);
-    return tokenCache;
+    throw new Error('Invalid token response');
   } catch (error) {
-    // Increment retry count
-    tokenRetryCount++;
+    console.error(`Error fetching Trestle token (attempt ${retryCount + 1}/${MAX_RETRIES}):`, error);
     
-    // Enhanced error logging for better debugging
-    console.error(`Error fetching Trestle token (attempt ${tokenRetryCount}/${MAX_TOKEN_RETRIES}):`, {
-      message: error.message,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      headers: error.response?.headers
-    });
-    
-    // Clear the cache on error
-    tokenCache = null;
-    tokenExpiry = null;
-    
-    if (error.response?.data?.suggestions) {
-      console.error('Suggestions to fix the issue:');
-      error.response.data.suggestions.forEach(suggestion => console.error(`- ${suggestion}`));
+    // Retry logic
+    if (retryCount < MAX_RETRIES - 1) {
+      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+      return getTrestleToken(retryCount + 1);
     }
     
-    // If we haven't exceeded max retries, try again with a slight delay
-    if (tokenRetryCount < MAX_TOKEN_RETRIES) {
-      console.log(`Retrying token request (${tokenRetryCount}/${MAX_TOKEN_RETRIES})...`);
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
-      return fetchToken();
-    }
-    
-    throw new Error('Failed to fetch Trestle token: ' + (error.response?.data?.error || error.message));
+    // All retries failed, clear cached token
+    cachedToken = null;
+    tokenExpiration = null;
+    throw new Error('Failed to fetch Trestle token: Failed to fetch token');
   }
 };
 
-export async function getPropertyById(listingKey) {
+/**
+ * Fetches properties based on filter criteria
+ */
+export const getPropertiesByFilter = async (filterQuery) => {
   try {
-    const response = await axios.get(
-      `${API_BASE_URL}/trestle/odata/Property`,
-      {
-        params: { $filter: `ListingKey eq '${listingKey}'` },
-        headers: {
-          Authorization: `Bearer ${await fetchToken()}`,
-          Accept: 'application/json'
-        }
-      }
-    );
-    return response.data.value[0];
-  } catch (error) {
-    console.error('Error fetching property by id:', error);
-    throw error;
-  }
-}
-
-export async function getPropertyDetails(listingKey) {
-  try {
-    const response = await axios.get(
-      `${API_BASE_URL}/trestle/odata/Property`,
-      {
-        params: { $filter: `ListingKey eq '${listingKey}'` },
-        headers: {
-          Authorization: `Bearer ${await fetchToken()}`,
-          Accept: 'application/json'
-        }
-      }
-    );
-    return response.data.value[0];
-  } catch (error) {
-    console.error('Error fetching property details:', error);
-    throw error;
-  }
-}
-
-// trestleServices.js
-export const getPropertiesByFilter = async (filterQuery, top = 9, skip = 0) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/trestle/odata/Property?${filterQuery}&$top=${top}&$skip=${skip}&$expand=Media`, {
+    const token = await getTrestleToken();
+    const response = await axios.get(`https://api.trestle.house/v4/properties?${filterQuery}`, {
       headers: {
-        Authorization: `Bearer ${await fetchToken()}`,
-        Accept: 'application/json'
+        Authorization: `Bearer ${token}`
       }
     });
-
-    if (!response.ok) throw new Error('Failed to fetch properties');
-
-    const data = await response.json();
-    const properties = Array.isArray(data.value) ? data.value : [];
+    
     return {
-      properties: properties.map(property => ({
-        ...property,
-        media: property.Media?.[0]?.MediaURL || '/fallback-property.jpg'
-      })),
-      nextLink: data['@odata.nextLink'] || null
+      properties: response.data?.value || [],
+      nextLink: response.data['@odata.nextLink'] || null
     };
   } catch (error) {
     console.error('Error in getPropertiesByFilter:', error);
@@ -146,26 +79,21 @@ export const getPropertiesByFilter = async (filterQuery, top = 9, skip = 0) => {
   }
 };
 
-// Function to fetch the next set of properties using the nextLink
+/**
+ * Fetches the next page of properties using the nextLink URL
+ */
 export const getNextProperties = async (nextLink) => {
   try {
-    const response = await fetch(nextLink, {
+    const token = await getTrestleToken();
+    const response = await axios.get(nextLink, {
       headers: {
-        Authorization: `Bearer ${await fetchToken()}`,
-        Accept: 'application/json'
+        Authorization: `Bearer ${token}`
       }
     });
-
-    if (!response.ok) throw new Error('Failed to fetch properties');
-
-    const data = await response.json();
-    const properties = Array.isArray(data.value) ? data.value : [];
+    
     return {
-      properties: properties.map(property => ({
-        ...property,
-        media: property.Media?.[0]?.MediaURL || '/fallback-property.jpg'
-      })),
-      nextLink: data['@odata.nextLink'] || null
+      properties: response.data?.value || [],
+      nextLink: response.data['@odata.nextLink'] || null
     };
   } catch (error) {
     console.error('Error in getNextProperties:', error);
@@ -173,68 +101,49 @@ export const getNextProperties = async (nextLink) => {
   }
 };
 
-export async function getMediaUrls(listingKey) {
-    try {
-      const response = await axios.get(
-        `${API_BASE_URL}/trestle/odata/Media`,
-        {
-          params: {
-            $filter: `ResourceRecordKey eq '${listingKey}' and MediaCategory eq 'Photo'`,
-            $orderby: 'Order',
-            $select: 'MediaURL'
-          },
-          headers: {
-            Authorization: `Bearer ${await fetchToken()}`,
-            Accept: 'application/json'
-          }
-        }
-      );
-  
-      // Log the raw URL for debugging
-      console.log("Raw Media URLs:", response.data.value);
-  
-      // If the API returns complete URLs, simply map over them:
-      return response.data.value
-        .map((media) => media.MediaURL)
-        .filter(url => !!url);
-    } catch (error) {
-      console.error('Error fetching media URLs:', error);
-      return [];
-    }
-  }
-
-  export const fetchCountyNames = async () => {
-    const response = await fetch('https://api-trestle.corelogic.com/trestle/odata/Lookup', {
+/**
+ * Fetches media URLs for a specific listing
+ */
+export const fetchMediaUrls = async (listingKey) => {
+  try {
+    const token = await getTrestleToken();
+    const response = await axios.get(`https://api.trestle.house/v4/media?$filter=ResourceRecordKey eq '${listingKey}'`, {
       headers: {
-        Authorization: `Bearer ${await fetchToken()}`
+        Authorization: `Bearer ${token}`
       }
     });
-    const data = await response.json();
-    const counties = data.value
-      .filter(item => item.LookupType === 'CountyOrParish' && ['Erie', 'Crawford', 'Warren'].includes(item.LookupValue))
-      .map(item => item.LookupValue);
-    return counties;
-  };
+    
+    const mediaItems = response.data?.value || [];
+    return mediaItems.map(item => item.MediaURL);
+  } catch (error) {
+    console.error(`Error fetching media for listing ${listingKey}:`, error);
+    return [];  // Return empty array instead of throwing
+  }
+};
 
-  export const fetchMediaUrls = async (listingKey) => {
-    try {
-      const response = await axios.get(
-        `https://api-trestle.corelogic.com/trestle/odata/Media`,
-        {
-          params: {
-            $filter: `ResourceRecordKey eq '${listingKey}'`,
-            $orderby: 'Order',
-            $select: 'MediaURL',
-          },
-          headers: {
-            Authorization: `Bearer ${await fetchToken()}`,
-            Accept: 'application/json',
-          },
-        }
-      );
-      return response.data.value.map((media) => media.MediaURL);
-    } catch (error) {
-      console.error('Error fetching media:', error);
-      return [];
-    }
-  };
+/**
+ * Fetches detailed property information
+ */
+export const getPropertyDetails = async (listingKey) => {
+  try {
+    const token = await getTrestleToken();
+    const response = await axios.get(`https://api.trestle.house/v4/properties?$filter=ListingKey eq '${listingKey}'`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    
+    const properties = response.data?.value || [];
+    return properties[0] || null;
+  } catch (error) {
+    console.error(`Error fetching details for listing ${listingKey}:`, error);
+    throw error;
+  }
+};
+
+export default {
+  getPropertiesByFilter,
+  getNextProperties,
+  fetchMediaUrls,
+  getPropertyDetails
+};

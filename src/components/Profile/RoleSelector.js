@@ -1,69 +1,106 @@
-const RoleSelector = ({ selectedRoles, onChange, onNext, onBack }) => {
-  const availableRoles = [
-    { id: 'developer', title: 'Developer', description: 'Software development and coding' },
-    { id: 'designer', title: 'Designer', description: 'UI/UX and graphic design' },
-    { id: 'manager', title: 'Manager', description: 'Project and team management' },
-    { id: 'analyst', title: 'Analyst', description: 'Data analysis and insights' },
-    { id: 'researcher', title: 'Researcher', description: 'AI/ML research and development' }
-  ];
+import React, { useState, useEffect } from 'react';
+
+const roles = [
+  { id: 'user', name: 'User', description: 'Regular platform user access' },
+  { id: 'agent', name: 'Agent', description: 'Real estate agent access' },
+  { id: 'broker', name: 'Broker', description: 'Broker with agent management' },
+  { id: 'admin', name: 'Admin', description: 'Administrative access' },
+];
+
+export default function RoleSelector({ selectedRoles = [], onChange, onNext, onBack }) {
+  const [localSelectedRoles, setLocalSelectedRoles] = useState([...selectedRoles]);
+  
+  // Make sure we always have at least 'user' selected
+  useEffect(() => {
+    if (!localSelectedRoles.includes('user')) {
+      setLocalSelectedRoles(prev => [...prev, 'user']);
+      if (onChange) onChange([...localSelectedRoles, 'user']);
+    }
+  }, []);
 
   const handleRoleToggle = (roleId) => {
-    const updatedRoles = selectedRoles.includes(roleId)
-      ? selectedRoles.filter(r => r !== roleId)
-      : [...selectedRoles, roleId];
-    onChange(updatedRoles);
+    // Never allow deselecting 'user' role
+    if (roleId === 'user') return;
+    
+    let updatedRoles;
+    if (localSelectedRoles.includes(roleId)) {
+      updatedRoles = localSelectedRoles.filter(id => id !== roleId);
+    } else {
+      updatedRoles = [...localSelectedRoles, roleId];
+    }
+    
+    setLocalSelectedRoles(updatedRoles);
+    if (onChange) onChange(updatedRoles);
   };
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <h3 className="text-lg font-medium mb-4">Select Your Roles</h3>
-        <div className="space-y-2">
-          {availableRoles.map(role => (
-            <div
+      <div>
+        <h3 className="text-lg font-medium text-gray-900">Select Your Role(s)</h3>
+        <p className="mt-1 text-sm text-gray-500">
+          Choose the roles that best describe you. You can select multiple roles.
+        </p>
+      </div>
+      
+      <div className="space-y-4">
+        {roles.map((role) => {
+          const isSelected = localSelectedRoles.includes(role.id);
+          const isUser = role.id === 'user';
+          
+          return (
+            <div 
               key={role.id}
-              className={`p-4 border rounded-lg cursor-pointer ${
-                selectedRoles.includes(role.id) ? 'border-indigo-600 bg-indigo-50' : 'border-gray-200'
-              }`}
               onClick={() => handleRoleToggle(role.id)}
+              className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                isSelected 
+                  ? 'border-blue-500 bg-blue-50' 
+                  : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+              }`}
+              role="checkbox"
+              aria-checked={isSelected}
+              tabIndex={0}
             >
-              <div className="flex items-center space-x-3">
-                <input
-                  type="checkbox"
-                  checked={selectedRoles.includes(role.id)}
-                  onChange={() => handleRoleToggle(role.id)}
-                  className="h-4 w-4 text-indigo-600 rounded"
-                />
+              <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium">{role.title}</p>
+                  <h4 className="font-medium text-gray-900">{role.name}</h4>
                   <p className="text-sm text-gray-500">{role.description}</p>
                 </div>
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                  isSelected ? 'bg-blue-600' : 'bg-gray-200'
+                }`}>
+                  {isSelected && (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </div>
               </div>
+              {isUser && (
+                <div className="mt-2 text-xs text-gray-500 italic">
+                  Base user role is required
+                </div>
+              )}
             </div>
-          ))}
-        </div>
+          );
+        })}
       </div>
-
-      {/* Navigation Buttons */}
-      <div className="flex justify-center pt-4">
+      
+      <div className="flex justify-between mt-8">
         <button
           type="button"
           onClick={onBack}
-          className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+          className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
         >
           Back
         </button>
         <button
           type="button"
           onClick={onNext}
-          disabled={selectedRoles.length === 0}
-          className="ml-4 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
         >
           Continue
         </button>
       </div>
     </div>
   );
-};
-
-export default RoleSelector;
+}

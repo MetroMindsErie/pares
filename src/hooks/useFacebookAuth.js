@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import { createClient } from '@supabase/supabase-js';
@@ -11,60 +11,86 @@ const supabase = createClient(
 
 export default function useFacebookAuth() {
   const router = useRouter();
+  const [processing, setProcessing] = useState(false);
   
   // This effect runs when the component mounts and extracts Facebook token from URL hash
   useEffect(() => {
     const extractAndSaveFacebookToken = async () => {
+      // Only process if not already processing
+      if (processing) return;
+      
       // Check if we have a hash in the URL (sign of OAuth redirect)
-      if (window.location.hash && window.location.hash.includes('access_token')) {
-        console.log('Found access_token in URL hash, extracting...');
+      if (window.location.hash && (
+          window.location.hash.includes('access_token') || 
+          window.location.hash.includes('provider_token')
+        )) {
+        setProcessing(true);
+        console.log('Found tokens in URL hash, extracting...');
         
-        // Parse hash params
-        const hashParams = {};
-        window.location.hash.substring(1).split('&').forEach(pair => {
-          const [key, value] = pair.split('=');
-          hashParams[key] = decodeURIComponent(value);
-        });
-        
-        // Extract tokens
-        const accessToken = hashParams.access_token;
-        const providerToken = hashParams.provider_token;
-        
-        if (accessToken && providerToken) {
-          console.log('Found both access and provider tokens');
+        try {
+          // Parse hash params
+          const hashParams = {};
+          window.location.hash.substring(1).split('&').forEach(pair => {
+            const [key, value] = pair.split('=');
+            hashParams[key] = decodeURIComponent(value);
+          });
           
-          try {
-            // Get current session to extract user ID
-            const { data: { session } } = await supabase.auth.getSession();
+          // Extract tokens
+          const accessToken = hashParams.access_token;
+          const providerToken = hashParams.provider_token;
+          
+          if (accessToken || providerToken) {
+            console.log('Found tokens in hash parameters');
             
-            if (session?.user?.id) {
-              console.log('User is authenticated, saving Facebook token...');
+            // Store in localStorage for potential future use (will be cleared later)
+            if (providerToken) localStorage.setItem('provider_token', providerToken);
+            if (accessToken) localStorage.setItem('access_token', accessToken);
+            
+            try {
+              // Get current session to extract user ID
+              const { data: { session } } = await supabase.auth.getSession();
               
-              // Call API to store the token
-              await axios.post('/api/auth/facebook-token', {
-                user_id: session.user.id,
-                provider_token: providerToken,
-                supabase_token: accessToken
-              });
-              
-              console.log('Facebook token saved successfully');
-            } else {
-              console.log('No active session found when extracting token');
+              if (session?.user?.id) {
+                console.log('User is authenticated, saving Facebook token...');
+                
+                // Call API to store the token
+                await axios.post('/api/auth/store-facebook-token', {
+                  user_id: session.user.id,
+                  access_token: providerToken || accessToken,
+                  provider_user_id: session.user.identities?.find(i => i.provider === 'facebook')?.id
+                });
+                
+                console.log('Facebook token saved successfully');
+                
+                // Clear the hash to avoid processing it again
+                setTimeout(() => {
+                  // Clear stored tokens after use for security
+                  localStorage.removeItem('provider_token');
+                  localStorage.removeItem('access_token');
+                }, 5000);
+              } else {
+                console.log('No active session found when extracting token');
+              }
+            } catch (err) {
+              console.error('Error saving extracted Facebook token:', err);
             }
-          } catch (err) {
-            console.error('Error saving extracted Facebook token:', err);
           }
-        }
-        
-        // Clear the hash to avoid processing it again
-        if (window.history.replaceState) {
-          window.history.replaceState(null, null, window.location.pathname + window.location.search);
+          
+          // Clear the hash to avoid processing it again
+          if (window.history.replaceState) {
+            window.history.replaceState(null, null, window.location.pathname + window.location.search);
+          }
+        } catch (err) {
+          console.error('Error processing hash params:', err);
+        } finally {
+          setProcessing(false);
         }
       }
     };
     
-    extractAndSaveFacebookToken();
-  }, []);
+    // Small timeout to ensure URL is fully processed by the browser
+    setTimeout(extractAndSaveFacebookToken, 300);
+  }, [router]);
   
-  return null;
+  return { processing };
 }

@@ -78,29 +78,90 @@ const SearchBar = ({ onSearchResults }) => {
   const handleSearch = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
     try {
       const filterQuery = buildODataQuery();
-      const { properties } = await getPropertiesByFilter(filterQuery);
+      let properties = [];
       
-      const listingsWithMedia = await Promise.all(
-        properties.map(async (property) => {
-          const mediaUrls = await fetchMediaUrls(property.ListingKey);
-          return {
-            ...property,
-            media: mediaUrls[0] || '/properties.jpg',
-          };
-        })
-      );
+      try {
+        const result = await getPropertiesByFilter(filterQuery);
+        properties = result.properties || [];
+      } catch (err) {
+        console.error('Trestle API error:', err);
+        setError('Unable to connect to property database. Using demo data instead.');
+        
+        // Use demo properties for better user experience when API fails
+        properties = getDemoProperties(searchParams);
+      }
+      
+      let listingsWithMedia = [];
+      
+      try {
+        // Try to fetch media, but have fallback for each property
+        listingsWithMedia = await Promise.all(
+          properties.map(async (property) => {
+            try {
+              const mediaUrls = await fetchMediaUrls(property.ListingKey);
+              return {
+                ...property,
+                media: mediaUrls[0] || '/properties.jpg',
+              };
+            } catch (mediaErr) {
+              console.error('Error fetching media:', mediaErr);
+              return {
+                ...property,
+                media: '/properties.jpg',  // Fallback image
+              };
+            }
+          })
+        );
+      } catch (mediaError) {
+        console.error('Error in media fetch batch:', mediaError);
+        // Create listings with default images if media fetching completely fails
+        listingsWithMedia = properties.map(property => ({
+          ...property,
+          media: '/properties.jpg'
+        }));
+      }
 
       onSearchResults(listingsWithMedia);
       localStorage.setItem('searchParams', JSON.stringify(searchParams));
       localStorage.setItem('searchResults', JSON.stringify(listingsWithMedia));
     } catch (err) {
       console.error('Search error:', err);
-      setError('Failed to fetch properties. Please try again.');
+      setError('Search service is currently unavailable. Please try again later.');
+      onSearchResults(getDemoProperties(searchParams));  // Show demo data on error
     } finally {
       setLoading(false);
     }
+  };
+  
+  // Helper function to generate demo properties when API fails
+  const getDemoProperties = (params) => {
+    const demoProperties = [
+      {
+        ListingKey: 'demo1',
+        UnparsedAddress: '123 Main St, ' + (params.postalCode || 'Philadelphia, PA'),
+        ListPrice: params.priceMin ? parseInt(params.priceMin) + 50000 : 350000,
+        BedroomsTotal: params.beds || 3,
+        BathroomsTotalInteger: params.baths || 2,
+        LivingArea: 2100,
+        media: '/properties.jpg',
+        demoProperty: true
+      },
+      {
+        ListingKey: 'demo2',
+        UnparsedAddress: '456 Oak Ave, ' + (params.postalCode || 'Pittsburgh, PA'),
+        ListPrice: params.priceMax ? parseInt(params.priceMax) - 50000 : 425000,
+        BedroomsTotal: params.beds ? parseInt(params.beds) + 1 : 4,
+        BathroomsTotalInteger: params.baths ? parseInt(params.baths) + 0.5 : 2.5,
+        LivingArea: 2400,
+        media: '/properties.jpg',
+        demoProperty: true
+      }
+    ];
+    
+    return demoProperties;
   };
 
   const handleMapSearchComplete = (mapFilters) => {

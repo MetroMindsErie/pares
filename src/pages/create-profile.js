@@ -212,6 +212,7 @@ export default function CreateProfile() {
     };
 
     const handleRoleChange = (selectedRoles) => {
+        console.log('Role selection changed:', selectedRoles);
         setFormData(prev => ({
             ...prev,
             roles: selectedRoles
@@ -219,6 +220,7 @@ export default function CreateProfile() {
     };
 
     const handleInterestChange = (selectedInterests) => {
+        console.log('Interest selection changed:', selectedInterests);
         setFormData(prev => ({
             ...prev,
             interests: selectedInterests
@@ -412,18 +414,16 @@ export default function CreateProfile() {
             console.log('Completed profile creation, redirecting to dashboard');
             
             // After successful save, force session refresh before redirecting
-            // This prevents the login redirect loop
             await supabase.auth.refreshSession();
             
-            // Add a slight delay to ensure state updates propagate
+            // Add a more significant delay to ensure state updates propagate
             setTimeout(() => {
-                router.push('/dashboard');
-            }, 500);
+                window.location.href = '/dashboard';  // Use direct navigation instead of router
+            }, 1000);
         } catch (error) {
             console.error('Error creating profile:', error);
             setError('Failed to create profile: ' + error.message);
-        } finally {
-            setIsSubmitting(false);
+            setIsSubmitting(false);  // Only reset submitting state on error
         }
     };
 

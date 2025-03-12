@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   
   try {
     // Call your external token URL with required credentials.
-    const response = await axios.post(process.env.NEXT_PUBLIC_TRESTLE_TOKEN_URL, {
+    const response = await axios.post("https://api-trestle.corelogic.com/trestle/oidc/connect/token", {
       client_id: process.env.NEXT_PUBLIC_TRESTLE_CLIENT_ID,
       client_secret: process.env.NEXT_PUBLIC_TRESTLE_CLIENT_SECRET,
       grant_type: 'client_credentials',

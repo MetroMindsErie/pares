@@ -14,189 +14,164 @@ export default function AuthCallback() {
       console.log('Processing auth callback...');
       
       try {
-        // Get current session
+        // IMPORTANT: First explicitly get the current session from supabase
+        // This helps ensure we have the latest session data
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
-        if (sessionError) throw sessionError;
+        if (sessionError) {
+          console.error('Session error in callback:', sessionError);
+          setDebugInfo(prev => ({...prev, sessionError: sessionError.message}));
+          throw sessionError;
+        }
         
-        // If no session, redirect to login
+        // If no session, try to extract it from URL parameters (for hash-based callbacks)
         if (!session) {
-          console.error('No session found in callback');
-          router.replace('/login');
+          console.log('No session found in callback, checking URL params...');
+          
+          // This helps with providers like Facebook that might use hash fragments
+          if (window.location.hash) {
+            console.log('Found hash fragment, processing...');
+            
+            // Give browser a moment to process the hash fragment
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Try session again after hash processing
+            const { data: { session: hashSession } } = await supabase.auth.getSession();
+            
+            if (hashSession) {
+              console.log('Successfully retrieved session from hash fragments');
+              // Continue with the session from hash
+              processAuthenticatedUser(hashSession.user);
+              return;
+            }
+          }
+          
+          console.error('No session found after all attempts');
+          router.replace('/login?error=no_session');
           return;
         }
         
         const { user } = session;
         console.log('Auth callback processing for user:', user.id);
-        
-        // Check if we have provider data
-        const provider = user.app_metadata?.provider;
-        if (!provider) {
-          console.log('No provider found in user metadata');
-          redirectBasedOnProfileStatus(user.id);
-          return;
-        }
-        
-        console.log('Processing provider:', provider);
-        setDebugInfo(prev => ({...prev, provider}));
-        
-        // Store provider-specific information
-        const identities = user.identities || [];
-        const identity = identities.find(i => i.provider === provider);
-        
-        if (!identity) {
-          console.error('No identity found for provider:', provider);
-          redirectBasedOnProfileStatus(user.id);
-          return;
-        }
-        
-        console.log('Found identity:', identity.id);
-        setDebugInfo(prev => ({...prev, identityId: identity.id}));
-        
-        // Get the tokens - try different methods to ensure we get them
-        const providerToken = session.provider_token || 
-                             window.localStorage.getItem('provider_token') || 
-                             null;
-                             
-        // Store in auth_providers table - check first if record exists
-        try {
-          // Check if an entry already exists
-          const { data: existingProvider, error: checkError } = await supabase
-            .from('auth_providers')
-            .select('id')
-            .eq('user_id', user.id)
-            .eq('provider', provider)
-            .maybeSingle();
-            
-          if (checkError) {
-            console.error('Error checking for existing provider record:', checkError);
-          }
-          
-          if (!existingProvider) {
-            // No record exists, create a new one
-            const { error: insertError } = await supabase
-              .from('auth_providers')
-              .insert({
-                user_id: user.id,
-                provider: provider,
-                provider_user_id: identity.id,
-                access_token: providerToken,
-                refresh_token: session.provider_refresh_token || null,
-                token_expiry: session.expires_at 
-                  ? new Date(session.expires_at * 1000).toISOString()
-                  : new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-              });
-                
-            if (insertError) {
-              console.error('Error creating provider record:', insertError);
-              setDebugInfo(prev => ({...prev, providerError: insertError.message}));
-            } else {
-              console.log('Successfully created provider record');
-              setDebugInfo(prev => ({...prev, providerSuccess: true}));
-            }
-          } else {
-            // Record exists, update it
-            const { error: updateError } = await supabase
-              .from('auth_providers')
-              .update({
-                access_token: providerToken,
-                refresh_token: session.provider_refresh_token || null,
-                token_expiry: session.expires_at 
-                  ? new Date(session.expires_at * 1000).toISOString()
-                  : new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', existingProvider.id);
-            
-            if (updateError) {
-              console.error('Error updating provider record:', updateError);
-              setDebugInfo(prev => ({...prev, providerUpdateError: updateError.message}));
-            } else {
-              console.log('Successfully updated provider record');
-              setDebugInfo(prev => ({...prev, providerUpdateSuccess: true}));
-            }
-          }
-        } catch (storeError) {
-          console.error('Exception storing provider data:', storeError);
-          setDebugInfo(prev => ({...prev, providerStoreException: storeError.message}));
-        }
-        
-        // Special handling for Facebook
-        if (provider === 'facebook') {
-          console.log('Processing Facebook-specific data...');
-          
-          // Save the token for debug purposes
-          setDebugInfo(prev => ({
-            ...prev, 
-            hasProviderToken: !!providerToken,
-            providerTokenFirstChars: providerToken ? providerToken.substring(0, 10) + '...' : null
-          }));
-          
-          // Execute Facebook data processing
-          await processFacebookData(user, identity.id, providerToken);
-        }
-        
-        // Check profile status and redirect accordingly
-        await redirectBasedOnProfileStatus(user.id);
+        await processAuthenticatedUser(user);
         
       } catch (err) {
         console.error('Error in auth callback:', err);
-        setError(err.message);
+        
+        // Add specific handling for Trestle token errors
+        if (err.message && (
+            err.message.includes('Trestle token') || 
+            (typeof err === 'object' && err.error === 'invalid_request')
+        )) {
+          console.log('Detected Trestle token error, adding to debug info');
+          setDebugInfo(prev => ({
+            ...prev, 
+            callbackError: err.message,
+            trestleTokenError: true,
+            trestleErrorDetails: JSON.stringify(err)
+          }));
+          
+          // Still allow authentication to proceed despite Trestle error
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user) {
+            console.log('Continuing with auth despite Trestle token error');
+            await processAuthenticatedUser(session.user);
+            return;
+          }
+        }
+        
+        setError(err.message || 'Authentication callback failed');
         setDebugInfo(prev => ({...prev, callbackError: err.message}));
-        router.replace('/login');
+        router.replace('/login?error=callback_error');
       } finally {
         setLoading(false);
       }
     };
     
-    // Helper function to process Facebook data
-    const processFacebookData = async (user, fbUserId, accessToken) => {
-      if (!accessToken) {
-        console.warn('No Facebook access token available');
+    // Extracted the authenticated user processing to a separate function
+    const processAuthenticatedUser = async (user) => {
+      if (!user) {
+        router.replace('/login');
         return;
       }
       
       try {
-        console.log('Processing Facebook data with token');
+        // Check if we have provider data
+        const provider = user.app_metadata?.provider;
+        if (provider) {
+          console.log('Processing provider:', provider);
+          setDebugInfo(prev => ({...prev, provider}));
+          
+          // Store provider-specific information
+          const identities = user.identities || [];
+          const identity = identities.find(i => i.provider === provider);
+          
+          if (identity) {
+            console.log('Found identity:', identity.id);
+            setDebugInfo(prev => ({...prev, identityId: identity.id}));
+            
+            // Process Facebook data if needed
+            if (provider === 'facebook') {
+              await processFacebookData(user, identity.id);
+            }
+          }
+        }
+        
+        // Check profile status and redirect accordingly
+        await redirectBasedOnProfileStatus(user.id);
+      } catch (err) {
+        console.error('Error processing authenticated user:', err);
+        
+        // Add more detailed error logging
+        const errorDetails = {
+          message: err.message,
+          stack: err.stack,
+          isTrestleError: err.message && err.message.includes('Trestle')
+        };
+        
+        setDebugInfo(prev => ({
+          ...prev, 
+          processingError: err.message,
+          errorDetails: JSON.stringify(errorDetails)
+        }));
+        
+        // Default to profile creation if there's an error
+        router.replace('/profile?setup=true&error=processing');
+      }
+    };
+    
+    // Helper function to process Facebook data
+    const processFacebookData = async (user, fbUserId) => {
+      try {
+        console.log('Processing Facebook data');
         setDebugInfo(prev => ({...prev, processingFacebook: true}));
+        
+        // Get tokens - try different sources
+        const { data: { session } } = await supabase.auth.getSession();
+        const providerToken = session?.provider_token || 
+                             window.localStorage.getItem('provider_token') || 
+                             null;
+        
+        if (!providerToken) {
+          console.warn('No Facebook access token available');
+          return;
+        }
         
         // Get profile picture from Facebook
         let profilePictureUrl = user.user_metadata?.avatar_url || null;
         
         // If no picture in metadata, try to fetch from Facebook
-        if (!profilePictureUrl) {
+        if (!profilePictureUrl && providerToken) {
           try {
-            // Method 1: Try direct picture endpoint
-            try {
-              const pictureResponse = await fetch(
-                `https://graph.facebook.com/${fbUserId}/picture?type=large&redirect=false&access_token=${accessToken}`
-              );
-              
-              if (pictureResponse.ok) {
-                const pictureData = await pictureResponse.json();
-                if (pictureData?.data?.url) {
-                  profilePictureUrl = pictureData.data.url;
-                  console.log('Got picture URL from direct endpoint:', profilePictureUrl);
-                }
-              }
-            } catch (pictureError) {
-              console.error('Error fetching picture from direct endpoint:', pictureError);
-            }
+            const graphResponse = await fetch(
+              `https://graph.facebook.com/v18.0/me?fields=picture.type(large)&access_token=${providerToken}`
+            );
             
-            // Method 2: Try fields parameter if method 1 failed
-            if (!profilePictureUrl) {
-              const graphResponse = await fetch(
-                `https://graph.facebook.com/v18.0/me?fields=picture.type(large)&access_token=${accessToken}`
-              );
-              
-              if (graphResponse.ok) {
-                const graphData = await graphResponse.json();
-                if (graphData?.picture?.data?.url) {
-                  profilePictureUrl = graphData.picture.data.url;
-                  console.log('Got picture URL from fields parameter:', profilePictureUrl);
-                }
+            if (graphResponse.ok) {
+              const graphData = await graphResponse.json();
+              if (graphData?.picture?.data?.url) {
+                profilePictureUrl = graphData.picture.data.url;
+                console.log('Got picture URL from fields parameter');
               }
             }
           } catch (pictureError) {
@@ -204,17 +179,12 @@ export default function AuthCallback() {
           }
         }
         
-        setDebugInfo(prev => ({
-          ...prev, 
-          fbPictureUrl: profilePictureUrl ? 'Found picture URL' : 'No picture URL'
-        }));
-        
-        // Update users table with Facebook data - with explicit error handling
+        // Update users table with Facebook data
         try {
-          const { data: updateData, error: fbError } = await supabase
+          const { error: fbError } = await supabase
             .from('users')
             .update({
-              facebook_access_token: accessToken,
+              facebook_access_token: providerToken,
               facebook_user_id: fbUserId,
               facebook_token_valid: true,
               facebook_token_updated_at: new Date().toISOString(),
@@ -225,50 +195,83 @@ export default function AuthCallback() {
               
           if (fbError) {
             console.error('Error updating Facebook user data:', fbError);
-            setDebugInfo(prev => ({...prev, fbUpdateError: fbError.message}));
           } else {
             console.log('Successfully saved Facebook data');
-            setDebugInfo(prev => ({...prev, fbUpdateSuccess: true}));
           }
         } catch (updateError) {
           console.error('Exception updating Facebook user data:', updateError);
-          setDebugInfo(prev => ({...prev, fbUpdateException: updateError.message}));
         }
         
-        // Also try using admin API as a fallback if needed
-        if (process.env.NEXT_PUBLIC_USE_ADMIN_API === 'true') {
-          try {
-            const response = await fetch('/api/auth/store-facebook-token', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                user_id: user.id,
-                access_token: accessToken,
-                provider_user_id: fbUserId
-              }),
-            });
+        // Store in auth_providers table as well
+        try {
+          // Check if an entry already exists
+          const { data: existingProvider, error: checkError } = await supabase
+            .from('auth_providers')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('provider', 'facebook')
+            .maybeSingle();
             
-            if (response.ok) {
-              console.log('Successfully saved Facebook data via API');
-              setDebugInfo(prev => ({...prev, apiUpdateSuccess: true}));
-            } else {
-              console.error('Error saving Facebook data via API:', await response.text());
-            }
-          } catch (apiError) {
-            console.error('Exception calling Facebook token API:', apiError);
+          if (!existingProvider) {
+            // No record exists, create a new one
+            await supabase
+              .from('auth_providers')
+              .insert({
+                user_id: user.id,
+                provider: 'facebook',
+                provider_user_id: fbUserId,
+                access_token: providerToken,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              });
+            console.log('Created auth_provider record for Facebook');
+          } else {
+            // Update existing record
+            await supabase
+              .from('auth_providers')
+              .update({
+                access_token: providerToken,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', existingProvider.id);
+            console.log('Updated existing auth_provider record for Facebook');
           }
+        } catch (providerError) {
+          console.error('Error storing Facebook provider data:', providerError);
         }
       } catch (error) {
         console.error('Error processing Facebook data:', error);
-        setDebugInfo(prev => ({...prev, fbProcessingError: error.message}));
       }
     };
     
     // Helper function to redirect based on profile status
     const redirectBasedOnProfileStatus = async (userId) => {
       try {
+        console.log('Checking profile status for user:', userId);
+        
+        // First check if user record exists
+        const { data: userExists, error: existsError } = await supabase
+          .from('users')
+          .select('id')
+          .eq('id', userId)
+          .single();
+          
+        // If user record doesn't exist, create one
+        if (existsError || !userExists) {
+          console.log('User record not found, creating initial record');
+          await supabase.from('users').insert({
+            id: userId,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            hasprofile: false
+          });
+          
+          console.log('Created initial user record, redirecting to profile setup');
+          router.replace('/profile?setup=true&new=true');
+          return;
+        }
+        
+        // Check hasprofile status
         const { data: userData, error: userError } = await supabase
           .from('users')
           .select('hasprofile')
@@ -277,7 +280,7 @@ export default function AuthCallback() {
           
         if (userError) {
           console.error('Error checking user profile:', userError);
-          router.replace('/create-profile');
+          router.replace('/profile?setup=true&error=check');
           return;
         }
         
@@ -288,11 +291,23 @@ export default function AuthCallback() {
           router.replace('/dashboard');
         } else {
           console.log('User needs to create profile, redirecting to create-profile');
-          router.replace('/create-profile');
+          router.replace('/profile?setup=true');
         }
       } catch (error) {
         console.error('Error checking profile status:', error);
-        router.replace('/create-profile');
+        
+        // Check if error is related to Trestle
+        const isTrestleError = 
+          (error.message && error.message.includes('Trestle')) ||
+          (error.error === 'invalid_request');
+        
+        if (isTrestleError) {
+          console.log('Trestle-related error detected during profile check, continuing workflow');
+          // Still redirect to profile setup but with a specific error code
+          router.replace('/profile?setup=true&error=trestle_error');
+        } else {
+          router.replace('/profile?setup=true&error=exception');
+        }
       }
     };
     
@@ -310,6 +325,12 @@ export default function AuthCallback() {
         ) : error ? (
           <div className="text-red-500 text-center">
             <p>Error: {error}</p>
+            {debugInfo.trestleTokenError && (
+              <p className="mt-2 text-sm text-gray-600">
+                Note: There was an issue connecting to property services.
+                You can still proceed with basic account access.
+              </p>
+            )}
             <button 
               onClick={() => router.push('/login')}
               className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
