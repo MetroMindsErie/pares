@@ -146,6 +146,7 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
   const [initialViewCompleted, setInitialViewCompleted] = useState(false);
   const detailsContainerRef = useRef(null);
   const [isMobileView, setIsMobileView] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   // Detect mobile view
   useEffect(() => {
@@ -163,7 +164,7 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
     const fetchProperties = async () => {
       if (selectedCounty) {
         setLoading(true);
-        setError(null);
+        setIsTransitioning(true); // Start transition
         try {
           const countyName = COUNTY_STYLES[selectedCounty].name;
           
@@ -175,14 +176,23 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
             
             // Ensure we're actually getting properties back
             if (response && response.properties) {
-              setPropertiesByCounty(prev => ({
-                ...prev,
+              // Prepare new state but don't apply immediately
+              const newPropertiesState = {
+                ...propertiesByCounty,
                 [selectedCounty]: { 
-                  ...prev[selectedCounty],
+                  ...propertiesByCounty[selectedCounty],
                   [selectedStatus]: response.properties 
                 }
-              }));
-              setNextLink(response.nextLink);
+              };
+              
+              // Small delay to allow transition to complete
+              setTimeout(() => {
+                setPropertiesByCounty(newPropertiesState);
+                setNextLink(response.nextLink);
+                setLoading(false);
+                // End transition after data is set
+                setTimeout(() => setIsTransitioning(false), 100);
+              }, 100);
             } else {
               throw new Error('No properties returned from API');
             }
@@ -212,6 +222,8 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
               }
             }));
             setError('Using demo data - property service unavailable');
+            setLoading(false);
+            setTimeout(() => setIsTransitioning(false), 100);
           }
         } catch (err) {
           console.error('Error in fetch properties flow:', err);
@@ -235,9 +247,8 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
               }))
             }
           }));
-        } finally {
-          // Ensure loading is always turned off
           setLoading(false);
+          setTimeout(() => setIsTransitioning(false), 100);
         }
       }
     };
@@ -909,13 +920,13 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
         )}
       </div>
       
-      {/* County Details Section with better loading states */} 
+      {/* County Details Section with improved transitions */} 
       {selectedCounty && (
         <div id="map-county-details-section" 
-            className="county-details-section bg-white border-t border-gray-200 mt-4 overflow-visible transition-all duration-300"
+            className={`county-details-section bg-white border-t border-gray-200 mt-4 overflow-visible transition-all duration-300 ${isTransitioning ? 'opacity-80' : 'opacity-100'}`}
             style={{ minHeight: loading ? '400px' : 'auto' }}>
             {loading ? (
-              <div className="p-6 animate-fade-in">
+              <div className="p-6 animate-fade-in property-loading-container">
                 <PropertyLoadingSkeleton />
               </div>
             ) : (

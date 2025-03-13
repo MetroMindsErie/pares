@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getPropertiesByFilter } from '../../src/services/trestleServices';
 
 const COUNTY_STYLES = {
@@ -39,13 +39,15 @@ const CountyDetails = ({ countyId }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [status, setStatus] = useState('active');
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const prevPropertiesRef = useRef([]);
   
   useEffect(() => {
     const fetchProperties = async () => {
       if (!countyId) return;
       
+      setIsTransitioning(true);
       setLoading(true);
-      setError(null);
       
       try {
         const countyName = COUNTY_STYLES[countyId].name;
@@ -56,7 +58,17 @@ const CountyDetails = ({ countyId }) => {
           const response = await getPropertiesByFilter(filter);
           if (response && response.properties) {
             console.log(`Successfully loaded ${response.properties.length} properties`);
-            setProperties(response.properties);
+            
+            // Store current properties as previous before updating
+            prevPropertiesRef.current = properties;
+            
+            // Small delay to ensure smooth transition
+            setTimeout(() => {
+              setProperties(response.properties);
+              setLoading(false);
+              // Small additional delay before removing transition effect
+              setTimeout(() => setIsTransitioning(false), 100);
+            }, 100);
           } else {
             throw new Error('No properties returned');
           }
@@ -64,35 +76,39 @@ const CountyDetails = ({ countyId }) => {
           console.error('Failed to fetch properties:', apiErr);
           setError('Unable to load properties from service');
           
-          // Always set demo properties to ensure UI shows something
+          // Set demo properties with smoother transition
+          setTimeout(() => {
+            setProperties(Array(5).fill().map((_, i) => ({
+              ListingKey: `demo-${i}`,
+              UnparsedAddress: `${i+100} Main St, ${COUNTY_STYLES[countyId].name}, PA`,
+              ListPrice: 350000 + (i * 50000),
+              BedroomsTotal: 3,
+              BathroomsTotalInteger: 2,
+              LivingArea: 2000,
+              media: '/properties.jpg'
+            })));
+            setLoading(false);
+            setTimeout(() => setIsTransitioning(false), 100);
+          }, 100);
+        }
+      } catch (err) {
+        console.error('Error in property fetch flow:', err);
+        setError('Unable to load properties');
+        
+        // Set demo properties with smoother transition
+        setTimeout(() => {
           setProperties(Array(5).fill().map((_, i) => ({
             ListingKey: `demo-${i}`,
-            UnparsedAddress: `${i+100} Main St, ${COUNTY_STYLES[countyId].name}, PA`,
+            UnparsedAddress: `${i+100} Main St, ${COUNTY_STYLES[countyId]?.name || 'Unknown'}, PA`,
             ListPrice: 350000 + (i * 50000),
             BedroomsTotal: 3,
             BathroomsTotalInteger: 2,
             LivingArea: 2000,
             media: '/properties.jpg'
           })));
-        }
-      } catch (err) {
-        console.error('Error in property fetch flow:', err);
-        setError('Unable to load properties');
-        
-        // Set demo properties as fallback
-        setProperties(Array(5).fill().map((_, i) => ({
-          ListingKey: `demo-${i}`,
-          UnparsedAddress: `${i+100} Main St, ${COUNTY_STYLES[countyId]?.name || 'Unknown'}, PA`,
-          ListPrice: 350000 + (i * 50000),
-          BedroomsTotal: 3,
-          BathroomsTotalInteger: 2,
-          LivingArea: 2000,
-          media: '/properties.jpg'
-        })));
-      } finally {
-        // Always turn off loading state with debug logging
-        console.log("Setting loading to false for CountyDetails");
-        setLoading(false);
+          setLoading(false);
+          setTimeout(() => setIsTransitioning(false), 100);
+        }, 100);
       }
     };
     
@@ -107,7 +123,7 @@ const CountyDetails = ({ countyId }) => {
   const county = COUNTY_STYLES[countyId];
   
   return (
-    <div className="p-6">
+    <div className={`p-6 transition-opacity duration-300 ${isTransitioning ? 'opacity-80' : 'opacity-100'}`}>
       <div className="mb-8 border-b border-gray-200 pb-6">
         <h2 className="text-2xl font-bold text-gray-800 mb-2 flex items-center">
           <span className="w-4 h-4 rounded-full mr-2" style={{backgroundColor: county.color}}></span>
@@ -165,8 +181,20 @@ const CountyDetails = ({ countyId }) => {
         </div>
         
         {loading ? (
-          <div className="flex justify-center p-12">
-            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="bg-white rounded-xl shadow-md overflow-hidden h-[350px]">
+                <div className="h-48 bg-gray-200"></div>
+                <div className="p-4">
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+                  <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                  <div className="mt-4 pt-3 border-t border-gray-100">
+                    <div className="h-6 bg-gray-200 rounded"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : error ? (
           <div className="mx-4 mb-6 p-3 bg-yellow-50 border border-yellow-300 rounded-md text-sm">

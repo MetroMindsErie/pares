@@ -244,8 +244,8 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
               }}
             >
               <div className="relative h-full w-full">
-                {/* Map Legend - Top Right */}
-                <div className="absolute top-4 right-4 z-10 bg-white bg-opacity-95 backdrop-blur-sm rounded-lg shadow-lg p-3 border border-gray-200 max-w-xs">
+                {/* Map Legend - Top Right - HIDDEN ON MOBILE */}
+                <div className="absolute top-4 right-4 z-10 bg-white bg-opacity-95 backdrop-blur-sm rounded-lg shadow-lg p-3 border border-gray-200 max-w-xs hidden md:block">
                   <div className="text-xs font-medium text-gray-500 mb-2">MAP LEGEND</div>
                   <div className="grid grid-cols-2 gap-x-3 gap-y-1">
                     <div className="flex items-center gap-1">
