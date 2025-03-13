@@ -65,7 +65,7 @@ const Layout = ({ children }) => {
       <Head>
         <title>Pares - Real Estate Network</title>
         <meta name="description" content="Connect and collaborate in real estate" />
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href="/paresfinal.jpg" />
       </Head>
       
       <Navbar 
