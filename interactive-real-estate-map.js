@@ -535,7 +535,7 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
                       </div>
                       <div class="flex items-center">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2v4a2 2 0 002 2h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                         </svg>
                         <span>${property.BathroomsTotalInteger || 'N/A'} ba</span>
                       </div>
@@ -679,24 +679,39 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
         // Update next link
         setNextLink(newNextLink);
         
-        // If on the last page, update the displayed properties to include new items
-        if (currentPage === totalPages) {
-          const startIndex = (currentPage - 1) * propertiesPerPage;
-          const paginatedProperties = updatedAllProperties[selectedCounty][selectedStatus].slice(
-            startIndex, 
-            startIndex + propertiesPerPage
-          );
-          
-          setPropertiesByCounty(prev => ({
-            ...prev,
-            [selectedCounty]: {
-              ...prev[selectedCounty],
-              [selectedStatus]: paginatedProperties
-            }
-          }));
-        }
+        // Set current page to the next page to show newly loaded properties
+        const nextPage = Math.min(currentPage + 1, newTotalPages);
+        setCurrentPage(nextPage);
         
-        setLoading(false);
+        // Get the properties for the next page
+        const startIndex = (nextPage - 1) * propertiesPerPage;
+        const paginatedProperties = updatedAllProperties[selectedCounty][selectedStatus].slice(
+          startIndex, 
+          startIndex + propertiesPerPage
+        );
+        
+        // Update displayed properties
+        setPropertiesByCounty(prev => ({
+          ...prev,
+          [selectedCounty]: {
+            ...prev[selectedCounty],
+            [selectedStatus]: paginatedProperties
+          }
+        }));
+        
+        // A slight delay to ensure state updates are processed
+        setTimeout(() => {
+          // Scroll to the top of the property section
+          const propertySection = document.querySelector('.property-grid');
+          if (propertySection) {
+            propertySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+          
+          setLoading(false);
+          // Update the DOM
+          updateCountyDetailsInDom();
+        }, 100);
+        
       } catch (err) {
         setError('Failed to load more properties');
         console.error(err);
@@ -963,7 +978,7 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
                       </div>
                       <div className="flex items-center">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 00-2 2v4a2 2 0 002 2h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                         </svg>
                         <span>{property.BathroomsTotalInteger || 'N/A'} ba</span>
                       </div>
