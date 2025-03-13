@@ -11,7 +11,7 @@ export default function AuthCallback() {
   useEffect(() => {
     const handleAuthCallback = async () => {
       setLoading(true);
-      console.log('Processing auth callback...');
+      console.log('Processing auth callback (production)...');
       
       try {
         // IMPORTANT: First explicitly get the current session from supabase
@@ -82,7 +82,16 @@ export default function AuthCallback() {
         
         setError(err.message || 'Authentication callback failed');
         setDebugInfo(prev => ({...prev, callbackError: err.message}));
-        router.replace('/login?error=callback_error');
+        
+        // Ensure that even on error we try to redirect to profile setup
+        // This helps in production when specific errors shouldn't block signup flow
+        try {
+          console.log('Redirecting to profile setup despite error');
+          router.replace('/profile?setup=true&recovery=true');
+        } catch (routerErr) {
+          console.error('Even router redirect failed:', routerErr);
+          router.replace('/login?error=callback_error');
+        }
       } finally {
         setLoading(false);
       }
@@ -135,7 +144,9 @@ export default function AuthCallback() {
           errorDetails: JSON.stringify(errorDetails)
         }));
         
-        // Default to profile creation if there's an error
+        // CRITICAL: Default to profile creation if there's an error
+        // This ensures users aren't stuck in a broken state
+        console.log('Error occurred, defaulting to profile creation');
         router.replace('/profile?setup=true&error=processing');
       }
     };
@@ -202,18 +213,13 @@ export default function AuthCallback() {
           console.error('Exception updating Facebook user data:', updateError);
         }
         
-        // Store in auth_providers table as well
+        // Store in auth_providers table as well - wrap in try/catch to prevent breaking flow
         try {
           // Check if an entry already exists
-          const { data: existingProvider, error: checkError } = await supabase
-            .from('auth_providers')
-            .select('id')
-            .eq('user_id', user.id)
-            .eq('provider', 'facebook')
-            .maybeSingle();
-            
-          if (!existingProvider) {
-            // No record exists, create a new one
+          console.log('Attempting to store Facebook token in auth_providers');
+          
+          // Direct insert with error handling for 406 errors
+          try {
             await supabase
               .from('auth_providers')
               .insert({
@@ -225,22 +231,35 @@ export default function AuthCallback() {
                 updated_at: new Date().toISOString()
               });
             console.log('Created auth_provider record for Facebook');
-          } else {
-            // Update existing record
-            await supabase
-              .from('auth_providers')
-              .update({
-                access_token: providerToken,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', existingProvider.id);
-            console.log('Updated existing auth_provider record for Facebook');
+          } catch (insertError) {
+            // If insert fails, try update instead (don't query first)
+            if (insertError.code === '406' || insertError.status === 406) {
+              console.log('Insert failed with 406, trying update instead');
+              try {
+                await supabase
+                  .from('auth_providers')
+                  .update({
+                    access_token: providerToken,
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('user_id', user.id)
+                  .eq('provider', 'facebook');
+                console.log('Updated auth_provider record using direct update');
+              } catch (updateError) {
+                console.warn('Both insert and update failed for auth_providers', updateError);
+                // Continue flow even if both attempts failed
+              }
+            } else {
+              console.warn('Insert to auth_providers failed with non-406 error', insertError);
+            }
           }
         } catch (providerError) {
           console.error('Error storing Facebook provider data:', providerError);
+          // Allow flow to continue even if auth_providers operations fail
         }
       } catch (error) {
         console.error('Error processing Facebook data:', error);
+        // Allow flow to continue even if Facebook data processing fails
       }
     };
     
@@ -280,6 +299,8 @@ export default function AuthCallback() {
           
         if (userError) {
           console.error('Error checking user profile:', userError);
+          // IMPORTANT: When in doubt, redirect to profile setup
+          console.log('Error checking profile status, defaulting to profile setup');
           router.replace('/profile?setup=true&error=check');
           return;
         }
@@ -290,24 +311,16 @@ export default function AuthCallback() {
           console.log('User has profile, redirecting to dashboard');
           router.replace('/dashboard');
         } else {
-          console.log('User needs to create profile, redirecting to create-profile');
+          console.log('User needs to create profile, redirecting to profile setup');
           router.replace('/profile?setup=true');
         }
       } catch (error) {
         console.error('Error checking profile status:', error);
         
-        // Check if error is related to Trestle
-        const isTrestleError = 
-          (error.message && error.message.includes('Trestle')) ||
-          (error.error === 'invalid_request');
-        
-        if (isTrestleError) {
-          console.log('Trestle-related error detected during profile check, continuing workflow');
-          // Still redirect to profile setup but with a specific error code
-          router.replace('/profile?setup=true&error=trestle_error');
-        } else {
-          router.replace('/profile?setup=true&error=exception');
-        }
+        // CRITICAL FIX: Default to profile setup on ANY error
+        // This ensures new Facebook users always go to profile creation
+        console.log('Exception in profile check, defaulting to profile setup');
+        router.replace('/profile?setup=true&error=exception');
       }
     };
     

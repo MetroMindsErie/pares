@@ -786,17 +786,22 @@ export const checkFacebookConnection = async (userId) => {
   try {
     console.log('Checking Facebook connection for user:', userId);
     
-    // Method 1: Check auth_providers table
-    const { data: providerData, error: providerError } = await supabase
-      .from('auth_providers')
-      .select('access_token')
-      .eq('user_id', userId)
-      .eq('provider', 'facebook')
-      .single();
-    
-    if (!providerError && providerData?.access_token) {
-      console.log('Found Facebook connection in auth_providers table');
-      return true;
+    // Method 1: Check auth_providers table - with enhanced error handling for 406 errors
+    try {
+      const { data: providerData, error: providerError } = await supabase
+        .from('auth_providers')
+        .select('access_token')
+        .eq('user_id', userId)
+        .eq('provider', 'facebook')
+        .single();
+      
+      if (!providerError && providerData?.access_token) {
+        console.log('Found Facebook connection in auth_providers table');
+        return true;
+      }
+    } catch (error) {
+      // Handle 406 errors specifically - they're permission issues, not "no data" issues
+      console.warn('Error checking auth_providers, might be a permission issue:', error);
     }
     
     // Method 2: Check users table
