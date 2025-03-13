@@ -130,6 +130,101 @@ const PropertyLoadingSkeleton = () => (
   </div>
 );
 
+// Add Pagination Component
+const Pagination = ({ currentPage, totalPages, onPageChange }) => {
+  const renderPageNumbers = () => {
+    const pageNumbers = [];
+    const maxPagesToShow = 5;
+    
+    if (totalPages <= maxPagesToShow) {
+      // Show all pages if total is less than max to show
+      for (let i = 1; i <= totalPages; i++) {
+        pageNumbers.push(i);
+      }
+    } else {
+      // Always include first page
+      pageNumbers.push(1);
+      
+      // Calculate range around current page
+      let startPage = Math.max(2, currentPage - 1);
+      let endPage = Math.min(totalPages - 1, currentPage + 1);
+      
+      // Add ellipsis after first page if needed
+      if (startPage > 2) {
+        pageNumbers.push('...');
+      }
+      
+      // Add pages around current page
+      for (let i = startPage; i <= endPage; i++) {
+        pageNumbers.push(i);
+      }
+      
+      // Add ellipsis before last page if needed
+      if (endPage < totalPages - 1) {
+        pageNumbers.push('...');
+      }
+      
+      // Always include last page
+      pageNumbers.push(totalPages);
+    }
+    
+    return pageNumbers;
+  };
+  
+  return (
+    <div className="flex justify-center mt-8">
+      <div className="flex items-center space-x-2">
+        <button 
+          className={`w-9 h-9 flex items-center justify-center rounded-full border ${
+            currentPage === 1 
+              ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+              : 'border-blue-500 text-blue-500 hover:bg-blue-50'
+          }`}
+          onClick={() => currentPage > 1 && onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+          </svg>
+        </button>
+        
+        {renderPageNumbers().map((page, index) => (
+          page === '...' ? (
+            <span key={`ellipsis-${index}`} className="mx-1 text-gray-500">...</span>
+          ) : (
+            <button
+              key={page}
+              className={`w-9 h-9 flex items-center justify-center rounded-full ${
+                currentPage === page
+                  ? 'bg-blue-500 text-white'
+                  : 'border border-gray-300 hover:border-blue-500 hover:text-blue-500'
+              }`}
+              onClick={() => page !== currentPage && onPageChange(page)}
+              data-page={page}
+            >
+              {page}
+            </button>
+          )
+        ))}
+        
+        <button 
+          className={`w-9 h-9 flex items-center justify-center rounded-full border ${
+            currentPage === totalPages 
+              ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+              : 'border-blue-500 text-blue-500 hover:bg-blue-50'
+          }`}
+          onClick={() => currentPage < totalPages && onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
   const [geoData, setGeoData] = useState(null);
   const [selectedCounty, setSelectedCounty] = useState(null);
@@ -147,6 +242,10 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
   const detailsContainerRef = useRef(null);
   const [isMobileView, setIsMobileView] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [propertiesPerPage, setPropertiesPerPage] = useState(9); // Changed to 9 per page
+  const [totalPages, setTotalPages] = useState(1);
+  const [allProperties, setAllProperties] = useState({});
 
   // Detect mobile view
   useEffect(() => {
@@ -176,18 +275,35 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
             
             // Ensure we're actually getting properties back
             if (response && response.properties) {
-              // Prepare new state but don't apply immediately
-              const newPropertiesState = {
-                ...propertiesByCounty,
-                [selectedCounty]: { 
-                  ...propertiesByCounty[selectedCounty],
-                  [selectedStatus]: response.properties 
+              // Set current page to 1 when changing county or status
+              setCurrentPage(1);
+              
+              // Store all properties in allProperties state
+              const updatedAllProperties = {
+                ...allProperties,
+                [selectedCounty]: {
+                  ...allProperties[selectedCounty],
+                  [selectedStatus]: response.properties
                 }
               };
+              setAllProperties(updatedAllProperties);
+              
+              // Calculate total pages
+              const newTotalPages = Math.ceil(response.properties.length / propertiesPerPage);
+              setTotalPages(newTotalPages);
+              
+              // Get paginated properties for the first page
+              const paginatedProperties = response.properties.slice(0, propertiesPerPage);
               
               // Small delay to allow transition to complete
               setTimeout(() => {
-                setPropertiesByCounty(newPropertiesState);
+                setPropertiesByCounty(prev => ({
+                  ...prev,
+                  [selectedCounty]: { 
+                    ...prev[selectedCounty],
+                    [selectedStatus]: paginatedProperties 
+                  }
+                }));
                 setNextLink(response.nextLink);
                 setLoading(false);
                 // End transition after data is set
@@ -213,14 +329,31 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
               }));
             };
             
-            // Always provide demo data to ensure we have something to show
+            // Generate a larger set of demo properties for pagination
+            const demoProperties = getDemoProperties(18);
+            
+            // Store all demo properties
+            setAllProperties(prev => ({
+              ...prev,
+              [selectedCounty]: { 
+                ...prev[selectedCounty],
+                [selectedStatus]: demoProperties 
+              }
+            }));
+            
+            // Calculate total pages for demo data
+            const newTotalPages = Math.ceil(demoProperties.length / propertiesPerPage);
+            setTotalPages(newTotalPages);
+            
+            // Only display the first page of properties
             setPropertiesByCounty(prev => ({
               ...prev,
               [selectedCounty]: { 
                 ...prev[selectedCounty],
-                [selectedStatus]: getDemoProperties(6) 
+                [selectedStatus]: demoProperties.slice(0, propertiesPerPage) 
               }
             }));
+            
             setError('Using demo data - property service unavailable');
             setLoading(false);
             setTimeout(() => setIsTransitioning(false), 100);
@@ -231,22 +364,39 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
           
           // Always provide demo data as fallback
           const countyName = COUNTY_STYLES[selectedCounty]?.name || 'Unknown';
+          const demoProperties = Array(15).fill().map((_, i) => ({
+            ListingKey: `demo-${i}`,
+            UnparsedAddress: `${i+100} Demo St, ${countyName}, PA`,
+            ListPrice: 350000 + (i * 50000),
+            BedroomsTotal: 3,
+            BathroomsTotalInteger: 2,
+            LivingArea: 2000,
+            media: '/properties.jpg',
+            demoProperty: true
+          }));
+          
+          // Store all demo properties
+          setAllProperties(prev => ({
+            ...prev,
+            [selectedCounty]: { 
+              ...prev[selectedCounty],
+              [selectedStatus]: demoProperties 
+            }
+          }));
+          
+          // Calculate total pages for demo data
+          const newTotalPages = Math.ceil(demoProperties.length / propertiesPerPage);
+          setTotalPages(newTotalPages);
+          
+          // Only display the first page of properties
           setPropertiesByCounty(prev => ({
             ...prev,
             [selectedCounty]: { 
               ...prev[selectedCounty],
-              [selectedStatus]: Array(5).fill().map((_, i) => ({
-                ListingKey: `demo-${i}`,
-                UnparsedAddress: `${i+100} Demo St, ${countyName}, PA`,
-                ListPrice: 350000 + (i * 50000),
-                BedroomsTotal: 3,
-                BathroomsTotalInteger: 2,
-                LivingArea: 2000,
-                media: '/properties.jpg',
-                demoProperty: true
-              }))
+              [selectedStatus]: demoProperties.slice(0, propertiesPerPage) 
             }
           }));
+          
           setLoading(false);
           setTimeout(() => setIsTransitioning(false), 100);
         }
@@ -281,6 +431,7 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
     
     const county = COUNTY_STYLES[selectedCounty];
     const properties = propertiesByCounty[selectedCounty]?.[selectedStatus] || [];
+    const totalPropertiesCount = allProperties[selectedCounty]?.[selectedStatus]?.length || 0;
     
     console.log("Updating DOM with properties:", properties.length);
     
@@ -405,7 +556,7 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
               </div>
             `).join('')}
           </div>
-          
+  
           ${properties.length === 0 && !loading ? `
             <div class="text-center py-12 bg-gray-50 rounded-xl border border-gray-200">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -413,6 +564,22 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
               </svg>
               <p class="text-gray-600 font-medium">No properties found in this county matching your criteria.</p>
               <p class="text-gray-500 text-sm mt-1">Try changing your search parameters or exploring a different county.</p>
+            </div>
+          ` : ''}
+          
+          ${totalPropertiesCount > propertiesPerPage ? renderPaginationHTML() : ''}
+          
+          ${nextLink ? `
+            <div class="mt-8 flex justify-center">
+              <button
+                id="load-more-btn"
+                class="px-6 py-3 bg-white border border-blue-600 text-blue-600 rounded-full hover:bg-blue-50 transition-colors flex items-center gap-2 font-medium"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+                Load More Properties
+              </button>
             </div>
           ` : ''}
         </div>
@@ -461,6 +628,22 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
         }
       });
     });
+
+    // Add event listener to the load more button
+    const loadMoreBtn = containerElement.querySelector('#load-more-btn');
+    if (loadMoreBtn) {
+      loadMoreBtn.addEventListener('click', loadMoreProperties);
+    }
+    
+    // Add event listeners to pagination buttons
+    containerElement.querySelectorAll('.page-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const pageNum = parseInt(btn.getAttribute('data-page'), 10);
+        if (!isNaN(pageNum) && pageNum !== currentPage) {
+          changePage(pageNum);
+        }
+      });
+    });
   };
 
   const loadMoreProperties = async () => {
@@ -470,18 +653,53 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
       try {
         const { properties, nextLink: newNextLink } = await getNextProperties(nextLink);
 
-        setPropertiesByCounty(prev => ({
-          ...prev,
+        // Initialize allProperties for this county and status if needed
+        const currentAllProperties = allProperties[selectedCounty]?.[selectedStatus] || 
+          propertiesByCounty[selectedCounty]?.[selectedStatus] || [];
+        
+        // Update all properties first
+        const updatedAllProperties = {
+          ...allProperties,
           [selectedCounty]: {
-            ...prev[selectedCounty],
-            active: [...prev[selectedCounty].active, ...properties]
+            ...allProperties[selectedCounty],
+            [selectedStatus]: [
+              ...currentAllProperties,
+              ...properties
+            ]
           }
-        }));
+        };
+        
+        setAllProperties(updatedAllProperties);
+        
+        // Calculate new total pages
+        const totalPropertiesCount = updatedAllProperties[selectedCounty][selectedStatus].length;
+        const newTotalPages = Math.ceil(totalPropertiesCount / propertiesPerPage);
+        setTotalPages(newTotalPages);
+        
+        // Update next link
         setNextLink(newNextLink);
+        
+        // If on the last page, update the displayed properties to include new items
+        if (currentPage === totalPages) {
+          const startIndex = (currentPage - 1) * propertiesPerPage;
+          const paginatedProperties = updatedAllProperties[selectedCounty][selectedStatus].slice(
+            startIndex, 
+            startIndex + propertiesPerPage
+          );
+          
+          setPropertiesByCounty(prev => ({
+            ...prev,
+            [selectedCounty]: {
+              ...prev[selectedCounty],
+              [selectedStatus]: paginatedProperties
+            }
+          }));
+        }
+        
+        setLoading(false);
       } catch (err) {
         setError('Failed to load more properties');
         console.error(err);
-      } finally {
         setLoading(false);
       }
     }
@@ -641,6 +859,7 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
     
     const county = COUNTY_STYLES[selectedCounty];
     const properties = propertiesByCounty[selectedCounty]?.[selectedStatus] || [];
+    const totalPropertiesCount = allProperties[selectedCounty]?.[selectedStatus]?.length || 0;
     
     return (
       <div className="p-6 county-details" data-county={county.name}>
@@ -776,7 +995,15 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
             </div>
           )}
           
-          {nextLink && properties.length > 0 && (
+          {totalPropertiesCount > propertiesPerPage && !loading && (
+            <Pagination 
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={changePage}
+            />
+          )}
+          
+          {nextLink && (
             <div className="mt-8 flex justify-center">
               <button
                 onClick={loadMoreProperties}
@@ -797,6 +1024,127 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
         </div>
       </div>
     );
+  };
+
+  // Add this function to render pagination HTML for DOM updates
+  const renderPaginationHTML = () => {
+    const pageNumbers = [];
+    const maxPagesToShow = 5;
+    
+    if (totalPages <= maxPagesToShow) {
+      // Show all pages if total is less than max to show
+      for (let i = 1; i <= totalPages; i++) {
+        pageNumbers.push(i);
+      }
+    } else {
+      // Always include first page
+      pageNumbers.push(1);
+      
+      // Calculate range around current page
+      let startPage = Math.max(2, currentPage - 1);
+      let endPage = Math.min(totalPages - 1, currentPage + 1);
+      
+      // Add ellipsis after first page if needed
+      if (startPage > 2) {
+        pageNumbers.push('...');
+      }
+      
+      // Add pages around current page
+      for (let i = startPage; i <= endPage; i++) {
+        pageNumbers.push(i);
+      }
+      
+      // Add ellipsis before last page if needed
+      if (endPage < totalPages - 1) {
+        pageNumbers.push('...');
+      }
+      
+      // Always include last page
+      pageNumbers.push(totalPages);
+    }
+
+    return `
+      <div class="flex justify-center mt-8">
+        <div class="flex items-center space-x-2">
+          <button 
+            class="w-9 h-9 flex items-center justify-center rounded-full border ${
+              currentPage === 1 
+                ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+                : 'border-blue-500 text-blue-500 hover:bg-blue-50'
+            }"
+            ${currentPage === 1 ? 'disabled' : 'data-page="' + (currentPage - 1) + '"'}
+            ${currentPage === 1 ? '' : 'class="page-btn"'}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+            </svg>
+          </button>
+          
+          ${pageNumbers.map((page, index) => {
+            if (page === '...') {
+              return `<span key="ellipsis-${index}" class="mx-1 text-gray-500">...</span>`;
+            } else {
+              return `
+                <button
+                  class="page-btn w-9 h-9 flex items-center justify-center rounded-full ${
+                    currentPage === page
+                      ? 'bg-blue-500 text-white'
+                      : 'border border-gray-300 hover:border-blue-500 hover:text-blue-500'
+                  }"
+                  data-page="${page}"
+                >
+                  ${page}
+                </button>
+              `;
+            }
+          }).join('')}
+          
+          <button 
+            class="w-9 h-9 flex items-center justify-center rounded-full border ${
+              currentPage === totalPages 
+                ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+                : 'border-blue-500 text-blue-500 hover:bg-blue-50'
+            }"
+            ${currentPage === totalPages ? 'disabled' : 'data-page="' + (currentPage + 1) + '"'}
+            ${currentPage === totalPages ? '' : 'class="page-btn"'}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    `;
+  };
+
+  // Add changePage function to handle pagination
+  const changePage = (page) => {
+    // Set loading state and update current page
+    setLoading(true);
+    setCurrentPage(page);
+    
+    if (allProperties[selectedCounty]?.[selectedStatus]) {
+      // Calculate the slice of properties to display
+      const startIndex = (page - 1) * propertiesPerPage;
+      const endIndex = startIndex + propertiesPerPage;
+      const paginatedProperties = allProperties[selectedCounty][selectedStatus].slice(startIndex, endIndex);
+      
+      // Update displayed properties
+      setPropertiesByCounty(prev => ({
+        ...prev,
+        [selectedCounty]: {
+          ...prev[selectedCounty],
+          [selectedStatus]: paginatedProperties
+        }
+      }));
+      
+      setLoading(false);
+      
+      // Update the DOM to reflect these changes
+      updateCountyDetailsInDom();
+    } else {
+      setLoading(false);
+    }
   };
 
   // Adjust map rendering and composition with mobile support
