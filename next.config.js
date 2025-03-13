@@ -15,7 +15,7 @@ const nextConfig = {
     styledComponents: true,
   },
   images: {
-    domains: ['cdnjs.cloudflare.com', 'tiles.stadiamaps.com', 'api-trestle.corelogic.com'],
+    domains: ['cdnjs.cloudflare.com', 'tiles.stadiamaps.com', 'api-trestle.corelogic.com', 'via.placeholder.com'], // Add placeholder domain
     unoptimized: true,
   },
   // NextJS 15+ configuration to prevent prerendering issue
@@ -57,7 +57,27 @@ const nextConfig = {
   },
   eslint: {
     ignoreDuringBuilds: true
-  }
+  },
+  // Fix missing fallback images with a redirect
+  async redirects() {
+    return [
+      {
+        source: '/fallback-property.jpg',
+        destination: 'https://via.placeholder.com/800x600?text=Property+Image+Not+Available',
+        permanent: true,
+      },
+      {
+        source: '/properties.jpg', 
+        destination: 'https://via.placeholder.com/800x600?text=Property+Image+Not+Available',
+        permanent: true,
+      },
+      {
+        source: '/default-agent.jpg',
+        destination: 'https://via.placeholder.com/200x200?text=Agent',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 // Use ES module export

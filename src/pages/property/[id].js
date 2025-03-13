@@ -2,54 +2,27 @@ import React from 'react';
 import { useRouter } from 'next/router';
 import { ActiveProperty } from '../../components/ActiveProperty';
 import { SoldProperty } from '../../components/SoldProperty';
-import Layout from '../../components/Layout';
 import axios from 'axios';
 
-// Define the component first to ensure it's recognized as a React component
-function PropertyDetail({ property, isSold }) {
-  const router = useRouter();
-
-  // Handle the case where the page is still being generated
-  if (router.isFallback) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-white text-black">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {isSold ? (
-          <SoldProperty property={property} />
-        ) : (
-          <ActiveProperty property={property} />
-        )}
-
-        <div className="mt-8 text-center">
-          <button
-            onClick={() => router.back()}
-            className="bg-gray-100 text-black py-2 px-6 rounded-lg border border-black hover:bg-gray-200 transition-colors"
-          >
-            ← Back to Listings
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Data fetching function
 export async function getServerSideProps({ params }) {
   try {
-    // Use our token API endpoint instead of directly calling Trestle
+    // Get Trestle access token
     const tokenResponse = await axios.post(
-      `${process.env.NEXT_PUBLIC_API_URL || ''}/api/token`
+      'https://api-trestle.corelogic.com/trestle/oidc/connect/token',
+      new URLSearchParams({
+        grant_type: 'client_credentials',
+        scope: 'api',
+        client_id: process.env.NEXT_PUBLIC_TRESTLE_CLIENT_ID,
+        client_secret: process.env.NEXT_PUBLIC_TRESTLE_CLIENT_SECRET,
+      }),
+      {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      }
     );
-    
+
     const token = tokenResponse.data.access_token;
 
+    // Fetch property and media data
     const [propertyResponse, mediaResponse] = await Promise.all([
       axios.get(
         `https://api-trestle.corelogic.com/trestle/odata/Property?$filter=ListingKey eq '${params.id}'`,
@@ -65,12 +38,26 @@ export async function getServerSideProps({ params }) {
       return { notFound: true };
     }
     
+    console.log(propertyResponse.data.value[0]);
     const rawProperty = propertyResponse.data.value[0];
     const isSold = rawProperty.StandardStatus?.toLowerCase() === 'closed';
 
-    // Transform property data
+    // Create media URLs array
+    const mediaUrls = (mediaResponse?.data?.value || [])
+      .map(media => media.MediaURL)
+      .filter(url => url && url.startsWith('http'));
+
+    // Add fallback if no images
+    if (!mediaUrls.length) {
+      mediaUrls.push('/fallback-property.jpg');
+    }
+
+    // Include both original and transformed property data
     const transformedProperty = {
-      // ...existing code...
+      // Original raw property fields
+      ...rawProperty,
+      
+      // Additional transformed fields
       waterSource: rawProperty.WaterSource || 'Unknown',
       sewer: rawProperty.Sewer || 'Unknown',
       propertyType: rawProperty.PropertyType || 'Unknown',
@@ -116,9 +103,12 @@ export async function getServerSideProps({ params }) {
         phone: rawProperty.ListAgentPhone || 'Phone not available',
         email: rawProperty.ListAgentEmail || 'Email not available'
       },
-      images: (mediaResponse?.data?.value || [])
-        .map(media => media.MediaURL)
-        .filter(url => url && url.startsWith('http')),
+      
+      // Image arrays - both formats for compatibility
+      mediaUrls: mediaUrls,
+      images: mediaUrls,
+      
+      // Sold property specific fields
       ...(isSold && {
         soldPrice: rawProperty.ClosePrice || 0,
         soldDate: rawProperty.CloseDate ?
@@ -127,6 +117,13 @@ export async function getServerSideProps({ params }) {
         buyerAgent: rawProperty.BuyerAgentFullName || 'Unknown Buyer Agent'
       })
     };
+
+    console.log('Property data ready:', {
+      address: transformedProperty.address,
+      UnparsedAddress: transformedProperty.UnparsedAddress,
+      hasImages: transformedProperty.mediaUrls.length > 0,
+      firstImage: transformedProperty.mediaUrls[0]
+    });
 
     return {
       props: {
@@ -140,5 +137,27 @@ export async function getServerSideProps({ params }) {
   }
 }
 
-// Make sure to export the component properly
-export default PropertyDetail;
+export default function PropertyDetail({ property, isSold }) {
+  const router = useRouter();
+
+  return (
+    <div className="min-h-screen bg-white text-black">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {isSold ? (
+          <SoldProperty property={property} />
+        ) : (
+          <ActiveProperty property={property} />
+        )}
+
+        <div className="mt-8 text-center">
+          <button
+            onClick={() => router.back()}
+            className="bg-gray-100 text-black py-2 px-6 rounded-lg border border-black hover:bg-gray-200 transition-colors"
+          >
+            ← Back to Listings
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

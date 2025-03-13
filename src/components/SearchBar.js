@@ -104,13 +104,13 @@ const SearchBar = ({ onSearchResults }) => {
               const mediaUrls = await fetchMediaUrls(property.ListingKey);
               return {
                 ...property,
-                media: mediaUrls[0] || '/properties.jpg',
+                media: mediaUrls[0] || '/fallback-property.jpg',
               };
             } catch (mediaErr) {
               console.error('Error fetching media:', mediaErr);
               return {
                 ...property,
-                media: '/properties.jpg',  // Fallback image
+                media: '/fallback-property.jpg',  // Fallback image
               };
             }
           })
@@ -120,7 +120,7 @@ const SearchBar = ({ onSearchResults }) => {
         // Create listings with default images if media fetching completely fails
         listingsWithMedia = properties.map(property => ({
           ...property,
-          media: '/properties.jpg'
+          media: '/fallback-property.jpg'
         }));
       }
 
@@ -146,7 +146,7 @@ const SearchBar = ({ onSearchResults }) => {
         BedroomsTotal: params.beds || 3,
         BathroomsTotalInteger: params.baths || 2,
         LivingArea: 2100,
-        media: '/properties.jpg',
+        media: '/fallback-property.jpg',
         demoProperty: true
       },
       {
@@ -156,7 +156,7 @@ const SearchBar = ({ onSearchResults }) => {
         BedroomsTotal: params.beds ? parseInt(params.beds) + 1 : 4,
         BathroomsTotalInteger: params.baths ? parseInt(params.baths) + 0.5 : 2.5,
         LivingArea: 2400,
-        media: '/properties.jpg',
+        media: '/fallback-property.jpg',
         demoProperty: true
       }
     ];
