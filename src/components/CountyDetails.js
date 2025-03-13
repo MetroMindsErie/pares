@@ -49,18 +49,40 @@ const CountyDetails = ({ countyId }) => {
       
       try {
         const countyName = COUNTY_STYLES[countyId].name;
+        console.log(`Fetching ${status} properties for ${countyName} County`);
         const filter = `$filter=CountyOrParish eq '${countyName}' and StandardStatus eq '${status === 'active' ? 'Active' : 'Closed'}' and PropertyType eq 'Residential'`;
         
-        const response = await getPropertiesByFilter(filter);
-        setProperties(response.properties || []);
+        try {
+          const response = await getPropertiesByFilter(filter);
+          if (response && response.properties) {
+            console.log(`Successfully loaded ${response.properties.length} properties`);
+            setProperties(response.properties);
+          } else {
+            throw new Error('No properties returned');
+          }
+        } catch (apiErr) {
+          console.error('Failed to fetch properties:', apiErr);
+          setError('Unable to load properties from service');
+          
+          // Always set demo properties to ensure UI shows something
+          setProperties(Array(5).fill().map((_, i) => ({
+            ListingKey: `demo-${i}`,
+            UnparsedAddress: `${i+100} Main St, ${COUNTY_STYLES[countyId].name}, PA`,
+            ListPrice: 350000 + (i * 50000),
+            BedroomsTotal: 3,
+            BathroomsTotalInteger: 2,
+            LivingArea: 2000,
+            media: '/properties.jpg'
+          })));
+        }
       } catch (err) {
-        console.error('Failed to fetch properties:', err);
+        console.error('Error in property fetch flow:', err);
         setError('Unable to load properties');
         
-        // Set demo properties
+        // Set demo properties as fallback
         setProperties(Array(5).fill().map((_, i) => ({
           ListingKey: `demo-${i}`,
-          UnparsedAddress: `${i+100} Main St, ${COUNTY_STYLES[countyId].name}, PA`,
+          UnparsedAddress: `${i+100} Main St, ${COUNTY_STYLES[countyId]?.name || 'Unknown'}, PA`,
           ListPrice: 350000 + (i * 50000),
           BedroomsTotal: 3,
           BathroomsTotalInteger: 2,
@@ -68,12 +90,17 @@ const CountyDetails = ({ countyId }) => {
           media: '/properties.jpg'
         })));
       } finally {
+        // Always turn off loading state with debug logging
+        console.log("Setting loading to false for CountyDetails");
         setLoading(false);
       }
     };
     
     fetchProperties();
   }, [countyId, status]);
+
+  // Add debug output to see if component is rendering
+  console.log(`CountyDetails rendering for county ${countyId}, loading: ${loading}, properties: ${properties.length}`);
   
   if (!countyId || !COUNTY_STYLES[countyId]) return null;
   

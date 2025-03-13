@@ -14,6 +14,7 @@ import { handleProfileNavigation } from '../utils/profileUtils';
 import Layout from '../components/Layout';
 import '../styles/animations.css';
 import ReactDOM from 'react-dom';
+import CountyDetails from '../components/CountyDetails';  // Add this import
 
 // Dynamically import the map component to prevent SSR issues
 const InteractiveRealEstateMap = dynamic(
@@ -33,7 +34,7 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
   const { user, isAuthenticated } = useAuth();
   // Track if user has seen instructions
   const hasSeenInstructions = useRef(false);
-  const [isMapExpanded, setIsMapExpanded] = useState(false);
+  const [isMapExpanded, setIsMapExpanded] = useState(true); // Changed from false to true
   const [selectedCountyId, setSelectedCountyId] = useState(null);
   const countyDetailsRef = useRef(null);
   const [countyDetails, setCountyDetails] = useState(null);
@@ -89,9 +90,32 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
       console.log("Ending loading state for county details");
       setIsDetailsLoading(false);
       
-      // Force render check
+      // Replace the require with a proper rendering approach
       const detailsContent = document.querySelector('.county-details-content');
-      console.log("County details content present:", !!detailsContent);
+      
+      if (detailsContent && typeof window !== 'undefined') {
+        try {
+          // Use createRoot API for React 18
+          const root = ReactDOM.createRoot(detailsContent);
+          root.render(<CountyDetails countyId={countyId} />);
+          console.log("County details rendered:", countyId);
+        } catch (err) {
+          console.error("Error rendering county details:", err);
+          // Fallback rendering for older React versions or errors
+          detailsContent.innerHTML = `
+            <div class="p-6 text-center">
+              <p class="text-gray-800 font-medium">
+                Showing details for county ID: ${countyId}
+              </p>
+              <p class="text-gray-500 mt-2">
+                (Loading county information...)
+              </p>
+            </div>
+          `;
+        }
+      } else {
+        console.error("County details container not found");
+      }
     }, 200);
   };
 

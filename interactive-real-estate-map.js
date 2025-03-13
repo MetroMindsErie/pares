@@ -167,112 +167,111 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
         try {
           const countyName = COUNTY_STYLES[selectedCounty].name;
           
-          const getDemoPropertiesForCounty = (count, countyName, status) => {
-            return Array(count).fill().map((_, i) => ({
-              ListingKey: `demo-${countyName}-${status}-${i}`,
-              UnparsedAddress: `${100 + i} Main St, ${countyName}, PA`,
-              ListPrice: status === 'Active' ? 
-                Math.round(250000 + Math.random() * 500000) :
-                Math.round(200000 + Math.random() * 450000),
-              BedroomsTotal: Math.floor(2 + Math.random() * 4),
-              BathroomsTotalInteger: Math.floor(1 + Math.random() * 3),
-              LivingArea: Math.floor(1000 + Math.random() * 2000),
-              media: '/properties.jpg',
-              demoProperty: true
-            }));
-          };
-
+          // Use standard filter format to ensure consistent response
+          const filter = `$filter=CountyOrParish eq '${countyName}' and StandardStatus eq '${selectedStatus === 'active' ? 'Active' : 'Closed'}' and PropertyType eq 'Residential'`;
+          
           try {
-            const [activeProperties, closedProperties] = await Promise.all([
-              getPropertiesByFilter(
-                `$filter=CountyOrParish eq '${countyName}' and StandardStatus eq 'Active' and PropertyType eq 'Residential'`
-              ),
-              getPropertiesByFilter(
-                `$filter=CountyOrParish eq '${countyName}' and StandardStatus eq 'Closed' and PropertyType eq 'Residential'`
-              )
-            ]);
-
-            // Add small delay to prevent UI glitches during state updates
-            setTimeout(() => {
+            const response = await getPropertiesByFilter(filter);
+            
+            // Ensure we're actually getting properties back
+            if (response && response.properties) {
               setPropertiesByCounty(prev => ({
                 ...prev,
                 [selectedCounty]: { 
-                  active: activeProperties.properties, 
-                  closed: closedProperties.properties 
+                  ...prev[selectedCounty],
+                  [selectedStatus]: response.properties 
                 }
               }));
-              setNextLink(activeProperties.nextLink);
-              setLoading(false);
-            }, 300);
-            
+              setNextLink(response.nextLink);
+            } else {
+              throw new Error('No properties returned from API');
+            }
           } catch (err) {
             console.error('Failed to fetch properties from Trestle API:', err);
             
             // Use demo data when API fails
-            const activeDemoProperties = getDemoPropertiesForCounty(6, countyName, 'Active');
-            const closedDemoProperties = getDemoPropertiesForCounty(4, countyName, 'Closed');
-            
-            // Add delay for smoother transition
-            setTimeout(() => {
-              setPropertiesByCounty(prev => ({
-                ...prev,
-                [selectedCounty]: { 
-                  active: activeDemoProperties,
-                  closed: closedDemoProperties
-                }
+            const getDemoProperties = (count) => {
+              return Array(count).fill().map((_, i) => ({
+                ListingKey: `demo-${countyName}-${i}`,
+                UnparsedAddress: `${100 + i} Main St, ${countyName}, PA`,
+                ListPrice: Math.round(250000 + Math.random() * 500000),
+                BedroomsTotal: Math.floor(2 + Math.random() * 4),
+                BathroomsTotalInteger: Math.floor(1 + Math.random() * 3),
+                LivingArea: Math.floor(1000 + Math.random() * 2000),
+                media: '/properties.jpg',
+                demoProperty: true
               }));
-              setError('Using demo data - property service unavailable');
-              setLoading(false);
-            }, 300);
-          }
-        } catch (err) {
-          setError('Failed to load properties - using demo data');
-          console.error(err);
-          
-          // Provide demo data when errors occur
-          const countyName = COUNTY_STYLES[selectedCounty]?.name || 'Unknown';
-          
-          // Add delay for smoother transition
-          setTimeout(() => {
+            };
+            
+            // Always provide demo data to ensure we have something to show
             setPropertiesByCounty(prev => ({
               ...prev,
               [selectedCounty]: { 
-                active: Array(5).fill().map((_, i) => ({
-                  ListingKey: `demo-${i}`,
-                  UnparsedAddress: `${i+100} Demo St, ${countyName}, PA`,
-                  ListPrice: 350000 + (i * 50000),
-                  BedroomsTotal: 3,
-                  BathroomsTotalInteger: 2,
-                  LivingArea: 2000,
-                  media: '/properties.jpg',
-                  demoProperty: true
-                })),
-                closed: []
+                ...prev[selectedCounty],
+                [selectedStatus]: getDemoProperties(6) 
               }
             }));
-            setLoading(false);
-          }, 300);
+            setError('Using demo data - property service unavailable');
+          }
+        } catch (err) {
+          console.error('Error in fetch properties flow:', err);
+          setError('Failed to load properties - using demo data');
+          
+          // Always provide demo data as fallback
+          const countyName = COUNTY_STYLES[selectedCounty]?.name || 'Unknown';
+          setPropertiesByCounty(prev => ({
+            ...prev,
+            [selectedCounty]: { 
+              ...prev[selectedCounty],
+              [selectedStatus]: Array(5).fill().map((_, i) => ({
+                ListingKey: `demo-${i}`,
+                UnparsedAddress: `${i+100} Demo St, ${countyName}, PA`,
+                ListPrice: 350000 + (i * 50000),
+                BedroomsTotal: 3,
+                BathroomsTotalInteger: 2,
+                LivingArea: 2000,
+                media: '/properties.jpg',
+                demoProperty: true
+              }))
+            }
+          }));
         } finally {
-          // Update the DOM with county details after data is loaded
-          setTimeout(() => {
-            updateCountyDetailsInDom();
-          }, 300);
+          // Ensure loading is always turned off
+          setLoading(false);
         }
       }
     };
-
+    
+    // Fetch properties when county or status changes
     fetchProperties();
   }, [selectedCounty, selectedStatus]);
 
-  // Function to update county details in DOM with smooth transitions
+  // Add this useEffect to trigger UI updates when properties are loaded
+  useEffect(() => {
+    // When properties are loaded for the selected county, update the UI
+    if (selectedCounty && 
+        propertiesByCounty[selectedCounty]?.[selectedStatus] && 
+        !loading) {
+      console.log("Properties loaded, updating UI...");
+      // Use setTimeout to ensure DOM is ready
+      setTimeout(() => updateCountyDetailsInDom(), 50);
+    }
+  }, [selectedCounty, propertiesByCounty, selectedStatus, loading]);
+
+  // Modify the updateCountyDetailsInDom function for better error handling
   const updateCountyDetailsInDom = () => {
     if (!selectedCounty || typeof window === 'undefined') return;
     
     const countyDetailsContainer = document.getElementById('county-details-container');
-    if (!countyDetailsContainer) return;
+    if (!countyDetailsContainer) {
+      console.error("County details container not found in DOM");
+      return;
+    }
     
     const county = COUNTY_STYLES[selectedCounty];
     const properties = propertiesByCounty[selectedCounty]?.[selectedStatus] || [];
+    
+    console.log("Updating DOM with properties:", properties.length);
     
     // Create county details HTML
     const countyDetailsHTML = `
@@ -797,14 +796,14 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
         <MobileCountySelector onCountySelected={handleCountyClick} />
       </div>
       
-      {/* Map Section - Only visible on larger screens */}
+      {/* Map Section - Only visible on larger screens with increased height */}
       <div className={`map-container relative hidden md:block ${mapLoaded ? 'opacity-100' : 'opacity-0'}`}
-           style={{ height: '100%', transition: 'opacity 1s ease-in-out' }}>
+           style={{ height: '500px', transition: 'opacity 1s ease-in-out' }}>
         <ComposableMap
           projection="geoMercator"
           projectionConfig={{
-            scale: 3450,
-            center: [-77.85, 38.55]
+            scale: 4000,
+            center: [-77.85, 40.55]
           }}
           style={{
             width: '100%',
@@ -818,6 +817,9 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
               [-200, -200],
               [1000, 800]
             ]}
+            // Disable zoom on scroll
+            onWheelCapture={e => e.preventDefault()}
+            onWheel={e => e.preventDefault()}
           >
             {geoData && (
               <Geographies geography={geoData}>
