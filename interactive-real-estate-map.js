@@ -79,7 +79,7 @@ const MobileCountySelector = ({ onCountySelected }) => {
   };
 
   return (
-    <div className="mobile-county-selector py-6 px-4">
+    <div className="mobile-county-selector py-6 px-4 pb-20">
       <h3 className="text-lg font-semibold text-gray-800 mb-4">Select a County</h3>
       <div className="grid grid-cols-1 gap-3">
         {Object.entries(COUNTY_STYLES).map(([fips, county]) => (
@@ -106,6 +106,20 @@ const MobileCountySelector = ({ onCountySelected }) => {
             </div>
           </button>
         ))}
+      </div>
+      
+      <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-white to-transparent py-4 px-4 flex justify-center">
+        <button 
+          className="start-exploring-btn w-full max-w-md py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium shadow-lg transition-colors"
+          onClick={() => {
+            // Select the first county if available
+            if (Object.keys(COUNTY_STYLES).length > 0) {
+              selectCounty(Object.keys(COUNTY_STYLES)[0]);
+            }
+          }}
+        >
+          Start Exploring
+        </button>
       </div>
     </div>
   );
@@ -535,7 +549,7 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
                       </div>
                       <div class="flex items-center">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2v4a2 2 0 002 2h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 00-2 2v4a2 2 0 002 2h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                         </svg>
                         <span>${property.BathroomsTotalInteger || 'N/A'} ba</span>
                       </div>
