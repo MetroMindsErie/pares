@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/auth-context';
-import ActiveProperty from '../ActiveProperty'; 
+import { ActiveProperty } from '../ActiveProperty';
 import CryptoProperty from './CryptoProperty';
 import { checkCryptoInvestorRole } from '../../utils/PropertyUtils';
+
 
 const PropertyView = ({ propertyData, mlsData }) => {
   const { user, getUserRole, refreshUserData } = useAuth();
