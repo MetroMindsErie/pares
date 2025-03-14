@@ -57,7 +57,6 @@ const CryptoProperty = ({ propertyData, mlsData }) => {
       try {
         // In production, replace with actual API calls to get crypto market data
         // Example: const response = await fetch('https://api.coingecko.com/api/v3/coins/usd-coin');
-        
         // Mock data for demonstration
         const mockCryptoData = {
           tokenPrice: 1.00, // 1 token = $1.00 (stablecoin)
@@ -101,6 +100,15 @@ const CryptoProperty = ({ propertyData, mlsData }) => {
     fetchCryptoData();
   }, [propertyData]);
   
+  // Check for existing wallet connection in localStorage
+  useEffect(() => {
+    const savedWalletAddress = localStorage.getItem('walletAddress');
+    if (savedWalletAddress) {
+      setWalletAddress(savedWalletAddress);
+      setWalletConnected(true);
+    }
+  }, []);
+
   // Normalize the property data to handle different formats
   const normalizePropertyData = (data) => {
     if (!data) return {
@@ -133,6 +141,8 @@ const CryptoProperty = ({ propertyData, mlsData }) => {
     if (!imagePath) {
       imagePath = '/properties.jpg';
     }
+    console.log(data,"&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
+
     // Handle different property data formats
     return {
       address: data.address || data.UnparsedAddress || 'Address Unavailable',
@@ -153,47 +163,124 @@ const CryptoProperty = ({ propertyData, mlsData }) => {
   
   // Connect to MetaMask wallet
   const connectWallet = async () => {
-    if (window.ethereum) {
-      try {
-        // Request wallet connection
-        const accounts = await window.ethereum.request({
-          method: 'eth_requestAccounts',
-        });
+    try {
+      // Detect if there are multiple wallet providers that might be causing conflicts
+      let provider = null;
+      
+      // Check for MetaMask specifically to avoid conflicts with other extensions
+      if (window.ethereum?.isMetaMask) {
+        console.log("Pure MetaMask detected, using it directly");
+        provider = window.ethereum;
+      } 
+      // If we have ethereum object but it's not explicitly MetaMask
+      else if (window.ethereum) {
+        console.log("Ethereum provider detected, checking for MetaMask");
         
-        // Get the connected wallet address
-        const address = accounts[0];
-        setWalletAddress(address);
-        setWalletConnected(true);
-        
-        // Add event listener for account changes
-        window.ethereum.on('accountsChanged', (newAccounts) => {
-          setWalletAddress(newAccounts[0]);
-        });
-      } catch (error) {
-        console.error("Error connecting to MetaMask:", error);
+        // Check if we can find MetaMask in the providers list
+        if (window.ethereum.providers && Array.isArray(window.ethereum.providers)) {
+          const metamaskProvider = window.ethereum.providers.find(p => p.isMetaMask);
+          if (metamaskProvider) {
+            console.log("Found MetaMask in providers list");
+            provider = metamaskProvider;
+          } else {
+            console.log("No MetaMask found in providers list");
+            provider = window.ethereum;
+          }
+        } else {
+          console.log("Using default ethereum provider");
+          provider = window.ethereum;
+        }
       }
-    } else {
-      alert("Please install MetaMask to use this feature!");
+      
+      // If we found a provider, try to connect
+      if (provider) {
+        try {
+          console.log("Attempting wallet connection with detected provider");
+          
+          // Try the legacy method first (might work better with some configurations)
+          let accounts;
+          try {
+            console.log("Trying enable method first");
+            accounts = await provider.enable();
+          } catch (enableError) {
+            console.log("Enable method failed, trying eth_requestAccounts", enableError);
+            // If enable fails, try the standard method
+            accounts = await provider.request({
+              method: 'eth_requestAccounts',
+            });
+          }
+          
+          if (accounts && accounts.length > 0) {
+            const address = accounts[0];
+            setWalletAddress(address);
+            setWalletConnected(true);
+            console.log("Successfully connected to wallet:", address);
+            
+            // Save wallet address to localStorage so Navbar can detect it
+            localStorage.setItem('walletAddress', address);
+            
+            // Add event listener for account changes
+            provider.on('accountsChanged', (newAccounts) => {
+              if (newAccounts.length === 0) {
+                setWalletConnected(false);
+                setWalletAddress('');
+                // Also clear from localStorage
+                localStorage.removeItem('walletAddress');
+              } else {
+                setWalletAddress(newAccounts[0]);
+                // Update localStorage with new address
+                localStorage.setItem('walletAddress', newAccounts[0]);
+              }
+            });
+          } else {
+            throw new Error("No accounts returned");
+          }
+        } catch (error) {
+          console.error("Error connecting to wallet:", error);
+          
+          // Specific error for the evmAsk.js error we're seeing
+          if (error.message?.includes("Ve: Unexpected error") || 
+              error.stack?.includes("evmAsk.js") ||
+              error.stack?.includes("chrome-extension")) {
+            alert("A wallet extension conflict was detected. Try disabling other wallet extensions (like Phantom, Coinbase Wallet) and refresh the page before connecting with MetaMask.");
+          } 
+          // Other standard errors
+          else if (error.code === 4001) {
+            alert("Connection rejected. Please approve the connection request in your wallet.");
+          } else {
+            alert("Error connecting to wallet: " + (error.message || "Unknown error"));
+          }
+        }
+      } 
+      // No ethereum provider found
+      else if (window.solana || document.querySelector("[id^='phantom-app']")) {
+        alert("MetaMask not detected, but another wallet (like Phantom) was found. This property requires MetaMask. Please install MetaMask and disable other wallet extensions temporarily.");
+      } else {
+        alert("Please install MetaMask to use this feature! Visit https://metamask.io/");
+      }
+    } catch (error) {
+      console.error("Unexpected wallet connection error:", error);
+      alert("Unexpected error connecting to wallet. Please refresh and try again.");
     }
   };
-  
+
   // Calculate number of tokens user can purchase
   const calculateTokens = (amount) => {
     if (!amount || amount <= 0 || !tokenPrice) return 0;
     return (amount / tokenPrice).toFixed(2);
   };
-  
+
   // Calculate investment amount based on tokens
   const handleInvestmentChange = (e) => {
     const value = parseFloat(e.target.value);
     setInvestmentAmount(value || 0);
   };
-  
+
   // Handle stablecoin selection
   const handleStablecoinChange = (e) => {
     setSelectedStablecoin(e.target.value);
   };
-  
+
   // Execute purchase (dummy function for now)
   const handlePurchase = async () => {
     if (!walletConnected) {
@@ -272,7 +359,7 @@ const CryptoProperty = ({ propertyData, mlsData }) => {
         backgroundColor: 'rgba(53, 162, 235, 0.5)',
         tension: 0.3
       },
-    ],
+    ]
   };
   
   // Return chart data for the bar chart
@@ -322,7 +409,6 @@ const CryptoProperty = ({ propertyData, mlsData }) => {
             </h1>
             <p className="text-gray-300">{normalizedProperty.city}, {normalizedProperty.state} {normalizedProperty.zipCode}</p>
           </div>
-          
           <div className="bg-gray-800 p-4 rounded-lg shadow-inner">
             <span className="text-gray-400 text-sm">Tokenized Value</span>
             <h3 className="text-2xl font-bold text-green-400">${tokenizedValue.toLocaleString()}</h3>
@@ -508,7 +594,7 @@ const CryptoProperty = ({ propertyData, mlsData }) => {
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">$</span>
-                  <input
+                  <input 
                     type="number"
                     value={investmentAmount}
                     onChange={handleInvestmentChange}
