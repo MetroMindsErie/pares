@@ -133,13 +133,11 @@ const CryptoProperty = ({ propertyData, mlsData }) => {
     if (!imagePath) {
       imagePath = '/properties.jpg';
     }
-    
     // Handle different property data formats
     return {
       address: data.address || data.UnparsedAddress || 'Address Unavailable',
-      city: data.city || 'Unknown',
-      state: data.state || 'Unknown',
-      zipCode: data.zipCode || 'Unknown',
+      city: data.City || 'Unknown',
+      zipCode: data.PostalCode  || 'Unknown',
       price: data.price || data.ListPrice || 350000,
       bedrooms: data.bedrooms || data.BedroomsTotal || 0,
       bathrooms: data.bathrooms || data.BathroomsTotalInteger || 0,
