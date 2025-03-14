@@ -8,6 +8,7 @@ const __dirname = path.dirname(__filename);
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  swcMinify: true,
   // Clean up experimental section
   experimental: {},
   // Fix hydration issues by enabling more strict React behaviors
@@ -47,6 +48,7 @@ const nextConfig = {
         outputPath: 'static/images/',
       },
     });
+    config.resolve.modules.push('.')
     return config;
   },
   env: {

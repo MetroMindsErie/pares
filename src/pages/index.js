@@ -14,9 +14,10 @@ import { handleProfileNavigation } from '../utils/profileUtils';
 import Layout from '../components/Layout';
 import '../styles/animations.css';
 import ReactDOM from 'react-dom';
-import CountyDetails from '../components/CountyDetails';  // Add this import
+import CountyDetails from '../components/CountyDetails';
 
-// Dynamically import the map component to prevent SSR issues
+// Dynamically import the map component with correct path from the root directory
+// Note: We've updated this path to reference the component from the project root
 const InteractiveRealEstateMap = dynamic(
   () => import('../../interactive-real-estate-map'),
   { ssr: false }

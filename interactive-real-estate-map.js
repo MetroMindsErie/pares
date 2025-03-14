@@ -1,14 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { geoCentroid } from 'd3-geo';
-import {
-  ComposableMap,
-  Geographies,
-  Geography,
-  ZoomableGroup,
-} from 'react-simple-maps';
 import { useRouter } from 'next/router';
 import { getPropertiesByFilter, getNextProperties } from './src/services/trestleServices';
-import { useAuth } from './src/context/auth-context'; // Import useAuth hook
+import { useAuth } from './src/context/auth-context';
+import Globe from 'react-globe.gl'; // Import the Globe component
+import * as THREE from 'three'; // Import Three.js for advanced rendering
+import { feature } from 'topojson-client';
+import { geoOrthographic } from 'd3-geo';
 
 // More accurate center point for Pennsylvania
 
@@ -68,6 +66,8 @@ const COUNTY_STYLES = {
 
 const DEFAULT_FILL = '#E2E8F0';
 const STATE_STROKE = '#0000FF';
+const GLOBE_BACKGROUND_COLOR = '#10121E'; // Deep space background color
+const GLOBE_ATMOSPHERE_COLOR = '#1a8fff'; // Atmospheric blue glow
 
 // Mobile County Selector Component
 const MobileCountySelector = ({ onCountySelected }) => {
@@ -240,6 +240,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
 
 const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
   const [geoData, setGeoData] = useState(null);
+  const [topoJson, setTopoJson] = useState(null); // Store TopoJSON data
   const [selectedCounty, setSelectedCounty] = useState(null);
   const [tooltipContent, setTooltipContent] = useState(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
@@ -255,10 +256,19 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
   const [isMobileView, setIsMobileView] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [propertiesPerPage, setPropertiesPerPage] = useState(9); // Changed to 9 per page
+  const [propertiesPerPage, setPropertiesPerPage] = useState(9);
   const [totalPages, setTotalPages] = useState(1);
   const [allProperties, setAllProperties] = useState({});
-  const { user, getUserRole } = useAuth(); // Get user and getUserRole method
+  const { user, getUserRole } = useAuth();
+  
+  // New state variables for globe control
+  const globeRef = useRef();
+  const [globeReady, setGlobeReady] = useState(false);
+  const [globeRotation, setGlobeRotation] = useState({ lat: 40.55, lng: -77.85, altitude: 1.5 });
+  const [hexBinData, setHexBinData] = useState([]);
+  const [countiesFeatures, setCountiesFeatures] = useState([]);
+  const [globeZooming, setGlobeZooming] = useState(false);
+  const [showDetailView, setShowDetailView] = useState(false);
 
   // Detect mobile view
   useEffect(() => {
@@ -431,6 +441,136 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
       setTimeout(() => updateCountyDetailsInDom(), 50);
     }
   }, [selectedCounty, propertiesByCounty, selectedStatus, loading]);
+
+  // Load county data and prepare for globe rendering
+  useEffect(() => {
+    const fetchGeoData = async () => {
+      try {
+        // Fetch the county data
+        const response = await fetch('/pa_counties.json');
+        const data = await response.json();
+        
+        // Filter for PA counties
+        const paData = {
+          ...data,
+          features: data.features.filter(feature => feature.properties.STATE === '42')
+        };
+        
+        setGeoData(paData);
+        setTopoJson(data); // Store the original TopoJSON data
+        
+        // Convert GeoJSON features to format suitable for globe
+        const features = paData.features.map(feature => {
+          const countyFips = feature.properties.COUNTY;
+          const fullFips = `42${countyFips}`;
+          const countyStyle = COUNTY_STYLES[fullFips];
+          
+          return {
+            type: feature.type,
+            properties: {
+              ...feature.properties,
+              FIPS: fullFips,
+              color: countyStyle ? countyStyle.color : DEFAULT_FILL,
+              hoverColor: countyStyle ? countyStyle.hoverColor : '#CBD5E1',
+              name: countyStyle ? countyStyle.name : feature.properties.NAME || 'County',
+              hasData: !!countyStyle
+            },
+            geometry: feature.geometry
+          };
+        });
+        
+        setCountiesFeatures(features);
+        
+        // Generate hex bin data for property density visualization
+        generateHexBinData(features);
+        
+        // Add a small delay to trigger animation after map loads
+        setTimeout(() => {
+          setMapLoaded(true);
+          setGlobeReady(true);
+        }, 800);
+      } catch (error) {
+        console.error("Failed to load geographic data:", error);
+        setError("Failed to load the map data. Please try again later.");
+      }
+    };
+    
+    fetchGeoData();
+  }, []);
+  
+  // Generate hex bin data based on counties
+  const generateHexBinData = (features) => {
+    if (!features || features.length === 0) return;
+    
+    // Create hex bin data based on property density (simplified for demo)
+    const hexData = [];
+    
+    features.forEach(feature => {
+      if (feature.properties.hasData) {
+        const centroid = geoCentroid(feature);
+        const countyFips = feature.properties.FIPS;
+        const countyStyle = COUNTY_STYLES[countyFips];
+        
+        if (countyStyle && countyStyle.details && countyStyle.details.neighborhoods) {
+          // Add hex bins for each neighborhood
+          countyStyle.details.neighborhoods.forEach(neighborhood => {
+            // Create slight variations from centroid for neighborhoods
+            const offsetLat = (Math.random() - 0.5) * 0.3;
+            const offsetLng = (Math.random() - 0.5) * 0.3;
+            
+            hexData.push({
+              lat: centroid[1] + offsetLat,
+              lng: centroid[0] + offsetLng,
+              value: neighborhood.heatIndex * 100, // Scale up for visibility
+              name: neighborhood.name,
+              countyName: countyStyle.name,
+              color: countyStyle.color
+            });
+          });
+        }
+      }
+    });
+    
+    setHexBinData(hexData);
+  };
+  
+  // Function to focus globe on a specific county
+  const focusGlobeOnCounty = (countyFips) => {
+    const county = countiesFeatures.find(f => f.properties.FIPS === countyFips);
+    if (county && globeRef.current) {
+      const centroid = geoCentroid(county);
+      
+      // Set zooming state for animation
+      setGlobeZooming(true);
+      
+      // Animate to the county location
+      globeRef.current.pointOfView({
+        lat: centroid[1],
+        lng: centroid[0],
+        altitude: 0.6 // Closer zoom
+      }, 1000); // 1000ms animation
+      
+      // After animation completes
+      setTimeout(() => {
+        setGlobeZooming(false);
+        setShowDetailView(true);
+      }, 1200);
+    }
+  };
+  
+  // When returning from detail view to globe
+  const returnToGlobeView = () => {
+    setShowDetailView(false);
+    
+    if (globeRef.current) {
+      // Animate back to default view
+      globeRef.current.pointOfView({
+        lat: 40.55,
+        lng: -77.85,
+        altitude: 1.5
+      }, 1000);
+    }
+  };
 
   // Modify the updateCountyDetailsInDom function for better error handling
   const updateCountyDetailsInDom = () => {
@@ -788,6 +928,9 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
       console.log("Notifying parent of county selection:", countyFips);
       onCountySelected(countyFips);
     }
+    
+    // Focus the globe on the selected county
+    focusGlobeOnCounty(countyFips);
     
     // Show loading screen immediately with smooth transition
     const countyDetailsContainer = document.getElementById('county-details-container');
@@ -1206,6 +1349,217 @@ const handlePropertyClick = (propertyId) => {
     }
   };
 
+  // Generate a starfield background for the globe
+  const StarfieldBackground = () => (
+    <div className="absolute inset-0 z-0" style={{ 
+      background: `radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%)`,
+      overflow: 'hidden'
+    }}>
+      {Array(100).fill().map((_, i) => (
+        <div 
+          key={`star-${i}`}
+          className="absolute rounded-full"
+          style={{
+            width: Math.random() * 2 + 1 + 'px',
+            height: Math.random() * 2 + 1 + 'px',
+            background: 'white',
+            top: Math.random() * 100 + '%',
+            left: Math.random() * 100 + '%',
+            opacity: Math.random() * 0.8 + 0.2,
+            animation: `twinkle ${Math.random() * 5 + 3}s infinite`
+          }}
+        />
+      ))}
+      <style jsx>{`
+        @keyframes twinkle {
+          0% { opacity: 0.2; }
+          50% { opacity: 0.8; }
+          100% { opacity: 0.2; }
+        }
+      `}</style>
+    </div>
+  );
+
+  // Render the globe visualization
+  const renderGlobe = () => (
+    <div className="relative w-full h-[600px] md:h-[700px]">
+      <StarfieldBackground />
+      
+      <div className="absolute inset-0 z-10 flex items-center justify-center">
+        <Globe
+          ref={globeRef}
+          globeImageUrl="//unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
+          bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
+          backgroundColor={GLOBE_BACKGROUND_COLOR}
+          
+          // Hex bin layer for property density visualization
+          hexBinPointsData={hexBinData}
+          hexBinPointLat={d => d.lat}
+          hexBinPointLng={d => d.lng}
+          hexBinPointWeight={d => d.value}
+          hexBinResolution={4}
+          hexTopColor={d => d.points[0]?.color || '#3B82F6'}
+          hexSideColor={d => d.points[0]?.color || '#1E40AF'}
+          hexBinMerge={true}
+          hexTransitionDuration={1000}
+          
+          // County polygons
+          polygonsData={countiesFeatures}
+          polygonCapColor={d => d.properties.hasData ? d.properties.color : 'rgba(200, 200, 200, 0.1)'}
+          polygonSideColor={() => 'rgba(20, 20, 20, 0.5)'}
+          polygonStrokeColor={() => STATE_STROKE}
+          polygonLabel={({ properties: d }) => `
+            <div class="globe-tooltip bg-white/90 backdrop-blur-sm shadow-lg rounded-lg p-2 border border-gray-200 text-sm">
+              <strong>${d.name || d.NAME} County</strong>
+              ${d.hasData ? `
+                <div class="text-xs text-gray-500 mt-1">
+                  Click to explore properties
+                </div>
+              ` : ''}
+            </div>
+          `}
+          polygonsTransitionDuration={800}
+          onPolygonClick={({ properties }) => {
+            if (properties.hasData) {
+              handleCountyClick(properties.FIPS);
+            }
+          }}
+          onPolygonHover={d => {
+            if (d && d.properties.hasData) {
+              document.body.style.cursor = 'pointer';
+            } else {
+              document.body.style.cursor = 'default';
+            }
+          }}
+          
+          // Atmosphere effect
+          atmosphereColor={GLOBE_ATMOSPHERE_COLOR}
+          atmosphereAltitude={0.15}
+          
+          // Globe controls
+          enablePointerInteraction={true}
+          pointOfView={globeRotation}
+          onGlobeReady={() => {
+            setGlobeReady(true);
+            // Initial animation
+            if (globeRef.current && !initialViewCompleted) {
+              globeRef.current.pointOfView({ lat: 40.55, lng: -77.85, altitude: 3 }, 0);
+              setTimeout(() => {
+                globeRef.current.pointOfView({ lat: 40.55, lng: -77.85, altitude: 1.5 }, 2000);
+                setInitialViewCompleted(true);
+              }, 200);
+            }
+          }}
+          width={isMobileView ? window.innerWidth : undefined}
+          height={isMobileView ? 500 : undefined}
+        />
+      </div>
+      
+      {/* Globe controls */}
+      <div className="absolute bottom-4 right-4 z-20">
+        <div className="bg-white/80 backdrop-blur-md rounded-lg shadow-lg p-2 flex flex-col gap-2">
+          <button 
+            className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 transition-colors"
+            onClick={() => {
+              if (globeRef.current) {
+                const currentPOV = globeRef.current.pointOfView();
+                globeRef.current.pointOfView({
+                  ...currentPOV,
+                  altitude: Math.max(0.6, currentPOV.altitude - 0.3)
+                }, 500);
+              }
+            }}
+            aria-label="Zoom in"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+          </button>
+          
+          <button 
+            className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 transition-colors"
+            onClick={() => {
+              if (globeRef.current) {
+                const currentPOV = globeRef.current.pointOfView();
+                globeRef.current.pointOfView({
+                  ...currentPOV,
+                  altitude: currentPOV.altitude + 0.3
+                }, 500);
+              }
+            }}
+            aria-label="Zoom out"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 12H6" />
+            </svg>
+          </button>
+          
+          <button 
+            className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 transition-colors"
+            onClick={() => {
+              if (globeRef.current) {
+                globeRef.current.pointOfView({
+                  lat: 40.55,
+                  lng: -77.85,
+                  altitude: 1.5
+                }, 1000);
+              }
+            }}
+            aria-label="Reset view"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      
+      {/* Globe legend */}
+      <div className="absolute top-4 left-4 z-20">
+        <div className="bg-white/80 backdrop-blur-md rounded-lg shadow-lg p-3">
+          <h3 className="text-sm font-medium text-gray-800 mb-2">Pennsylvania Real Estate</h3>
+          <div className="text-xs text-gray-600">
+            <p className="mb-1">• Colored regions are available counties</p>
+            <p>• Hexagons show property density</p>
+          </div>
+          <div className="mt-2 flex items-center gap-2">
+            {Object.values(COUNTY_STYLES).map(county => (
+              <div 
+                key={county.name} 
+                className="flex items-center cursor-pointer"
+                onClick={() => {
+                  const countyFips = Object.keys(COUNTY_STYLES).find(key => COUNTY_STYLES[key] === county);
+                  if (countyFips) handleCountyClick(countyFips);
+                }}
+              >
+                <span 
+                  className="w-3 h-3 rounded-full inline-block mr-1"
+                  style={{ backgroundColor: county.color }}
+                ></span>
+                <span className="text-xs">{county.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      
+      {/* Return button - shows when in detail view */}
+      {showDetailView && (
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
+          <button 
+            className="bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+            onClick={returnToGlobeView}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Return to Globe View
+          </button>
+        </div>
+      )}
+    </div>
+  );
+
   // Adjust map rendering and composition with mobile support
   return (
     <div className="flex flex-col w-full">
@@ -1214,121 +1568,14 @@ const handlePropertyClick = (propertyId) => {
         <MobileCountySelector onCountySelected={handleCountyClick} />
       </div>
       
-      {/* Map Section - Only visible on larger screens with increased height */}
-      <div className={`map-container relative hidden md:block ${mapLoaded ? 'opacity-100' : 'opacity-0'}`}
-           style={{ height: '500px', transition: 'opacity 1s ease-in-out' }}>
-        <ComposableMap
-          projection="geoMercator"
-          projectionConfig={{
-            scale: 4000,
-            center: [-77.85, 40.55]
-          }}
-          style={{
-            width: '100%',
-            height: '100%'
-          }}
-        >
-          <ZoomableGroup 
-            center={[0, 0]}
-            zoom={1.0}
-            translateExtent={[
-              [-200, -200],
-              [1000, 800]
-            ]}
-            // Disable zoom on scroll
-            onWheelCapture={e => e.preventDefault()}
-            onWheel={e => e.preventDefault()}
-          >
-            {geoData && (
-              <Geographies geography={geoData}>
-                {({ geographies }) =>
-                  geographies.map(geo => {
-                    const countyFips = geo.properties.COUNTY;
-                    const fullFips = `42${countyFips}`;
-                    const countyStyle = COUNTY_STYLES[fullFips];
-                    const fillColor = countyStyle ? countyStyle.color : DEFAULT_FILL;
-                    const hoverColor = countyStyle ? countyStyle.hoverColor : '#CBD5E1';
-                    const centroid = geoCentroid(geo);
-                    const countyName = countyStyle ? countyStyle.name : (geo.properties.NAME || 'County');
-    
-                    return (
-                      <Geography
-                        key={geo.rsmKey}
-                        geography={geo}
-                        fill={fillColor}
-                        stroke={STATE_STROKE}
-                        strokeWidth={0.5}
-                        style={{
-                          default: { outline: 'none' },
-                          hover: { fill: hoverColor, outline: 'none', cursor: 'pointer' },
-                          pressed: { outline: 'none' }
-                        }}
-                        onMouseEnter={() => {
-                          setTooltipContent(countyName);
-                        }}
-                        onMouseMove={(e) => {
-                          setTooltipPosition({ x: e.clientX, y: e.clientY });
-                        }}
-                        onMouseLeave={() => {
-                          setTooltipContent(null);
-                        }}
-                        onClick={() => {
-                          if (countyStyle) {
-                            handleCountyClick(fullFips);
-                          }
-                        }}
-                      >
-                        {countyStyle && (
-                          <text
-                            textAnchor="middle"
-                            x={centroid[0]}
-                            y={centroid[1]}
-                            fill="#000"
-                            fontSize={10}
-                            fontWeight="bold"
-                            style={{
-                              pointerEvents: 'none',
-                              textShadow: '0px 0px 2px #fff'
-                            }}
-                          >
-                            {countyStyle.name}
-                          </text>
-                        )}
-                      </Geography>
-                    );
-                  })
-                }
-              </Geographies>
-            )}
-          </ZoomableGroup>
-        </ComposableMap>
-        
-        {tooltipContent && (
-          <div 
-            className="tooltip" 
-            style={{
-              position: 'absolute',
-              top: tooltipPosition.y,
-              left: tooltipPosition.x,
-              backgroundColor: 'rgba(30, 41, 59, 0.85)',
-              color: '#fff',
-              padding: '6px 10px',
-              borderRadius: '6px',
-              fontSize: '0.875rem',
-              pointerEvents: 'none',
-              transform: 'translate(10px, 10px)',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-              backdropFilter: 'blur(4px)',
-              border: '1px solid rgba(255, 255, 255, 0.1)'
-            }}
-          >
-            {tooltipContent}
-          </div>
-        )}
+      {/* Globe Section */}
+      <div className={`globe-container relative ${mapLoaded ? 'opacity-100' : 'opacity-0'} ${showDetailView ? 'h-80' : ''}`}
+           style={{ transition: 'opacity 1s ease-in-out, height 0.5s ease-in-out' }}>
+        {renderGlobe()}
       </div>
       
       {/* County Details Section with improved transitions */} 
-      {selectedCounty && (
+      {selectedCounty && showDetailView && (
         <div id="map-county-details-section" 
             className={`county-details-section bg-white border-t border-gray-200 mt-4 overflow-visible transition-all duration-300 ${isTransitioning ? 'opacity-80' : 'opacity-100'}`}
             style={{ minHeight: loading ? '400px' : 'auto' }}>
@@ -1337,7 +1584,9 @@ const handlePropertyClick = (propertyId) => {
                 <PropertyLoadingSkeleton />
               </div>
             ) : (
-              renderCountyDetails()
+              <div id="county-details-container">
+                {renderCountyDetails()}
+              </div>
             )}
         </div>
       )}
