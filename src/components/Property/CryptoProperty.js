@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-// Remove chart.js imports since it's not installed
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -16,7 +15,7 @@ import {
 import { Line, Bar, Pie } from 'react-chartjs-2';
 import { useAuth } from '../../context/auth-context';
 
-// Comment out ChartJS registration
+// ChartJS registration 
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -51,11 +50,6 @@ const CryptoProperty = ({ propertyData, mlsData }) => {
     { id: 'dai', name: 'Dai (DAI)', logo: '/images/crypto/dai.svg' },
   ];
 
-  // Debug effect - MOVED HERE to avoid hooks order issues
-  useEffect(() => {
-    console.log('CryptoProperty component mounted', { propertyData });
-  }, [propertyData]);
-  
   // Mock fetch of crypto data - replace with actual API call
   useEffect(() => {
     const fetchCryptoData = async () => {
@@ -108,7 +102,6 @@ const CryptoProperty = ({ propertyData, mlsData }) => {
   }, [propertyData]);
   
   // Normalize the property data to handle different formats
-  // MOVED OUTSIDE of hooks to prevent conditional hook calling
   const normalizePropertyData = (data) => {
     if (!data) return {
       address: 'Property Address Unavailable',
@@ -120,8 +113,26 @@ const CryptoProperty = ({ propertyData, mlsData }) => {
       bathrooms: 0,
       squareFeet: 0,
       yearBuilt: 0,
-      description: 'No description available.'
+      description: 'No description available.',
+      image: '/properties.jpg' // Default fallback
     };
+    
+    // Extract image from various possible sources
+    let imagePath = null;
+    if (data.image) {
+      imagePath = data.image;
+    } else if (data.mediaUrls && data.mediaUrls.length) {
+      imagePath = data.mediaUrls[0];
+    } else if (data.images && data.images.length) {
+      imagePath = data.images[0];
+    } else if (data.media) {
+      imagePath = data.media;
+    }
+    
+    // If no image found, use default
+    if (!imagePath) {
+      imagePath = '/properties.jpg';
+    }
     
     // Handle different property data formats
     return {
@@ -135,7 +146,7 @@ const CryptoProperty = ({ propertyData, mlsData }) => {
       squareFeet: data.squareFeet || data.LivingArea || 0,
       yearBuilt: data.yearBuilt || 0,
       description: data.description || data.PublicRemarks || 'No description available.',
-      image: data.image || data.media || '/properties.jpg'
+      image: imagePath
     };
   };
   
@@ -210,7 +221,49 @@ const CryptoProperty = ({ propertyData, mlsData }) => {
     );
   }
 
-  // Comment out chart configuration for now
+  // Define chart options to match the dark theme
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: {
+          color: 'rgba(255, 255, 255, 0.8)',
+          font: {
+            size: 10
+          }
+        }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(30, 41, 59, 0.9)',
+        titleColor: 'rgba(255, 255, 255, 0.9)',
+        bodyColor: 'rgba(255, 255, 255, 0.8)',
+        borderColor: 'rgba(140, 171, 226, 0.3)',
+        borderWidth: 1
+      }
+    },
+    scales: {
+      x: {
+        grid: {
+          color: 'rgba(255, 255, 255, 0.1)'
+        },
+        ticks: {
+          color: 'rgba(255, 255, 255, 0.6)'
+        }
+      },
+      y: {
+        grid: {
+          color: 'rgba(255, 255, 255, 0.1)'
+        },
+        ticks: {
+          color: 'rgba(255, 255, 255, 0.6)'
+        }
+      }
+    }
+  };
+
+  // Cash flow chart data
   const cashFlowChartData = {
     labels: ['6 mo ago', '5 mo ago', '4 mo ago', '3 mo ago', '2 mo ago', 'Last month'],
     datasets: [
@@ -219,10 +272,12 @@ const CryptoProperty = ({ propertyData, mlsData }) => {
         data: financialData.cashFlow,
         borderColor: 'rgb(53, 162, 235)',
         backgroundColor: 'rgba(53, 162, 235, 0.5)',
+        tension: 0.3
       },
     ],
   };
   
+  // Return chart data for the bar chart
   const returnChartData = {
     labels: ['5Y ago', '4Y ago', '3Y ago', '2Y ago', 'Last Year'],
     datasets: [
@@ -265,9 +320,9 @@ const CryptoProperty = ({ propertyData, mlsData }) => {
         <div className="flex flex-wrap justify-between items-start">
           <div>
             <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
-              {propertyData.address || 'Property Address'}
+              {normalizedProperty.address}
             </h1>
-            <p className="text-gray-300">{propertyData.city}, {propertyData.state} {propertyData.zipCode}</p>
+            <p className="text-gray-300">{normalizedProperty.city}, {normalizedProperty.state} {normalizedProperty.zipCode}</p>
           </div>
           
           <div className="bg-gray-800 p-4 rounded-lg shadow-inner">
@@ -283,9 +338,13 @@ const CryptoProperty = ({ propertyData, mlsData }) => {
         <div className="lg:col-span-1">
           <div className="bg-gray-800 p-4 rounded-lg shadow-lg mb-6">
             <img 
-              src={propertyData.image || 'https://placehold.co/600x400/2d3748/f8fafc?text=Property+Image'} 
-              alt="Property" 
+              src={normalizedProperty.image} 
+              alt={`${normalizedProperty.address || 'Property'}`} 
               className="w-full h-64 object-cover rounded-md mb-4"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = '/properties.jpg';
+              }}
             />
             
             {/* Property Specifications */}
@@ -351,51 +410,28 @@ const CryptoProperty = ({ propertyData, mlsData }) => {
           <div className="bg-gray-800 p-4 rounded-lg shadow-lg mb-6">
             <h3 className="text-xl font-semibold mb-3 text-blue-300">Financial Performance</h3>
             
-            {/* Replace charts with simple data display until chart.js is installed */}
+            {/* Annual Return Chart - Now using actual Bar chart */}
             <div className="mb-6">
               <h4 className="text-sm font-medium text-gray-400 mb-2">Annual Return (%)</h4>
               <div className="bg-gray-700 p-4 rounded-lg">
-                <p className="text-center text-lg text-white">
-                  Chart will appear here after installing chart.js
-                </p>
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  {financialData.totalReturn.map((value, index) => (
-                    <div key={index} className="p-2 bg-gray-800 rounded">
-                      <p className="text-xs text-gray-400">Year {index + 1}</p>
-                      <p className="text-lg text-blue-400">{value}%</p>
-                    </div>
-                  ))}
+                <div style={{ height: '200px' }}>
+                  <Bar 
+                    data={returnChartData} 
+                    options={chartOptions} 
+                  />
                 </div>
               </div>
             </div>
             
-            {/* Cash Flow Data */}
+            {/* Cash Flow Chart - Now using actual Line chart */}
             <div className="mb-6">
               <h4 className="text-sm font-medium text-gray-400 mb-2">Monthly Cash Flow ($)</h4>
               <div className="bg-gray-700 p-4 rounded-lg">
-                <p className="text-center text-lg text-white">
-                  Chart will appear here after installing chart.js
-                </p>
-                <div className="mt-3 overflow-x-auto">
-                  <table className="min-w-full">
-                    <thead>
-                      <tr>
-                        <th className="px-2 py-1 text-xs text-gray-400">6 mo ago</th>
-                        <th className="px-2 py-1 text-xs text-gray-400">5 mo ago</th>
-                        <th className="px-2 py-1 text-xs text-gray-400">4 mo ago</th>
-                        <th className="px-2 py-1 text-xs text-gray-400">3 mo ago</th>
-                        <th className="px-2 py-1 text-xs text-gray-400">2 mo ago</th>
-                        <th className="px-2 py-1 text-xs text-gray-400">Last month</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        {financialData.cashFlow.map((value, index) => (
-                          <td key={index} className="px-2 py-1 text-center text-green-400">${value}</td>
-                        ))}
-                      </tr>
-                    </tbody>
-                  </table>
+                <div style={{ height: '200px' }}>
+                  <Line 
+                    data={cashFlowChartData} 
+                    options={chartOptions} 
+                  />
                 </div>
               </div>
             </div>

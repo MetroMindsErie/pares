@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { ActiveProperty } from '../../components/ActiveProperty';
 import { SoldProperty } from '../../components/SoldProperty';
 import CryptoProperty from '../../components/Property/CryptoProperty';  // Import the CryptoProperty component
 import { useAuth } from '../../context/auth-context';  // Import the auth context
+import Layout from '../../components/Layout'; // Import the Layout component
 import axios from 'axios';
 
 export async function getServerSideProps({ params }) {
@@ -144,34 +145,25 @@ export default function PropertyDetail({ property, isSold }) {
   const { template } = router.query;
   const { user, getUserRole } = useAuth();
   
-  // Log user role information for debugging
-  console.log("PropertyDetail: auth user", user?.id);
-  console.log("PropertyDetail: user roles", user?.roles);
-  
-  // Determine if user should see crypto template
+  // Determine if user should see crypto template - keep the logic, remove logs
   const shouldShowCryptoTemplate = () => {
-    // First priority: URL parameter (for testing)
+    // Priority 1: Explicit template parameter
     if (template === 'crypto' || router.query.force === 'crypto') {
-      console.log("Using crypto template based on URL parameter");
       return true;
     }
     
-    // Check if user has crypto_investor role
-    const hasCryptoRole = user?.roles?.includes('crypto_investor');
-    if (hasCryptoRole) {
-      console.log("Using crypto template based on user role");
+    // Priority 2: Check user role directly
+    if (user?.roles?.includes('crypto_investor')) {
       return true;
     }
     
-    // Check localStorage (for persistence)
+    // Priority 3: Check localStorage
     if (typeof window !== 'undefined' && localStorage.getItem('cryptoInvestorSelected') === 'true') {
-      console.log("Using crypto template based on localStorage flag");
       return true;
     }
     
-    // Check getUserRole function
+    // Priority 4: Check getUserRole function
     if (getUserRole && getUserRole() === 'crypto_investor') {
-      console.log("Using crypto template based on getUserRole function");
       localStorage.setItem('cryptoInvestorSelected', 'true');
       return true;
     }
@@ -181,68 +173,30 @@ export default function PropertyDetail({ property, isSold }) {
   
   // Determine which template to show
   const useCryptoTemplate = shouldShowCryptoTemplate();
-  
-  // Debug output
-  console.log("Final template decision:", useCryptoTemplate ? "CRYPTO" : "STANDARD");
 
   return (
-    <div className="min-h-screen bg-white text-black">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Template indicator for debugging */}
-        <div className="mb-4 px-3 py-1 inline-block text-xs rounded-full" style={{ 
-          backgroundColor: useCryptoTemplate ? '#10b981' : '#6366f1', 
-          color: 'white' 
-        }}>
-          {useCryptoTemplate ? '🔐 Crypto View' : '👤 Standard View'}
-        </div>
-        
-        {/* Choose the appropriate template based on both property status and user role */}
-        {isSold ? (
-          <SoldProperty property={property} />
-        ) : useCryptoTemplate ? (
-          <CryptoProperty propertyData={property} mlsData={property} />
-        ) : (
-          <ActiveProperty property={property} />
-        )}
+    <Layout> {/* Wrap everything in the Layout component */}
+      <div className="min-h-screen bg-white text-black">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Choose the appropriate template based on both property status and user role */}
+          {isSold ? (
+            <SoldProperty property={property} />
+          ) : useCryptoTemplate ? (
+            <CryptoProperty propertyData={property} mlsData={property} />
+          ) : (
+            <ActiveProperty property={property} />
+          )}
 
-        <div className="mt-8 text-center">
-          <button
-            onClick={() => router.back()}
-            className="bg-gray-100 text-black py-2 px-6 rounded-lg border border-black hover:bg-gray-200 transition-colors"
-          >
-            ← Back to Listings
-          </button>
-        </div>
-        
-        {/* Debugging buttons in development */}
-        {process.env.NODE_ENV !== 'production' && (
-          <div className="mt-4 p-4 border-t border-gray-200">
-            <div className="flex gap-2 flex-wrap justify-center">
-              <button 
-                onClick={() => router.push(`${router.asPath.split('?')[0]}?template=standard`)}
-                className="px-3 py-1 bg-blue-600 text-white text-xs rounded"
-              >
-                Force Standard View
-              </button>
-              <button 
-                onClick={() => router.push(`${router.asPath.split('?')[0]}?template=crypto`)}
-                className="px-3 py-1 bg-green-600 text-white text-xs rounded"
-              >
-                Force Crypto View
-              </button>
-              <button 
-                onClick={() => {
-                  localStorage.setItem('cryptoInvestorSelected', 'true');
-                  router.reload();
-                }}
-                className="px-3 py-1 bg-purple-600 text-white text-xs rounded"
-              >
-                Set Crypto Flag
-              </button>
-            </div>
+          <div className="mt-8 text-center">
+            <button
+              onClick={() => router.back()}
+              className="bg-gray-100 text-black py-2 px-6 rounded-lg border border-black hover:bg-gray-200 transition-colors"
+            >
+              ← Back to Listings
+            </button>
           </div>
-        )}
+        </div>
       </div>
-    </div>
+    </Layout>
   );
 }
