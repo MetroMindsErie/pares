@@ -176,10 +176,17 @@ export default function ProfileSetup() {
   };
 
   const handleRoleChange = (selectedRoles) => {
-    setFormData(prev => ({
-      ...prev,
-      roles: selectedRoles
-    }));
+    console.log('Role selection changed in profile page:', selectedRoles);
+    
+    // Ensure we're capturing the full array with a fresh copy
+    setFormData(prevState => {
+        const newData = {
+            ...prevState,
+            roles: [...selectedRoles]
+        };
+        console.log('Updated profile formData with roles:', newData.roles);
+        return newData;
+    });
   };
 
   const handleInterestChange = (selectedInterests) => {
@@ -201,52 +208,77 @@ export default function ProfileSetup() {
     setError(null);
 
     try {
-      if (!user) throw new Error('User not authenticated');
+        if (!user) throw new Error('User not authenticated');
 
-      // Prepare metadata with additional fields
-      const metadata = {
-        ...formData.metadata,
-        notification_preferences: {
-          email: formData.notification_email,
-          sms: formData.notification_sms
-        },
-        years_experience: formData.years_experience,
-        title: formData.title
-      };
+        // Prepare metadata with additional fields
+        const metadata = {
+            ...formData.metadata,
+            notification_preferences: {
+                email: formData.notification_email,
+                sms: formData.notification_sms
+            },
+            years_experience: formData.years_experience,
+            title: formData.title
+        };
 
-      // Save to database
-      const dataToSubmit = {
-        first_name: formData.first_name,
-        last_name: formData.last_name,
-        email: formData.email,
-        alternate_email: formData.alternate_email,
-        phone: formData.phone,
-        city: formData.city,
-        state: formData.state,
-        zip_code: formData.zip_code,
-        profile_type_id: formData.profile_type_id,
-        interests: formData.interests,
-        roles: formData.roles,
-        profile_picture_url: formData.profile_picture_url,
-        metadata: metadata,
-        hasprofile: true,
-        updated_at: new Date().toISOString()
-      };
+        // Ensure roles is always an array with at least 'user'
+        const rolesToSubmit = Array.isArray(formData.roles) && formData.roles.length > 0
+            ? [...formData.roles] // Create a fresh copy
+            : ['user'];
+        
+        console.log('Final roles before submission:', rolesToSubmit);
 
-      const { error } = await supabase
-        .from('users')
-        .update(dataToSubmit)
-        .eq('id', user.id);
+        // Save to database with verified roles array
+        const dataToSubmit = {
+            first_name: formData.first_name,
+            last_name: formData.last_name,
+            email: formData.email,
+            alternate_email: formData.alternate_email,
+            phone: formData.phone,
+            city: formData.city,
+            state: formData.state,
+            zip_code: formData.zip_code,
+            profile_type_id: formData.profile_type_id,
+            interests: formData.interests,
+            roles: rolesToSubmit,
+            profile_picture_url: formData.profile_picture_url,
+            metadata: metadata,
+            hasprofile: true,
+            updated_at: new Date().toISOString()
+        };
 
-      if (error) throw error;
+        console.log('Updating profile with final roles:', dataToSubmit.roles);
 
-      // Redirect to dashboard after successful profile setup
-      router.push('/dashboard');
+        const { error } = await supabase
+            .from('users')
+            .update(dataToSubmit)
+            .eq('id', user.id);
+
+        if (error) {
+            console.error('Supabase update error:', error);
+            throw error;
+        }
+
+        // Verify the save was successful
+        const { data: verifyData, error: verifyError } = await supabase
+            .from('users')
+            .select('roles')
+            .eq('id', user.id)
+            .single();
+            
+        if (verifyError) {
+            console.error('Error verifying saved roles:', verifyError);
+        } else {
+            console.log('VERIFICATION - Roles saved in database:', verifyData.roles);
+        }
+
+        // Redirect to dashboard after successful profile setup
+        router.push('/dashboard');
     } catch (error) {
-      console.error('Error updating profile:', error);
-      setError('Failed to update profile: ' + error.message);
+        console.error('Error updating profile:', error);
+        setError('Failed to update profile: ' + error.message);
     } finally {
-      setIsSubmitting(false);
+        setIsSubmitting(false);
     }
   };
 

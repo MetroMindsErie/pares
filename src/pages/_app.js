@@ -5,6 +5,7 @@ import '../styles/propertyTemplates.css';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AuthProvider } from '../context/auth-context';
 import supabase from '../lib/supabase-setup';
+import RoleSaver from '../components/Profile/RoleSaver';
 
 function SafeHydrate({ children }) {
   return (
@@ -63,6 +64,16 @@ function MyApp({ Component, pageProps }) {
     };
     
     checkSession();
+    
+    // Clean up all flags that could cause loops
+    if (typeof window !== 'undefined') {
+      // Only clear flags if not on these specific pages
+      if (!['/create-profile', '/profile'].includes(window.location.pathname)) {
+        sessionStorage.removeItem('selectedRoles');
+        sessionStorage.removeItem('expectedRoles');
+        sessionStorage.removeItem('dashboardLoadCount');
+      }
+    }
   }, []);
 
   // Use the layout defined at the page level, if available
@@ -75,6 +86,16 @@ function MyApp({ Component, pageProps }) {
 
   return (
     <AuthProvider>
+      {/* Only render RoleSaver on specific paths and only once per session */}
+      {typeof window !== 'undefined' && 
+       window.location.pathname === '/dashboard' && 
+       !sessionStorage.getItem('roleSaverRendered') && (
+        <>
+          <RoleSaver />
+          {/* Mark that RoleSaver has rendered to prevent duplicates */}
+          {sessionStorage.setItem('roleSaverRendered', 'true')}
+        </>
+      )}
       <ErrorBoundary>
         {isAuthPage ? (
           <SafeHydrate>

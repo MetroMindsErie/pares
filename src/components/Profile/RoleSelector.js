@@ -4,17 +4,44 @@ const roles = [
   { id: 'user', name: 'User', description: 'Regular platform user access' },
   { id: 'agent', name: 'Agent', description: 'Real estate agent access' },
   { id: 'broker', name: 'Broker', description: 'Broker with agent management' },
-  { id: 'admin', name: 'Admin', description: 'Administrative access' },
+  { id: 'crypto_investor', name: 'Crypto Investor', description: 'Access to fractional property investments via stablecoins' },
 ];
 
 export default function RoleSelector({ selectedRoles = [], onChange, onNext, onBack }) {
-  const [localSelectedRoles, setLocalSelectedRoles] = useState([...selectedRoles]);
+  // Initialize with previously selected roles or defaults
+  const [localSelectedRoles, setLocalSelectedRoles] = useState(() => {
+    // Try to get roles from session storage first for persistence
+    const savedRoles = typeof window !== 'undefined' ? 
+      sessionStorage.getItem('selectedRoles') : null;
+    
+    if (savedRoles) {
+      try {
+        const parsedRoles = JSON.parse(savedRoles);
+        if (Array.isArray(parsedRoles) && parsedRoles.length > 0) {
+          return parsedRoles;
+        }
+      } catch (e) {
+        console.error('Error parsing saved roles:', e);
+      }
+    }
+    
+    // Fall back to props or default
+    return selectedRoles.length > 0 ? [...selectedRoles] : ['user'];
+  });
+  
+  // Only log once when component mounts
+  useEffect(() => {
+    console.log('RoleSelector initialized with roles:', selectedRoles);
+  }, []);
   
   // Make sure we always have at least 'user' selected
   useEffect(() => {
     if (!localSelectedRoles.includes('user')) {
-      setLocalSelectedRoles(prev => [...prev, 'user']);
-      if (onChange) onChange([...localSelectedRoles, 'user']);
+      const updatedRoles = [...localSelectedRoles, 'user'];
+      setLocalSelectedRoles(updatedRoles);
+      
+      // Call the onChange handler to sync with parent component
+      if (onChange) onChange(updatedRoles);
     }
   }, []);
 
@@ -29,8 +56,35 @@ export default function RoleSelector({ selectedRoles = [], onChange, onNext, onB
       updatedRoles = [...localSelectedRoles, roleId];
     }
     
+    // Update local state
     setLocalSelectedRoles(updatedRoles);
+    
+    // Save to session storage for persistence
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('selectedRoles', JSON.stringify(updatedRoles));
+    }
+    
+    // Notify parent component of change
     if (onChange) onChange(updatedRoles);
+  };
+
+  // Handle the Next button click to ensure roles are saved
+  const handleNext = () => {
+    // Save to session storage one more time to ensure persistence
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('selectedRoles', JSON.stringify(localSelectedRoles));
+      
+      // Set a persistent flag if crypto investor was selected
+      if (localSelectedRoles.includes('crypto_investor')) {
+        localStorage.setItem('cryptoInvestorSelected', 'true');
+      }
+    }
+    
+    // Ensure parent component has the latest state before proceeding
+    if (onChange) onChange([...localSelectedRoles]);
+    
+    // Proceed to next step
+    onNext();
   };
 
   return (
@@ -85,6 +139,10 @@ export default function RoleSelector({ selectedRoles = [], onChange, onNext, onB
         })}
       </div>
       
+      <div className="mt-3 text-xs bg-gray-50 p-2 rounded">
+        <strong>Selected Roles:</strong> {localSelectedRoles.join(', ')}
+      </div>
+      
       <div className="flex justify-between mt-8">
         <button
           type="button"
@@ -95,7 +153,7 @@ export default function RoleSelector({ selectedRoles = [], onChange, onNext, onB
         </button>
         <button
           type="button"
-          onClick={onNext}
+          onClick={handleNext}
           className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
         >
           Continue

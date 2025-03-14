@@ -211,13 +211,40 @@ export default function CreateProfile() {
         setCurrentStep(prevStep => prevStep + 1);
     };
 
+    // Preserve role selection state between steps by storing in session storage
     const handleRoleChange = (selectedRoles) => {
-        console.log('Role selection changed:', selectedRoles);
+        // Save to session storage immediately to preserve state
+        sessionStorage.setItem('selectedRoles', JSON.stringify(selectedRoles));
+        
+        // Directly update state with new array to avoid accidental mutation
         setFormData(prev => ({
             ...prev,
-            roles: selectedRoles
+            roles: [...selectedRoles] // Copy array to ensure it's a new reference
         }));
     };
+
+    // When switching steps, make sure to preserve roles
+    useEffect(() => {
+        // When going to the interest step (step 5), ensure roles are preserved
+        if (currentStep === 5) {
+            const savedRoles = sessionStorage.getItem('selectedRoles');
+            if (savedRoles) {
+                try {
+                    const parsedRoles = JSON.parse(savedRoles);
+                    if (Array.isArray(parsedRoles) && parsedRoles.length > 0) {
+                        // Ensure we don't lose roles when going to the last step
+                        console.log('Preserving roles from session storage:', parsedRoles);
+                        setFormData(prev => ({
+                            ...prev,
+                            roles: parsedRoles
+                        }));
+                    }
+                } catch (e) {
+                    console.error('Error parsing saved roles:', e);
+                }
+            }
+        }
+    }, [currentStep]);
 
     const handleInterestChange = (selectedInterests) => {
         console.log('Interest selection changed:', selectedInterests);
@@ -238,6 +265,9 @@ export default function CreateProfile() {
         setIsSubmitting(true);
         setError(null);
 
+        // Clear session storage flag to prevent infinite loops
+        sessionStorage.removeItem('expectedRoles');
+        
         try {
             // Log the current user state for debugging
             console.log('Current user state during submission:', { 
@@ -314,6 +344,44 @@ export default function CreateProfile() {
                 title: formData.title
             };
 
+            // Log the exact roles array being submitted
+            console.log('FINAL ROLES BEING SUBMITTED:', formData.roles);
+
+            // Ensure roles is always an array with at least 'user'
+            let rolesToSubmit = Array.isArray(formData.roles) && formData.roles.length > 0 
+                ? [...formData.roles] // Create fresh copy
+                : ['user'];
+                
+            // CRITICAL FIX: Force include crypto_investor if it was selected
+            // This is needed because sometimes the role can get lost during form transitions
+            const hasCryptoInvestor = 
+                formData.roles?.includes('crypto_investor') || 
+                document.querySelector('[aria-checked="true"][role="checkbox"]')?.textContent.includes('Crypto Investor');
+                
+            if (hasCryptoInvestor && !rolesToSubmit.includes('crypto_investor')) {
+                console.log('Re-adding crypto_investor role that was lost');
+                rolesToSubmit.push('crypto_investor');
+            }
+
+            // Get roles from session storage as a backup
+            const savedRoles = sessionStorage.getItem('selectedRoles');
+            if (!rolesToSubmit.includes('crypto_investor') && savedRoles) {
+                try {
+                    const parsedRoles = JSON.parse(savedRoles);
+                    if (Array.isArray(parsedRoles) && parsedRoles.includes('crypto_investor')) {
+                        console.log('Restoring crypto_investor role from session storage');
+                        rolesToSubmit = parsedRoles;
+                    }
+                } catch (e) {
+                    console.error('Error parsing saved roles during submit:', e);
+                }
+            }
+            
+            // Ensure user role is included
+            if (!rolesToSubmit.includes('user')) {
+                rolesToSubmit.push('user');
+            }
+
             // Save to database
             const dataToSubmit = {
                 first_name: formData.first_name,
@@ -326,12 +394,14 @@ export default function CreateProfile() {
                 zip_code: formData.zip_code,
                 profile_type_id: formData.profile_type_id,
                 interests: formData.interests,
-                roles: formData.roles,
+                roles: rolesToSubmit, // Use our sanitized roles array
                 profile_picture_url: formData.profile_picture_url,
                 metadata: metadata,
                 hasprofile: true,
                 updated_at: new Date().toISOString()
             };
+
+            console.log('Submitting profile with final roles array:', dataToSubmit.roles);
 
             // Ensure profile picture is included if we have it
             if (formData.profile_picture_url) {
@@ -411,15 +481,34 @@ export default function CreateProfile() {
 
             if (error) throw error;
 
+            // Verify the save was successful by retrieving the user data
+            const { data: verifyData, error: verifyError } = await supabase
+                .from('users')
+                .select('roles')
+                .eq('id', user.id)
+                .single();
+                
+            if (verifyError) {
+                console.error('Error verifying saved roles:', verifyError);
+            } else {
+                console.log('VERIFICATION - Roles saved in database:', verifyData.roles);
+            }
+
             console.log('Completed profile creation, redirecting to dashboard');
             
-            // After successful save, force session refresh before redirecting
-            await supabase.auth.refreshSession();
+            // Remove all session storage items to prevent loop
+            sessionStorage.clear();
             
-            // Add a more significant delay to ensure state updates propagate
-            setTimeout(() => {
-                window.location.href = '/dashboard';  // Use direct navigation instead of router
-            }, 1000);
+            // Set the crypto investor flag in localStorage if needed for RoleSaver
+            if (rolesToSubmit.includes('crypto_investor')) {
+                localStorage.setItem('cryptoInvestorSelected', 'true');
+            }
+            
+            // Reset dashboard load counter
+            localStorage.setItem(`roleSaverRun_${user.id}`, 'true');
+            
+            // Use router.push instead of refreshing the page
+            router.push('/dashboard');
         } catch (error) {
             console.error('Error creating profile:', error);
             setError('Failed to create profile: ' + error.message);

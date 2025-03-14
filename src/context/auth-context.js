@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 
 const AuthContext = createContext({
   isAuthenticated: false,
@@ -61,22 +61,37 @@ export const AuthProvider = ({ children }) => {
             setError(error.message);
           } else if (data && data.session) {
             console.log('Found existing session, user authenticated');
-            setUser(data.session.user);
-            setIsAuthenticated(true);
             
             try {
+              // Fetch full user data including roles from the users table
               const { data: userData, error: userError } = await supabaseClient
                 .from('users')
-                .select('hasprofile')
+                .select('*')  // Select all fields including roles
                 .eq('id', data.session.user.id)
                 .single();
                 
               if (!userError && userData) {
+                // Merge the auth user with database user data
+                const mergedUser = {
+                  ...data.session.user,
+                  ...userData
+                };
+                console.log('Merged user data with roles:', {
+                  hasRoles: Array.isArray(userData.roles),
+                  roles: userData.roles
+                });
+                setUser(mergedUser);
                 setHasProfile(!!userData.hasprofile);
+              } else {
+                console.error('Failed to fetch user data:', userError);
+                setUser(data.session.user); // Fall back to just auth user
               }
             } catch (err) {
-              console.error('Error checking profile status:', err);
+              console.error('Error fetching user profile:', err);
+              setUser(data.session.user);
             }
+            
+            setIsAuthenticated(true);
           } else {
             console.log('No active session found');
           }
@@ -86,27 +101,47 @@ export const AuthProvider = ({ children }) => {
             
             if (event === 'SIGNED_IN' && session) {
               console.log('User signed in:', session.user.id);
-              setUser(session.user);
               setIsAuthenticated(true);
               
               try {
+                // Fetch full user data including roles
                 const { data: userData, error: userError } = await supabaseClient
                   .from('users')
-                  .select('hasprofile')
+                  .select('*')  // Select all fields including roles
                   .eq('id', session.user.id)
                   .single();
                   
                 if (!userError && userData) {
+                  // Merge the auth user with database user data
+                  const mergedUser = {
+                    ...session.user,
+                    ...userData
+                  };
+                  console.log('Auth change - merged user data with roles:', {
+                    hasRoles: Array.isArray(userData.roles),
+                    roles: userData.roles
+                  });
+                  setUser(mergedUser);
                   setHasProfile(!!userData.hasprofile);
+                } else {
+                  console.error('Failed to fetch user data on auth change:', userError);
+                  setUser(session.user); // Fall back to just auth user
                 }
               } catch (err) {
-                console.error('Error checking profile status:', err);
+                console.error('Error fetching user profile on auth change:', err);
+                setUser(session.user);
+                setHasProfile(false);
               }
             } else if (event === 'SIGNED_OUT') {
               console.log('User signed out');
               setUser(null);
               setIsAuthenticated(false);
               setHasProfile(null);
+            } else if (event === 'USER_UPDATED') {
+              console.log('User updated, refreshing user data');
+              if (session) {
+                await refreshUserData(session.user.id);
+              }
             }
           });
 
@@ -232,6 +267,76 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Refresh the user data including roles from database
+  const refreshUserData = useCallback(async (userId) => {
+    if (!userId || !isBrowser) return;
+    
+    try {
+      // Skip excessive logging - only log once when refreshing
+      const { default: supabaseClient } = await import('../utils/supabaseClient');
+      
+      const { data, error } = await supabaseClient
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+        
+      if (error) {
+        console.error('Error refreshing user data:', error);
+        return;
+      }
+      
+      if (data) {
+        // Only log significant information
+        const hasRoles = Array.isArray(data.roles) && data.roles.length > 0;
+        const hasCryptoInvestor = hasRoles && data.roles.includes('crypto_investor');
+        
+        if (hasCryptoInvestor) {
+          console.log('User has crypto_investor role');
+        }
+        
+        // Ensure we don't lose auth data when updating with database data
+        setUser(prevUser => ({
+          ...prevUser,
+          ...data
+        }));
+        
+        setHasProfile(!!data.hasprofile);
+        return data;
+      }
+    } catch (err) {
+      console.error('Error in refreshUserData:', err);
+    }
+    return null;
+  }, [isBrowser]);
+
+  // Get user role with preference for crypto_investor
+  const getUserRole = useCallback(() => {
+    if (!user) {
+      return 'user';
+    }
+    
+    // Skip logging every time - it's causing spam
+    
+    // If roles isn't an array or is empty, return 'user'
+    if (!Array.isArray(user.roles) || user.roles.length === 0) {
+      // Try to refresh the user data in the background to load roles
+      if (user.id) {
+        refreshUserData(user.id);
+      }
+      return 'user';
+    }
+    
+    if (user.roles.includes('crypto_investor')) {
+      return 'crypto_investor';
+    } else if (user.roles.includes('broker')) {
+      return 'broker';
+    } else if (user.roles.includes('agent')) {
+      return 'agent';
+    }
+    return 'user';
+  }, [user, refreshUserData]);
+
   const value = {
     isAuthenticated,
     user,
@@ -242,7 +347,9 @@ export const AuthProvider = ({ children }) => {
     login,
     loginWithProvider: (...args) => loginWithProviderRef.current(...args),
     logout,
-    signup
+    signup,
+    getUserRole,
+    refreshUserData
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

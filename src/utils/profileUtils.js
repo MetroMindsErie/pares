@@ -6,34 +6,46 @@ import supabase from '../lib/supabase-setup';
  * @returns {Promise<boolean>} - Whether the user has a complete profile
  */
 export const checkUserHasProfile = async (userId) => {
-  if (!userId) return false;
-  
   try {
-    console.log('Checking profile for user ID:', userId);
-    
+    // Fetch the user profile including roles
     const { data, error } = await supabase
       .from('users')
-      .select('*')  // Select all fields to make debugging easier
+      .select('hasprofile, roles')
       .eq('id', userId)
       .single();
     
-    if (error) {
-      console.error('Error checking user profile:', error);
-      return false;
-    }
+    if (error) throw error;
     
-    console.log('Profile data:', data);
+    console.log('User profile check:', { hasprofile: data.hasprofile, roles: data.roles });
     
-    // Consider a profile complete if it exists at all
-    // You can add more specific checks based on your data model
-    const hasprofile = Boolean(data && Object.keys(data).length > 0);
-    
-    console.log('Has profile:', hasprofile);
-    
-    return hasprofile;
+    return data.hasprofile;
   } catch (err) {
     console.error('Error in checkUserHasProfile:', err);
     return false;
+  }
+};
+
+/**
+ * Get user roles from the database
+ * @param {string} userId - The user ID to check
+ * @returns {Promise<Array>} - Array of user roles
+ */
+export const getUserRoles = async (userId) => {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('roles')
+      .eq('id', userId)
+      .single();
+    
+    if (error) throw error;
+    
+    console.log('User roles from database:', data.roles);
+    
+    return Array.isArray(data.roles) ? data.roles : ['user'];
+  } catch (err) {
+    console.error('Error getting user roles:', err);
+    return ['user']; // Default to user role on error
   }
 };
 

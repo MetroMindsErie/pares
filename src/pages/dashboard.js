@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../context/auth-context';
 import WelcomeBanner from '../components/Dashboard/WelcomeBanner';
 import StatsCard from '../components/Dashboard/StatsCard';
@@ -15,172 +15,124 @@ export default function DashboardPage() {
   const [activities, setActivities] = useState([]);
   const [localLoading, setLocalLoading] = useState(true);
   const [hasFacebookConnection, setHasFacebookConnection] = useState(false);
-  const [userId, setUserId] = useState(null); // Add dedicated state for userId
+  const [userId, setUserId] = useState(null);
   const router = useRouter();
+  
+  // Use refs to track if effects have run to prevent loops
+  const profileFetchedRef = useRef(false);
+  const activitiesFetchedRef = useRef(false);
+  const cleanupDoneRef = useRef(false);
 
-  // Get user ID from multiple sources to ensure we have one
+  // Stop potential infinite loops by clearing URL params
+  useEffect(() => {
+    if (!cleanupDoneRef.current && typeof window !== 'undefined') {
+      cleanupDoneRef.current = true;
+      
+      // Clear URL params that could cause refresh loops
+      if (window.location.href.includes('?')) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+      
+      // Reset dashboard load counter and all session storage that might cause loops
+      sessionStorage.removeItem('dashboardLoadCount');
+      localStorage.removeItem('cryptoInvestorSelected');
+    }
+    
+    // Cleanup and prevent edge case loops
+    return () => {
+      sessionStorage.removeItem('dashboardLoadCount');
+    };
+  }, []);
+
+  // Get user ID from multiple sources to ensure we have one - only run once
   useEffect(() => {
     const getUserId = async () => {
+      // Skip if we already have a user ID
+      if (userId) return;
+      
       // First try from auth context
       if (user?.id) {
-        console.log("Setting user ID from auth context:", user.id);
         setUserId(user.id);
         return;
       }
 
-      // If not in auth context, try from session
+      // If not in auth context, try from session once
       try {
         const { data } = await supabase.auth.getSession();
         const sessionUserId = data?.session?.user?.id;
         
         if (sessionUserId) {
-          console.log("Setting user ID from session:", sessionUserId);
           setUserId(sessionUserId);
           return;
         }
       } catch (err) {
         console.error('Error getting session:', err);
       }
-      
-      // No user ID available
-      console.warn("No user ID available from auth context or session");
     };
     
     getUserId();
-  }, [user]);
+  }, [user, userId]);
 
-  // Improved redirect logic with session verification and better loading state
+  // Fetch user profile only once
   useEffect(() => {
-    const verifySession = async () => {
-      if (!loading && authChecked && !isAuthenticated) {
-        console.log('No authentication detected in dashboard, checking session directly');
-        
-        try {
-          // Double-check session before redirecting
-          const { data: { session } } = await supabase.auth.getSession();
-          
-          if (session?.user) {
-            console.log('Found session despite auth context reporting not authenticated');
-            return; // Don't redirect if we have a session
-          }
-          
-          console.log('No session found, redirecting to login');
-          router.replace('/login?redirect=/dashboard');
-        } catch (err) {
-          console.error('Session verification error:', err);
-        }
-      }
-    };
+    // Only run this effect if we have a userId and haven't fetched the profile yet
+    if (!userId || profileFetchedRef.current) return;
     
-    verifySession();
-  }, [authChecked, isAuthenticated, loading, router]);
-
-  // Debug logging
-  useEffect(() => {
-    console.log('Dashboard auth state:', { 
-      isAuthenticated, 
-      loading, 
-      authChecked,
-      hasUser: !!user,
-      userId: user?.id,
-      storedUserId: userId
-    });
-  }, [isAuthenticated, loading, authChecked, user, userId]);
-
-  // Fetch user profile with enhanced error handling and retries
-  useEffect(() => {
     const fetchUserProfile = async () => {
-      // Don't try to fetch if we don't have a user ID
-      if (!userId) {
-        console.log("Waiting for user ID before fetching profile...");
-        return;
-      }
-      
       setLocalLoading(true);
-      let retryCount = 0;
-      const MAX_RETRIES = 3;
+      profileFetchedRef.current = true; // Mark as fetched to prevent loops
       
-      const attemptFetch = async () => {
-        try {
-          console.log('Fetching profile for user:', userId);
-          
-          // Also check for Facebook connection
-          const fbConnected = await checkFacebookConnection(userId);
-          setHasFacebookConnection(fbConnected);
-          console.log('User has Facebook connection:', fbConnected);
-          
-          // Fetch user profile with additional debug
-          const { data, error } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', userId)
-            .single();
+      try {
+        // Fetch user profile
+        const { data, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', userId)
+          .single();
 
-          if (error) {
-            console.error('Error fetching profile:', error);
-            setLocalLoading(false);
-            return;
-          }
-
-          console.log('Fetched profile with these fields:', Object.keys(data));
-          console.log('Profile picture URL from database:', data.profile_picture_url);
-          
-          // If no profile picture in database but user has one in metadata, use that
-          if (!data.profile_picture_url && user?.user_metadata?.avatar_url) {
-            console.log('Using avatar URL from auth metadata:', user.user_metadata.avatar_url);
-            
-            // Update the database with this URL
-            const { error: updateError } = await supabase
-              .from('users')
-              .update({ 
-                profile_picture_url: user.user_metadata.avatar_url,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', userId);
-            
-            if (updateError) {
-              console.error('Error updating profile picture:', updateError);
-            } else {
-              // Update local data copy with picture URL
-              data.profile_picture_url = user.user_metadata.avatar_url;
-            }
-          }
-          
-          setProfile(data);
+        if (error) {
+          console.error('Error fetching profile:', error);
           setLocalLoading(false);
-        } catch (err) {
-          console.error('Profile fetch error:', err);
-          if (retryCount < MAX_RETRIES) {
-            retryCount++;
-            console.log(`Error fetching profile, retrying (${retryCount}/${MAX_RETRIES})...`);
-            setTimeout(attemptFetch, 1000); // Retry after 1 second
-          } else {
-            console.log('Max retries reached, giving up');
-            setLocalLoading(false);
-          }
+          return;
         }
-      };
 
-      attemptFetch();
+        // If no profile picture but user has one in metadata, use that
+        if (!data.profile_picture_url && user?.user_metadata?.avatar_url) {
+          data.profile_picture_url = user.user_metadata.avatar_url;
+        }
+          
+        setProfile(data);
+        
+        // Check Facebook connection in a non-blocking way
+        checkFacebookConnection(userId)
+          .then(fbConnected => setHasFacebookConnection(fbConnected))
+          .catch(err => console.error('Error checking Facebook connection:', err));
+      } catch (err) {
+        console.error('Profile fetch error:', err);
+      } finally {
+        setLocalLoading(false);
+      }
     };
 
     fetchUserProfile();
   }, [userId, user]);
 
-  const fetchRecentActivities = async () => {
-    // Implement your activity fetching logic here
-    // For now, using mock data
+  // Fetch activities only once - simplified to avoid loops
+  useEffect(() => {
+    if (activitiesFetchedRef.current) return;
+    activitiesFetchedRef.current = true;
+    
+    // Mock data for now
     setActivities([
       { title: 'Profile updated', time: '2 hours ago', icon: '📝' },
       { title: 'New connection added', time: '1 day ago', icon: '🤝' }
     ]);
-  };
-
-  useEffect(() => {
-    fetchRecentActivities();
   }, []);
 
-  if (loading || localLoading || !userId) {
+  // Simplified loading check
+  const isLoading = loading || (localLoading && !profile);
+
+  if (isLoading) {
     return (
       <div className="min-h-screen flex justify-center items-center">
         <div className="flex flex-col items-center">

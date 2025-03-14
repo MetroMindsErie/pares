@@ -8,10 +8,9 @@ import {
 } from 'react-simple-maps';
 import { useRouter } from 'next/router';
 import { getPropertiesByFilter, getNextProperties } from './src/services/trestleServices';
-import ReactDOM from 'react-dom';
+import { useAuth } from './src/context/auth-context'; // Import useAuth hook
 
 // More accurate center point for Pennsylvania
-const PENNSYLVANIA_CENTER = [-77.85, 40.95];
 
 const COUNTY_STYLES = {
   '42049': { 
@@ -253,13 +252,13 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
   const [mapLoaded, setMapLoaded] = useState(false);
   const countyDetailsRef = useRef(null);
   const [initialViewCompleted, setInitialViewCompleted] = useState(false);
-  const detailsContainerRef = useRef(null);
   const [isMobileView, setIsMobileView] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [propertiesPerPage, setPropertiesPerPage] = useState(9); // Changed to 9 per page
   const [totalPages, setTotalPages] = useState(1);
   const [allProperties, setAllProperties] = useState({});
+  const { user, getUserRole } = useAuth(); // Get user and getUserRole method
 
   // Detect mobile view
   useEffect(() => {
@@ -549,7 +548,7 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
                       </div>
                       <div class="flex items-center">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 00-2 2v4a2 2 0 002 2h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 00-2 2v4a2 2 0 00-2 2h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                         </svg>
                         <span>${property.BathroomsTotalInteger || 'N/A'} ba</span>
                       </div>
@@ -633,11 +632,12 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
       });
     }
     
-    // Add event listeners to property cards
+    // Add event listeners to property cards with proper role check
     containerElement.querySelectorAll('.property-card').forEach(card => {
       card.addEventListener('click', () => {
         const propertyId = card.getAttribute('data-property-id');
         if (propertyId) {
+          // Use the handlePropertyClick function that uses getUserRole
           handlePropertyClick(propertyId);
         }
       });
@@ -875,12 +875,42 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
     }
   };
 
-  const handlePropertyClick = (propertyId) => {
-    console.log(`Property clicked: ${propertyId}`);
-    if (onInteraction) onInteraction();
-    // Navigate to property details page
-    router.push(`/property/${propertyId}`);
-  };
+const handlePropertyClick = (propertyId) => {
+  console.log(`Property clicked: ${propertyId}`);
+  if (onInteraction) onInteraction();
+  
+  // Check multiple sources to determine if user is a crypto investor
+  let isCryptoInvestor = false;
+  
+  // Check 1: getUserRole method
+  if (getUserRole && getUserRole() === 'crypto_investor') {
+    console.log('Crypto investor detected via getUserRole');
+    isCryptoInvestor = true;
+  } 
+  // Check 2: Direct user.roles check
+  else if (user && Array.isArray(user.roles) && user.roles.includes('crypto_investor')) {
+    console.log('Crypto investor detected via user.roles');
+    isCryptoInvestor = true;
+  }
+  // Check 3: localStorage flag
+  else if (typeof window !== 'undefined' && localStorage.getItem('cryptoInvestorSelected') === 'true') {
+    console.log('Crypto investor detected via localStorage');
+    isCryptoInvestor = true;
+  }
+  
+  console.log(`User role check complete - isCryptoInvestor: ${isCryptoInvestor}`);
+  
+  // Store the crypto investor status in localStorage for persistence
+  if (isCryptoInvestor && typeof window !== 'undefined') {
+    localStorage.setItem('cryptoInvestorSelected', 'true');
+  }
+  
+  // Navigate to property with appropriate template
+  router.push({
+    pathname: `/property/${propertyId}`,
+    query: { template: isCryptoInvestor ? 'crypto' : 'standard' }
+  });
+};
 
   // Render the county details
   const renderCountyDetails = () => {
@@ -992,7 +1022,7 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
                       </div>
                       <div className="flex items-center">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 00-2 2v4a2 2 0 002 2h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 00-2 2v4a2 2 0 00-2 2h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                         </svg>
                         <span>{property.BathroomsTotalInteger || 'N/A'} ba</span>
                       </div>
@@ -1233,7 +1263,7 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
                           hover: { fill: hoverColor, outline: 'none', cursor: 'pointer' },
                           pressed: { outline: 'none' }
                         }}
-                        onMouseEnter={(e) => {
+                        onMouseEnter={() => {
                           setTooltipContent(countyName);
                         }}
                         onMouseMove={(e) => {
