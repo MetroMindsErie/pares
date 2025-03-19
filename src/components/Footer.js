@@ -35,36 +35,34 @@ const Footer = () => {
             </h3>
             <ul className="mt-4 space-y-2">
               <li>
-                <Link href="/properties" className="text-gray-400 hover:text-white transition-colors">
+                <Link href="#" className="text-gray-400 hover:text-white transition-colors">
                   Properties
                 </Link>
               </li>
               <li>
-                <Link href="/agents" className="text-gray-400 hover:text-white transition-colors">
+                <Link href="#" className="text-gray-400 hover:text-white transition-colors">
                   Agents
                 </Link>
               </li>
               {/* ...existing links... */}
             </ul>
           </div>
-          
-          {/* Column 3: Resources */}
-          <div>
-            <h3 className="text-sm font-semibold text-gray-300 tracking-wider uppercase">
-              Resources
-            </h3>
-            <ul className="mt-4 space-y-2">
-              <li>
-                <Link href="/blog" className="text-gray-400 hover:text-white transition-colors">
-                  Blog
-                </Link>
-              </li>
-              <li>
-                <Link href="/faq" className="text-gray-400 hover:text-white transition-colors">
-                  FAQ
-                </Link>
-              </li>
-              {/* ...existing links... */}
+                <div>
+                <h3 className="text-sm font-semibold text-gray-300 tracking-wider uppercase">
+                  Resources
+                </h3>
+                <ul className="mt-4 space-y-2">
+                  <li>
+                  <a href="#" onClick={(e) => e.preventDefault()} className="text-gray-400 hover:text-white transition-colors">
+                    Blog Coming Soon
+                  </a>
+                  </li>
+                  <li>
+                  <a href="#" onClick={(e) => e.preventDefault()} className="text-gray-400 hover:text-white transition-colors">
+                    FAQ Coming Soon
+                  </a>
+                  </li>
+                  {/* ...existing links... */}
             </ul>
           </div>
         </div>
