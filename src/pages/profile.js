@@ -9,7 +9,7 @@ import InterestPicker from '../components/Profile/InterestPicker';
 // import ProfileTypeSelector from '../components/Profile/ProfileTypeSelector';
 import ProfileProgressBar from '../components/Profile/ProfileProgressBar';
 import { getFacebookToken, getFacebookProfilePicture } from '../services/facebookService';
-
+import Navbar from '../components/Navbar';
 export default function ProfileSetup() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
@@ -328,6 +328,7 @@ export default function ProfileSetup() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+    <Navbar></Navbar>
       <div className="max-w-3xl mx-auto">
         <div className="space-y-8">
           <div className="text-center">

@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuth } from '../context/auth-context';
-import supabase from '../lib/supabase-setup';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -143,7 +142,7 @@ export default function Navbar() {
               >
                 Home
               </Link>
-              <Link 
+              {/* <Link 
                 href="/properties" 
                 className={`inline-flex items-center px-1 pt-1 border-b-2 ${
                   router.pathname === '/properties' 
@@ -152,8 +151,8 @@ export default function Navbar() {
                 } text-sm font-medium`}
               >
                 Properties
-              </Link>
-              <Link 
+              </Link> */}
+              {/* <Link 
                 href="/agents" 
                 className={`inline-flex items-center px-1 pt-1 border-b-2 ${
                   router.pathname === '/agents' 
@@ -162,7 +161,7 @@ export default function Navbar() {
                 } text-sm font-medium`}
               >
                 Agents
-              </Link>
+              </Link> */}
             </div>
           </div>
           
