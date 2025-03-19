@@ -12,6 +12,7 @@ export default function Navbar() {
   const [isCryptoInvestor, setIsCryptoInvestor] = useState(false);
   const [walletConnected, setWalletConnected] = useState(false);
   const [walletAddress, setWalletAddress] = useState('');
+  const [isOnline, setIsOnline] = useState(true); // Track connection status
   
   // Use refs to track if useEffects have already run to prevent loops
   const roleCheckedRef = useRef(false);
@@ -21,6 +22,28 @@ export default function Navbar() {
   useEffect(() => {
     setIsClient(true);
   }, []);
+  
+  // Monitor online/offline status
+  useEffect(() => {
+    if (!isClient) return;
+    
+    // Set initial connection status
+    setIsOnline(navigator.onLine);
+    
+    // Event handlers for connection changes
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    // Add event listeners
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    // Clean up listeners on unmount
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [isClient]);
   
   // Force refresh user data only once when component mounts
   useEffect(() => {
@@ -133,6 +156,12 @@ export default function Navbar() {
               </Link>
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+              {/* Connection status indicator */}
+              <div className="flex items-center">
+                <span className={`h-2 w-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'} mr-2`}></span>
+                <span className="text-xs text-gray-500">{isOnline ? 'Online' : 'Offline'}</span>
+              </div>
+              
               <Link 
                 href="/" 
                 className={`inline-flex items-center px-1 pt-1 border-b-2 ${
@@ -259,6 +288,12 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       <div className={`${isOpen ? 'block' : 'hidden'} sm:hidden`}>
+        {/* Mobile connection status */}
+        <div className="px-4 py-2 border-b border-gray-200 flex items-center">
+          <span className={`h-2 w-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'} mr-2`}></span>
+          <span className="text-sm text-gray-500">{isOnline ? 'Connected to internet' : 'No internet connection'}</span>
+        </div>
+        
         <div className="pt-2 pb-3 space-y-1">
           <Link 
             href="/" 

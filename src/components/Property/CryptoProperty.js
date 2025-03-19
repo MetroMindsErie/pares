@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
+import { getEastersCrypto } from '../../lib/eastersCrypto';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -161,8 +162,209 @@ const CryptoProperty = ({ propertyData, mlsData }) => {
   // Use normalization here, after all hooks have been called
   const normalizedProperty = normalizePropertyData(propertyData || mlsData);
   
-  // Connect to MetaMask wallet
+  const [eastersCrypto, setEastersCrypto] = useState(null);
+  const [tokenContract, setTokenContract] = useState(null);
+  const [tokenized, setTokenized] = useState(false);
+  const [tokenUri, setTokenUri] = useState(null);
+  
+  // Initialize Easter's Crypto when component mounts
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const crypto = getEastersCrypto();
+      setEastersCrypto(crypto);
+      
+      // Check if you have any deployed contracts already
+      const checkContracts = async () => {
+        try {
+          // This is a simplified example - in production you would fetch 
+          // contracts from a database or blockchain explorer
+          const storedContract = localStorage.getItem('propertyTokenContract');
+          if (storedContract) {
+            setTokenContract(storedContract);
+            console.log('Found existing token contract:', storedContract);
+          }
+        } catch (error) {
+          console.error('Error checking contracts:', error);
+        }
+      };
+      
+      checkContracts();
+    }
+  }, []);
+  
+  // Connect to MetaMask wallet with Easter's Crypto
   const connectWallet = async () => {
+    try {
+      if (!eastersCrypto) {
+        console.error('Easter\'s Crypto not initialized');
+        return;
+      }
+      
+      const web3 = eastersCrypto.getWeb3();
+      const accounts = await web3.eth.requestAccounts();
+      
+      if (accounts && accounts.length > 0) {
+        const address = accounts[0];
+        setWalletAddress(address);
+        setWalletConnected(true);
+        
+        // Save wallet address to localStorage
+        localStorage.setItem('walletAddress', address);
+        
+        // Add event listener for account changes
+        window.ethereum.on('accountsChanged', (newAccounts) => {
+          if (newAccounts.length === 0) {
+            setWalletConnected(false);
+            setWalletAddress('');
+            localStorage.removeItem('walletAddress');
+          } else {
+            setWalletAddress(newAccounts[0]);
+            localStorage.setItem('walletAddress', newAccounts[0]);
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error connecting to wallet:', error);
+      alert('Failed to connect wallet: ' + error.message);
+    }
+  };
+
+  // Deploy a new token contract
+  const deployTokenContract = async () => {
+    if (!eastersCrypto || !walletConnected) {
+      alert('Please connect your wallet first');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      // Deploy new tokenization contract
+      const result = await eastersCrypto.smartContractService.deployTokenizationContract(
+        'PARES Property',  // Name
+        'PPRTY'           // Symbol
+      );
+      
+      if (result.success) {
+        setTokenContract(result.contractAddress);
+        // Store contract address in localStorage (in production, use a database)
+        localStorage.setItem('propertyTokenContract', result.contractAddress);
+        alert(`Contract deployed successfully: ${result.contractAddress}`);
+      } else {
+        alert('Failed to deploy contract: ' + (result.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error deploying contract:', error);
+      alert('Error deploying contract: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Tokenize the current property
+  const tokenizeProperty = async () => {
+    if (!eastersCrypto || !walletConnected || !tokenContract) {
+      alert('Please connect your wallet and deploy a contract first');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      // Normalize property data
+      const property = normalizePropertyData(propertyData || mlsData);
+      
+      // Create metadata for the token
+      const metadata = {
+        name: `Property at ${property.address}`,
+        description: property.description || 'Tokenized real estate property',
+        image: property.image,
+        attributes: {
+          address: property.address,
+          city: property.city,
+          bedrooms: property.bedrooms,
+          bathrooms: property.bathrooms,
+          squareFeet: property.squareFeet,
+          yearBuilt: property.yearBuilt,
+          price: property.price
+        }
+      };
+      
+      // In a real application, you'd upload this to IPFS
+      // For this example, we'll just create a mock URI
+      const mockTokenUri = `https://example.com/metadata/${Date.now()}.json`;
+      setTokenUri(mockTokenUri);
+      
+      // Mint the property token
+      const result = await eastersCrypto.tokenManager.mintPropertyToken(
+        tokenContract,
+        mockTokenUri,
+        walletAddress, // recipient
+        metadata.attributes
+      );
+      
+      if (result.success) {
+        setTokenId(result.tokenId);
+        setTokenized(true);
+        alert(`Property tokenized successfully! Token ID: ${result.tokenId}`);
+      } else {
+        alert('Tokenization failed: ' + (result.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error tokenizing property:', error);
+      alert('Error tokenizing property: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Add these buttons to your component UI
+  const renderTokenizationControls = () => {
+    if (!eastersCrypto) return null;
+    
+    return (
+      <div className="bg-gray-800 p-4 rounded-lg shadow-lg mb-6">
+        <h3 className="text-xl font-semibold mb-3 text-blue-300">Property Tokenization</h3>
+        
+        {!tokenContract ? (
+          <button
+            onClick={deployTokenContract}
+            disabled={loading || !walletConnected}
+            className={`w-full py-3 px-4 mb-3 font-bold rounded-lg transition-all duration-200 ${
+              (!walletConnected)
+                ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                : 'bg-purple-600 text-white hover:bg-purple-700'
+            }`}
+          >
+            {loading ? 'Deploying Contract...' : 'Deploy Token Contract'}
+          </button>
+        ) : (
+          <>
+            <div className="bg-gray-700 p-3 rounded-lg mb-3">
+              <p className="text-sm text-gray-300 mb-1">Contract Address</p>
+              <p className="font-medium text-green-400">{tokenContract}</p>
+            </div>
+            
+            {!tokenized ? (
+              <button
+                onClick={tokenizeProperty}
+                disabled={loading}
+                className="w-full py-3 px-4 font-bold rounded-lg transition-all duration-200 bg-green-600 text-white hover:bg-green-700"
+              >
+                {loading ? 'Tokenizing Property...' : 'Tokenize This Property'}
+              </button>
+            ) : (
+              <div className="bg-green-800 p-3 rounded-lg">
+                <p className="text-sm text-green-300 mb-1">Property Tokenized!</p>
+                <p className="font-medium text-white">Token ID: {tokenId}</p>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    );
+  };
+
+  // Connect to MetaMask wallet
+  const connectWalletLegacy = async () => {
     try {
       // Detect if there are multiple wallet providers that might be causing conflicts
       let provider = null;
@@ -638,6 +840,9 @@ const CryptoProperty = ({ propertyData, mlsData }) => {
               </button>
             </div>
           </div>
+          
+          {/* Add the tokenization controls here */}
+          {renderTokenizationControls()}
           
           {/* Legal Information */}
           <div className="bg-gray-800 p-4 rounded-lg shadow-lg">
