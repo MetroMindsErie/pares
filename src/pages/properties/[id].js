@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import Layout from '../../components/Layout';
 import PropertyView from '../../components/Property/PropertyView';
 import { useAuth } from '../../context/auth-context';
 import RoleSaver from '../../components/Profile/RoleSaver';
@@ -88,7 +87,6 @@ const PropertyPage = () => {
   }, [id]);
 
   return (
-    <Layout>
       <div className="container mx-auto px-4 py-8">
         {/* Add role debug info */}
         {user && (
@@ -110,7 +108,6 @@ const PropertyPage = () => {
           <PropertyView propertyData={property} mlsData={mlsData} />
         )}
       </div>
-    </Layout>
   );
 };
 

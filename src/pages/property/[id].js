@@ -1,10 +1,9 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useRouter } from 'next/router';
 import { ActiveProperty } from '../../components/ActiveProperty';
 import { SoldProperty } from '../../components/SoldProperty';
 import CryptoProperty from '../../components/Property/CryptoProperty';  // Import the CryptoProperty component
 import { useAuth } from '../../context/auth-context';  // Import the auth context
-import Layout from '../../components/Layout'; // Import the Layout component
 import axios from 'axios';
 
 export async function getServerSideProps({ params }) {
@@ -175,7 +174,6 @@ export default function PropertyDetail({ property, isSold }) {
   const useCryptoTemplate = shouldShowCryptoTemplate();
 
   return (
-    <Layout> {/* Wrap everything in the Layout component */}
       <div className="min-h-screen bg-white text-black">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Choose the appropriate template based on both property status and user role */}
@@ -197,6 +195,5 @@ export default function PropertyDetail({ property, isSold }) {
           </div>
         </div>
       </div>
-    </Layout>
   );
 }
