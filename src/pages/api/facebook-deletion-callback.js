@@ -4,7 +4,7 @@ import crypto from 'crypto';
 // Initialize Supabase admin client for data deletion
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
 const FACEBOOK_APP_SECRET = process.env.SUPABASE_AUTH_FACEBOOK_SECRET;
@@ -16,19 +16,21 @@ export default async function handler(req, res) {
     const mode = req.query['hub.mode'];
     const token = req.query['hub.verify_token'];
     const challenge = req.query['hub.challenge'];
-    
+
     // Verify using your configured verification token
     const verifyToken = process.env.FACEBOOK_WEBHOOK_VERIFY_TOKEN;
-    
+
+    console.log('Webhook verification request received:', { mode, token, challenge, verifyToken });
+
     if (mode === 'subscribe' && token === verifyToken) {
       console.log('Facebook webhook verified successfully');
       return res.status(200).send(challenge);
     } else {
-      console.error('Failed to verify Facebook webhook');
+      console.error('Failed to verify Facebook webhook:', { mode, token, verifyToken });
       return res.status(403).json({ error: 'Verification failed' });
     }
   }
-  
+
   // Handle actual data deletion requests
   if (req.method === 'POST') {
     try {
@@ -105,14 +107,27 @@ async function handleUserDataDeletion(facebookUserId) {
       throw providerError;
     }
     
-    if (!providers || providers.length === 0) {
+    // Also check the users table which has a direct facebook_user_id field
+    const { data: directUsers, error: directUserError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('facebook_user_id', facebookUserId);
+      
+    if (directUserError) {
+      throw directUserError;
+    }
+    
+    // Combine user IDs from both queries (avoiding duplicates)
+    let userIds = new Set(providers?.map(p => p.user_id) || []);
+    directUsers?.forEach(user => userIds.add(user.id));
+    
+    if (userIds.size === 0) {
       console.log('No users found with this Facebook ID');
       return;
     }
     
     // 2. Delete user data for each matched user
-    for (const provider of providers) {
-      const userId = provider.user_id;
+    for (const userId of userIds) {
       console.log(`Deleting data for user ID: ${userId}`);
       
       // Delete user's content (reels, etc.)
@@ -121,27 +136,40 @@ async function handleUserDataDeletion(facebookUserId) {
         .delete()
         .eq('user_id', userId);
       
+      // Check if user has a profile picture in user_profile table
+      const { data: userProfile, error: profileError } = await supabase
+        .from('user_profile')
+        .select('profile_picture_url')
+        .eq('id', userId)
+        .single();
+      
+      if (!profileError && userProfile?.profile_picture_url) {
+        // Delete profile picture from storage if it's stored in Supabase
+        try {
+          const picUrl = userProfile.profile_picture_url;
+          if (picUrl && picUrl.includes('user-content')) {
+            // Extract path from URL if it's stored in Supabase
+            const pathMatch = picUrl.match(/user-content\/([^?]+)/);
+            if (pathMatch && pathMatch[1]) {
+              await supabase.storage.from('user-content').remove([pathMatch[1]]);
+            }
+          }
+        } catch (storageError) {
+          console.error(`Error deleting profile picture for user ${userId}:`, storageError);
+        }
+      }
+      
       // Delete from auth_providers
       await supabase
         .from('auth_providers')
         .delete()
         .eq('user_id', userId);
       
-      // Delete profile/avatar from storage
-      try {
-        // Remove user's profile pictures from storage
-        const { data: storageObjects } = await supabase
-          .storage
-          .from('user-content')
-          .list(`profile-pictures/${userId}`);
-          
-        if (storageObjects && storageObjects.length > 0) {
-          const filePaths = storageObjects.map(obj => `profile-pictures/${userId}/${obj.name}`);
-          await supabase.storage.from('user-content').remove(filePaths);
-        }
-      } catch (storageError) {
-        console.error(`Error deleting storage for user ${userId}:`, storageError);
-      }
+      // Delete from user_profile if it exists
+      await supabase
+        .from('user_profile')
+        .delete()
+        .eq('id', userId);
       
       // Delete user record itself
       await supabase
