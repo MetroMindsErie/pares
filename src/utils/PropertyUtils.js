@@ -62,23 +62,44 @@ export const hasCryptoInvestorRoleSync = () => {
 };
 
 /**
+ * Check if crypto view is currently toggled on
+ */
+export const getCryptoViewToggleState = () => {
+  return localStorage.getItem('cryptoViewEnabled') === 'true';
+};
+
+/**
+ * Set crypto view toggle state
+ */
+export const setCryptoViewToggleState = (enabled) => {
+  localStorage.setItem('cryptoViewEnabled', enabled ? 'true' : 'false');
+};
+
+/**
  * Get property template to use based on user role
  */
 export const getPropertyTemplate = async (userId) => {
-  // First check sync methods
-  if (hasCryptoInvestorRoleSync()) {
-    return 'crypto';
+  // Check if user has crypto investor role
+  let isCryptoInvestor = hasCryptoInvestorRoleSync();
+  
+  if (!isCryptoInvestor && userId) {
+    isCryptoInvestor = await checkCryptoInvestorRole(userId);
   }
   
-  // Then check async
-  if (!userId) return 'standard';
+  // Only show crypto view if user is a crypto investor AND has toggled it on
+  if (isCryptoInvestor) {
+    const cryptoViewEnabled = getCryptoViewToggleState();
+    return cryptoViewEnabled ? 'crypto' : 'standard';
+  }
   
-  const isCryptoInvestor = await checkCryptoInvestorRole(userId);
-  return isCryptoInvestor ? 'crypto' : 'standard';
+  // Always standard view for non-crypto investors
+  return 'standard';
 };
 
 export default {
   checkCryptoInvestorRole,
   getPropertyTemplate,
-  hasCryptoInvestorRoleSync
+  hasCryptoInvestorRoleSync,
+  getCryptoViewToggleState,
+  setCryptoViewToggleState
 };

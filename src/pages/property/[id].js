@@ -2,7 +2,7 @@ import React from 'react';
 import { useRouter } from 'next/router';
 import { ActiveProperty } from '../../components/ActiveProperty';
 import { SoldProperty } from '../../components/SoldProperty';
-import CryptoProperty from '../../components/Property/CryptoProperty';  // Import the CryptoProperty component
+import PropertyView from '../../components/Property/PropertyView';  // Import PropertyView component
 import { useAuth } from '../../context/auth-context';  // Import the auth context
 import axios from 'axios';
 
@@ -141,49 +141,14 @@ export async function getServerSideProps({ params }) {
 
 export default function PropertyDetail({ property, isSold }) {
   const router = useRouter();
-  const { template } = router.query;
-  const { user, getUserRole } = useAuth();
+  const { user } = useAuth();
   
-  // Determine if user should see crypto template - keep the logic, remove logs
-  const shouldShowCryptoTemplate = () => {
-    // Priority 1: Explicit template parameter
-    if (template === 'crypto' || router.query.force === 'crypto') {
-      return true;
-    }
-    
-    // Priority 2: Check user role directly
-    if (user?.roles?.includes('crypto_investor')) {
-      return true;
-    }
-    
-    // Priority 3: Check localStorage
-    if (typeof window !== 'undefined' && localStorage.getItem('cryptoInvestorSelected') === 'true') {
-      return true;
-    }
-    
-    // Priority 4: Check getUserRole function
-    if (getUserRole && getUserRole() === 'crypto_investor') {
-      localStorage.setItem('cryptoInvestorSelected', 'true');
-      return true;
-    }
-    
-    return false;
-  };
-  
-  // Determine which template to show
-  const useCryptoTemplate = shouldShowCryptoTemplate();
-
-  return (
+  // If the property is sold, show the SoldProperty view
+  if (isSold) {
+    return (
       <div className="min-h-screen bg-white text-black">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Choose the appropriate template based on both property status and user role */}
-          {isSold ? (
-            <SoldProperty property={property} />
-          ) : useCryptoTemplate ? (
-            <CryptoProperty propertyData={property} mlsData={property} />
-          ) : (
-            <ActiveProperty property={property} />
-          )}
+          <SoldProperty property={property} />
 
           <div className="mt-8 text-center">
             <button
@@ -195,5 +160,25 @@ export default function PropertyDetail({ property, isSold }) {
           </div>
         </div>
       </div>
+    );
+  }
+  
+  // For active properties, use the PropertyView component which has the toggle
+  return (
+    <div className="min-h-screen bg-white text-black">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Use PropertyView which handles the toggle between views */}
+        <PropertyView propertyData={property} mlsData={property} />
+
+        <div className="mt-8 text-center">
+          <button
+            onClick={() => router.back()}
+            className="bg-gray-100 text-black py-2 px-6 rounded-lg border border-black hover:bg-gray-200 transition-colors"
+          >
+            ← Back to Listings
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

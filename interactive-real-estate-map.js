@@ -9,6 +9,7 @@ import {
 import { useRouter } from 'next/router';
 import { getPropertiesByFilter, getNextProperties } from './src/services/trestleServices';
 import { useAuth } from './src/context/auth-context'; // Import useAuth hook
+import { getCryptoViewToggleState, setCryptoViewToggleState } from './src/utils/PropertyUtils'; // Import crypto toggle functions
 
 // More accurate center point for Pennsylvania
 
@@ -903,12 +904,21 @@ const handlePropertyClick = (propertyId) => {
   // Store the crypto investor status in localStorage for persistence
   if (isCryptoInvestor && typeof window !== 'undefined') {
     localStorage.setItem('cryptoInvestorSelected', 'true');
+    
+    // Ensure the toggle is initialized (default to standard view)
+    if (localStorage.getItem('cryptoViewEnabled') === null) {
+      setCryptoViewToggleState(false);
+    }
   }
   
-  // Navigate to property with appropriate template
+  // Check if crypto view is enabled via toggle
+  const cryptoViewEnabled = isCryptoInvestor && getCryptoViewToggleState();
+  console.log(`Crypto view toggle state: ${cryptoViewEnabled}`);
+  
+  // Navigate to property with template based on both role AND toggle state
   router.push({
     pathname: `/property/${propertyId}`,
-    query: { template: isCryptoInvestor ? 'crypto' : 'standard' }
+    query: { template: cryptoViewEnabled ? 'crypto' : 'standard' }
   });
 };
 
