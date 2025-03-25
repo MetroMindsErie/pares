@@ -28,7 +28,7 @@ const nextConfig = {
   unstable_excludeFiles: [
     '**/src/pages/login.js',
     '**/src/pages/register.js',
-    '**/src/pages/profile.js'
+    '**/src/pages/create-profile.js'
   ],
   webpack: (config) => {
     // Disable persistent caching to avoid large buffer allocations

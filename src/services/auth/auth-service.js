@@ -218,8 +218,46 @@ export const handleAuthCallback = async () => {
  * Sign out the current user
  */
 export const signOut = async () => {
-  const { error } = await supabase.auth.signOut();
-  return { error };
+  try {
+    // Capture user ID before signing out to use in cleanup
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    // First, clear any local storage items that might be causing issues
+    if (user?.id) {
+      localStorage.removeItem(`roleSaverRun_${user.id}`);
+      sessionStorage.removeItem('selectedRoles');
+      localStorage.removeItem('cryptoInvestorSelected');
+    }
+    
+    // Clear any other application-specific storage
+    localStorage.removeItem('dashboard_lastAccessed');
+    sessionStorage.removeItem('auth_redirected');
+
+    // Perform the actual sign out
+    const { error } = await supabase.auth.signOut();
+    
+    if (error) throw error;
+    
+    // Force clear session cookies as backup
+    document.cookie.split(';').forEach(c => {
+      document.cookie = c
+        .replace(/^ +/, '')
+        .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
+    });
+    
+    // After successful signout, ensure the page gets fully reloaded
+    // rather than just client-side navigation which can preserve state
+    window.location.href = '/login';
+    
+    return { success: true, error: null };
+  } catch (error) {
+    console.error('Sign out error:', error);
+    
+    // Even on error, try to force redirect to login
+    window.location.href = '/login';
+    
+    return { success: false, error };
+  }
 };
 
 /**
@@ -245,15 +283,57 @@ export const getCurrentUser = async () => {
     if (userError) {
       // If user doesn't exist in our table yet, return the auth user
       if (userError.code === 'PGRST116') {
+        console.log('User not found in users table, creating initial record');
+        
+        // Create initial record for the user
+        const initialUserData = {
+          id: session.user.id,
+          email: session.user.email,
+          first_name: session.user.user_metadata?.full_name?.split(' ')[0] || '',
+          last_name: session.user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
+          avatar_url: session.user.user_metadata?.avatar_url,
+          hasprofile: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        
+        await supabase.from('users').insert(initialUserData);
+        
         return { 
           user: { 
             ...session.user, 
-            hasprofile: false 
+            ...initialUserData
           }, 
           error: null 
         };
       }
       throw userError;
+    }
+    
+    // Ensure the user record has at least basic data
+    if (userData && !userData.hasprofile) {
+      // If we're missing name but have it in metadata, update the record
+      if ((!userData.first_name || !userData.last_name) && 
+          session.user.user_metadata?.full_name) {
+        
+        console.log('Updating user record with missing name data from metadata');
+        
+        const firstName = session.user.user_metadata?.full_name?.split(' ')[0] || '';
+        const lastName = session.user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '';
+        
+        await supabase
+          .from('users')
+          .update({ 
+            first_name: firstName,
+            last_name: lastName,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', session.user.id);
+        
+        // Update the userData object with the new values
+        userData.first_name = firstName;
+        userData.last_name = lastName;
+      }
     }
     
     return { 

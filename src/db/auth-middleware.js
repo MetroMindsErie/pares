@@ -14,7 +14,7 @@ export async function middleware(req) {
   const isApiRoute = req.nextUrl.pathname.startsWith('/api');
   const isProtectedRoute = 
     req.nextUrl.pathname.startsWith('/dashboard') || 
-    req.nextUrl.pathname.startsWith('/profile') ||
+    req.nextUrl.pathname.startsWith('/create-profile') ||
     req.nextUrl.pathname.startsWith('/admin');
   
   // Special handling for admin routes

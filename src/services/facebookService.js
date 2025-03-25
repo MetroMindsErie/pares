@@ -223,124 +223,68 @@ export const validateFacebookToken = async (accessToken) => {
  */
 export const fetchUserReels = async (accessToken, providerId = 'me') => {
   try {
-    console.log('Fetching reels with #realestate hashtag from Facebook...');
+    console.log('Fetching reels from Facebook using ID:', providerId);
     
-    // First search for posts with #realestate hashtag
-    const hashtagResponse = await fetch(
-      `https://graph.facebook.com/v18.0/${providerId}/posts?fields=id,message,attachments{media_type,url,description,media,target{id}},permalink_url,created_time&limit=100&access_token=${accessToken}`
-    );
+    // First try the videos endpoint with reels filter
+    const videosEndpoint = `https://graph.facebook.com/v19.0/${providerId}/videos`;
+    const response = await fetch(`${videosEndpoint}?fields=id,description,source,permalink_url,created_time,thumbnails,title,picture&video_type=reels&limit=50&access_token=${accessToken}`);
     
-    const hashtagData = await hashtagResponse.json();
-    const realEstateVideos = [];
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Facebook API error:', errorData);
+      throw new Error(`Facebook API error: ${errorData.error?.message || 'Unknown error'}`);
+    }
     
-    // Filter posts for real estate content
-    if (hashtagData?.data?.length > 0) {
-      console.log(`Found ${hashtagData.data.length} posts, searching for real estate content...`);
-      
-      for (const post of hashtagData.data) {
-        const message = post.message?.toLowerCase() || '';
-        const hasRealEstateHashtag = message.includes('#realestate') || 
-                                    message.includes('real estate') ||
-                                    message.includes('realtor');
-        
-        if (hasRealEstateHashtag && post.attachments?.data) {
-          // Extract videos from post attachments
-          const videoAttachments = post.attachments.data.filter(
-            attachment => attachment.media_type === 'video'
-          );
-          
-          for (const video of videoAttachments) {
-            // Get video details if we have a target ID
-            if (video.target?.id) {
-              // Get full video details
-              const videoDetailResponse = await fetch(
-                `https://graph.facebook.com/v18.0/${video.target.id}?fields=id,description,source,thumbnails&access_token=${accessToken}`
-              );
-              
-              const videoDetail = await videoDetailResponse.json();
-              
-              realEstateVideos.push({
-                id: videoDetail.id,
-                media_type: 'VIDEO',
-                media_url: videoDetail.source || null,
-                permalink: post.permalink_url,
-                thumbnail_url: videoDetail.thumbnails?.data?.[0]?.uri || null,
-                caption: videoDetail.description || post.message || '',
-                timestamp: post.created_time
-              });
-            }
+    console.log(`Retrieved videos from Facebook`);
+    const data = await response.json();
+    const reelsResults = (data.data || []).map(video => ({
+      id: video.id,
+      title: video.title || video.description || 'Untitled Reel',
+      description: video.description || '',
+      source: video.source,
+      picture: video.picture,
+      created_time: video.created_time,
+      permalink_url: video.permalink_url
+    }));
+    
+    // Fallback: try regular posts with video attachments
+    console.log('No reels found, trying posts endpoint for video content');
+    const postsEndpoint = `https://graph.facebook.com/v19.0/${providerId}/posts`;
+    const postsResponse = await fetch(`${postsEndpoint}?fields=id,message,created_time,permalink_url,attachments{media_type,media,url,description,title}&limit=50&access_token=${accessToken}`);
+    
+    if (!postsResponse.ok) {
+      const errorData = await postsResponse.json();
+      console.error('Facebook posts API error:', errorData);
+      throw new Error(`Facebook API error: ${errorData.error?.message || 'Unknown error'}`);
+    }
+    
+    const postsData = await postsResponse.json();
+    
+    // Filter posts with video attachments
+    const videoResults = [];
+    for (const post of (postsData.data || [])) {
+      if (post.attachments && post.attachments.data) {
+        for (const attachment of post.attachments.data) {
+          if (attachment.media_type === 'video') {
+            videoResults.push({
+              id: post.id,
+              title: attachment.title || post.message || 'Untitled Video',
+              description: attachment.description || post.message || '',
+              source: attachment.media?.source || attachment.url,
+              picture: attachment.media?.image?.src,
+              created_time: post.created_time,
+              permalink_url: post.permalink_url
+            });
           }
         }
       }
-      
-      if (realEstateVideos.length > 0) {
-        console.log(`Found ${realEstateVideos.length} real estate related videos`);
-        return realEstateVideos;
-      }
     }
     
-    // Primary fallback: Fetch reels directly
-    console.log('No real estate videos found in posts, trying reels endpoint...');
-    const videosResponse = await fetch(
-      `https://graph.facebook.com/v18.0/${providerId}/videos?fields=id,description,source,permalink_url,created_time,thumbnails&video_type=reels&limit=50&access_token=${accessToken}`
-    );
-    
-    const data = await videosResponse.json();
-    
-    if (data?.data?.length > 0) {
-      console.log(`Found ${data.data.length} reels using reels endpoint`);
-      // Filter them for real estate content
-      return data.data
-        .filter(video => {
-          const description = (video.description || '').toLowerCase();
-          return description.includes('real estate') || 
-                 description.includes('#realestate') || 
-                 description.includes('#realtor');
-        })
-        .map(video => ({
-          id: video.id,
-          media_type: 'VIDEO',
-          media_url: video.source || null,
-          permalink: video.permalink_url,
-          thumbnail_url: video.thumbnails?.data?.[0]?.uri || null,
-          caption: video.description || '',
-          timestamp: video.created_time
-        }));
-    }
-    
-    // Secondary fallback to general videos
-    console.log('No reels found, trying fallback to general videos');
-    const generalVideosResponse = await fetch(
-      `https://graph.facebook.com/v18.0/${providerId}/videos?fields=id,description,source,permalink_url,created_time,thumbnails&video_type=all&limit=50&access_token=${accessToken}`
-    );
-    
-    const generalData = await generalVideosResponse.json();
-    
-    if (generalData?.data?.length > 0) {
-      console.log(`Found ${generalData.data.length} videos, filtering for real estate content`);
-      return generalData.data
-        .filter(video => {
-          const description = (video.description || '').toLowerCase();
-          return description.includes('real estate') || 
-                 description.includes('#realestate') || 
-                 description.includes('#realtor');
-        })
-        .map(video => ({
-          id: video.id,
-          media_type: 'VIDEO',
-          media_url: video.source || null,
-          permalink: video.permalink_url,
-          thumbnail_url: video.thumbnails?.data?.[0]?.uri || null,
-          caption: video.description || '',
-          timestamp: video.created_time
-        }));
-    }
-    
-    console.log('No real estate videos found using any endpoint');
-    return [];
+    console.log(`Found ${videoResults.length} videos in posts`);
+    return videoResults;
   } catch (error) {
-    console.error('Error fetching real estate reels from Facebook:', error.message);
-    return [];
+    console.error('Error fetching user reels:', error);
+    throw error;
   }
 };
 

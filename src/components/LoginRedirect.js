@@ -20,7 +20,7 @@ export default function LoginRedirect() {
         if (hasprofile !== null) {
           if (hasprofile === false) {
             console.log('User needs to create profile (from context)');
-            router.replace('/profile?setup=true');
+            router.replace('/create-profile?setup=true');
           } else {
             console.log('User has profile (from context), redirecting to dashboard');
             router.replace('/dashboard');
@@ -43,12 +43,12 @@ export default function LoginRedirect() {
             router.replace('/dashboard');
           } else {
             console.log('User needs to create profile (from DB)');
-            router.replace('/profile?setup=true');
+            router.replace('/create-profile?setup=true');
           }
         } catch (err) {
           console.error('Error checking profile status:', err);
           // Default to profile creation on error
-          router.replace('/profile?setup=true&error=true');
+          router.replace('/create-profile?setup=true&error=true');
         }
       }
     };

@@ -50,5 +50,5 @@ export async function GET(request) {
     }
   }
 
-  return NextResponse.redirect(new URL('/profile?setup=true', request.url));
+  return NextResponse.redirect(new URL('/create-profile?setup=true', request.url));
 }

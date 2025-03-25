@@ -204,7 +204,7 @@ export default function Navbar() {
                   Dashboard
                 </Link>
                 <Link 
-                  href="/profile" 
+                  href="/create-profile" 
                   className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-800"
                 >
                   Profile
@@ -330,7 +330,7 @@ export default function Navbar() {
                 Dashboard
               </Link>
               <Link 
-                href="/profile" 
+                href="/create-profile" 
                 className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 text-base font-medium"
               >
                 Profile

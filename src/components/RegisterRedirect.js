@@ -11,7 +11,7 @@ export default function RegisterRedirect() {
     // Only redirect after auth has finished loading and user is authenticated
     if (!loading && isAuthenticated) {
       if (hasprofile === false) {
-        router.push('/profile?setup=true');
+        router.push('create-/profile?setup=true');
       } else {
         router.push('/dashboard');
       }

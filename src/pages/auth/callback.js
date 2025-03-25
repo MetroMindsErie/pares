@@ -87,7 +87,7 @@ export default function AuthCallback() {
         // This helps in production when specific errors shouldn't block signup flow
         try {
           console.log('Redirecting to profile setup despite error');
-          router.replace('/profile?setup=true&recovery=true');
+          router.replace('/create-profile?setup=true&recovery=true');
         } catch (routerErr) {
           console.error('Even router redirect failed:', routerErr);
           router.replace('/login?error=callback_error');
@@ -126,8 +126,8 @@ export default function AuthCallback() {
           }
         }
         
-        // Check profile status and redirect accordingly
-        await redirectBasedOnProfileStatus(user.id);
+        // Enhanced profile status check that also ensures basic profile fields exist
+        await checkAndEnsureUserProfile(user.id);
       } catch (err) {
         console.error('Error processing authenticated user:', err);
         
@@ -145,16 +145,57 @@ export default function AuthCallback() {
         }));
         
         // CRITICAL: Default to profile creation if there's an error
-        // This ensures users aren't stuck in a broken state
         console.log('Error occurred, defaulting to profile creation');
-        router.replace('/profile?setup=true&error=processing');
+        router.replace('/create-profile?setup=true&error=processing');
+      }
+    };
+    
+    // New helper function to check and ensure user profile completeness
+    const checkAndEnsureUserProfile = async (userId) => {
+      try {
+        // Check if user has a complete profile with all required fields
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', userId)
+          .single();
+          
+        if (userError) {
+          console.error('Error checking user profile:', userError);
+          router.replace('/create-profile?setup=true&error=check');
+          return;
+        }
+        
+        // Check if crucial profile fields exist
+        const hasRequiredFields = 
+          userData.first_name && 
+          userData.last_name && 
+          userData.hasprofile === true;
+        
+        console.log('User profile status:', {
+          hasprofile: userData.hasprofile,
+          hasRequiredFields,
+          firstName: !!userData.first_name,
+          lastName: !!userData.last_name
+        });
+        
+        if (hasRequiredFields) {
+          console.log('User has complete profile, redirecting to dashboard');
+          router.replace('/dashboard');
+        } else {
+          console.log('User needs to complete profile, redirecting to profile setup');
+          router.replace('/create-profile?setup=true');
+        }
+      } catch (error) {
+        console.error('Error in profile completeness check:', error);
+        router.replace('/create-profile?setup=true&error=exception');
       }
     };
     
     // Helper function to process Facebook data
     const processFacebookData = async (user, fbUserId) => {
       try {
-        console.log('Processing Facebook data');
+        console.log('Processing Facebook data for user:', user.id);
         setDebugInfo(prev => ({...prev, processingFacebook: true}));
         
         // Get tokens - try different sources
@@ -164,33 +205,42 @@ export default function AuthCallback() {
                              null;
         
         if (!providerToken) {
-          console.warn('No Facebook access token available');
+          console.warn('No Facebook provider token available');
           return;
         }
         
-        // Get profile picture from Facebook
-        let profilePictureUrl = user.user_metadata?.avatar_url || null;
+        // Extract all available metadata
+        const firstName = user.user_metadata?.full_name?.split(' ')[0] || '';
+        const lastName = user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '';
+        const email = user.email || '';
+        const avatarUrl = user.user_metadata?.avatar_url || null;
         
-        // If no picture in metadata, try to fetch from Facebook
-        if (!profilePictureUrl && providerToken) {
-          try {
-            const graphResponse = await fetch(
-              `https://graph.facebook.com/v18.0/me?fields=picture.type(large)&access_token=${providerToken}`
-            );
-            
-            if (graphResponse.ok) {
-              const graphData = await graphResponse.json();
-              if (graphData?.picture?.data?.url) {
-                profilePictureUrl = graphData.picture.data.url;
-                console.log('Got picture URL from fields parameter');
-              }
-            }
-          } catch (pictureError) {
-            console.error('Failed to fetch profile picture from Facebook:', pictureError);
+        console.log('Extracted Facebook profile data:', { 
+          firstName, 
+          lastName, 
+          email, 
+          hasAvatar: !!avatarUrl,
+          fbUserId
+        });
+        
+        // Get additional data from Facebook API
+        let additionalData = {};
+        try {
+          const fbResponse = await fetch(`https://graph.facebook.com/v19.0/me?fields=hometown,location,birthday&access_token=${providerToken}`);
+          if (fbResponse.ok) {
+            const fbData = await fbResponse.json();
+            additionalData = {
+              facebook_location: fbData.location?.name,
+              facebook_hometown: fbData.hometown?.name,
+              facebook_birthday: fbData.birthday
+            };
+            console.log('Retrieved additional Facebook data:', additionalData);
           }
+        } catch (fbApiError) {
+          console.warn('Could not fetch additional Facebook data:', fbApiError);
         }
         
-        // Update users table with Facebook data
+        // Update users table with ALL Facebook data
         try {
           const { error: fbError } = await supabase
             .from('users')
@@ -199,21 +249,30 @@ export default function AuthCallback() {
               facebook_user_id: fbUserId,
               facebook_token_valid: true,
               facebook_token_updated_at: new Date().toISOString(),
-              profile_picture_url: profilePictureUrl || null,
+              profile_picture_url: avatarUrl || null,
+              // Make sure we're including these key fields
+              first_name: firstName || null,
+              last_name: lastName || null,
+              email: email || null,
+              // Include additional fields from Facebook
+              ...additionalData,
+              // Ensure these fields are set
+              hasprofile: false, // Will be set to true after profile completion
+              created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             })
             .eq('id', user.id);
-              
+          
           if (fbError) {
-            console.error('Error updating Facebook user data:', fbError);
+            console.error('Error updating user with Facebook data:', fbError);
           } else {
-            console.log('Successfully saved Facebook data');
+            console.log('Successfully saved Facebook user data');
           }
         } catch (updateError) {
           console.error('Exception updating Facebook user data:', updateError);
         }
         
-        // Store in auth_providers table as well - wrap in try/catch to prevent breaking flow
+        // Store in auth_providers table for token management
         try {
           // Check if an entry already exists
           console.log('Attempting to store Facebook token in auth_providers');
@@ -286,7 +345,7 @@ export default function AuthCallback() {
           });
           
           console.log('Created initial user record, redirecting to profile setup');
-          router.replace('/profile?setup=true&new=true');
+          router.replace('/create-profile?setup=true&new=true');
           return;
         }
         
@@ -301,7 +360,7 @@ export default function AuthCallback() {
           console.error('Error checking user profile:', userError);
           // IMPORTANT: When in doubt, redirect to profile setup
           console.log('Error checking profile status, defaulting to profile setup');
-          router.replace('/profile?setup=true&error=check');
+          router.replace('/create-profile?setup=true&error=check');
           return;
         }
         
@@ -312,7 +371,7 @@ export default function AuthCallback() {
           router.replace('/dashboard');
         } else {
           console.log('User needs to create profile, redirecting to profile setup');
-          router.replace('/profile?setup=true');
+          router.replace('/create-profile?setup=true');
         }
       } catch (error) {
         console.error('Error checking profile status:', error);
@@ -320,7 +379,7 @@ export default function AuthCallback() {
         // CRITICAL FIX: Default to profile setup on ANY error
         // This ensures new Facebook users always go to profile creation
         console.log('Exception in profile check, defaulting to profile setup');
-        router.replace('/profile?setup=true&error=exception');
+        router.replace('/create-profile?setup=true&error=exception');
       }
     };
     

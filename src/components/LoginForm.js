@@ -60,7 +60,7 @@ const Login = () => {
         .single();
 
       if (!profileData?.hasprofile) {
-        router.push('/profile?setup=true');
+        router.push('/create-profile?setup=true');
       } else {
         router.push('/dashboard');
       }

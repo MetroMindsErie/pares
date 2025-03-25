@@ -80,7 +80,7 @@ function MyApp({ Component, pageProps }) {
   const getLayout = Component.getLayout || ((page) => page);
   
   // Determine if this is an auth page that needs special handling
-  const isAuthPage = ['/login', '/register', '/profile'].includes(
+  const isAuthPage = ['/login', '/register', '/create-profile'].includes(
     typeof window !== 'undefined' ? window.location.pathname : ''
   );
 

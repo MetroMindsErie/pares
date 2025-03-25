@@ -50,12 +50,12 @@ const RegisterForm = () => {
             router.push('/dashboard');
           } else {
             console.log('User needs to create profile');
-            router.push('/profile?setup=true');
+            router.push('/create-profile?setup=true');
           }
         } catch (err) {
           console.error('Error checking profile status:', err);
           // Default to profile creation if there's an error
-          router.push('/profile?setup=true');
+          router.push('/create-profile?setup=true');
         }
       }
     };
@@ -94,7 +94,7 @@ const RegisterForm = () => {
         setFormError(error.message || 'Failed to sign up');
       } else {
         // Registration successful, redirect to profile setup
-        router.push('/profile?setup=true');
+        router.push('/create-profile?setup=true');
       }
     } catch (err) {
       setFormError(err.message || 'An unexpected error occurred');

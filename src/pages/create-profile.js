@@ -8,6 +8,7 @@ import InterestPicker from '../components/Profile/InterestPicker';
 import ProfileProgressBar from '../components/Profile/ProfileProgressBar';
 import Layout from '../components/Layout';
 import { getFacebookToken, getFacebookProfilePicture } from '../services/facebookService';
+import { saveUserProfile } from '../utils/profileUtils';
 
 export default function CreateProfile() {
     const { user, isAuthenticated, loading, authChecked } = useAuth();
@@ -273,7 +274,14 @@ export default function CreateProfile() {
             console.log('Current user state during submission:', { 
                 hasUser: !!user, 
                 userId: user?.id,
-                isAuthenticated
+                isAuthenticated,
+                formData: {
+                    first_name: formData.first_name,
+                    last_name: formData.last_name,
+                    email: formData.email,
+                    // Log only key fields to avoid cluttering the console
+                    roles: formData.roles
+                }
             });
 
             // Check if user exists in context
@@ -287,6 +295,30 @@ export default function CreateProfile() {
                     // Use the refreshed user
                     const userId = sessionData.session.user.id;
                     
+                    // Fetch existing user data from the database to preserve Facebook info
+                    const { data: existingUserData, error: userDataError } = await supabase
+                        .from('users')
+                        .select('facebook_access_token, facebook_user_id, facebook_token_valid, facebook_token_updated_at, profile_picture_url')
+                        .eq('id', userId)
+                        .single();
+                        
+                    if (userDataError) {
+                        console.warn('Could not fetch existing user data:', userDataError);
+                    }
+                    
+                    // Preserve any Facebook data that might exist
+                    const facebookData = existingUserData ? {
+                        facebook_access_token: existingUserData.facebook_access_token,
+                        facebook_user_id: existingUserData.facebook_user_id,
+                        facebook_token_valid: existingUserData.facebook_token_valid,
+                        facebook_token_updated_at: existingUserData.facebook_token_updated_at
+                    } : {};
+                    
+                    // Use profile picture from existing data if not set in form
+                    if (existingUserData?.profile_picture_url && !formData.profile_picture_url) {
+                        formData.profile_picture_url = existingUserData.profile_picture_url;
+                    }
+                    
                     // Prepare metadata with additional fields
                     const metadata = {
                         ...formData.metadata,
@@ -298,11 +330,11 @@ export default function CreateProfile() {
                         title: formData.title
                     };
 
-                    // Save to database
+                    // Prepare data for submission
                     const dataToSubmit = {
                         first_name: formData.first_name,
                         last_name: formData.last_name,
-                        email: formData.email,
+                        email: formData.email || sessionData.session.user.email, // Ensure email is set
                         alternate_email: formData.alternate_email,
                         phone: formData.phone,
                         city: formData.city,
@@ -314,18 +346,26 @@ export default function CreateProfile() {
                         profile_picture_url: formData.profile_picture_url,
                         metadata: metadata,
                         hasprofile: true,
-                        updated_at: new Date().toISOString()
+                        updated_at: new Date().toISOString(),
+                        // Preserve any existing Facebook data
+                        ...facebookData
                     };
 
+                    // Verify all required fields are present
+                    if (!dataToSubmit.first_name || !dataToSubmit.last_name) {
+                        throw new Error('First name and last name are required');
+                    }
+
                     console.log('Saving profile with refreshed user ID:', userId);
-                    const { error: updateError } = await supabase
-                        .from('users')
-                        .update(dataToSubmit)
-                        .eq('id', userId);
+                    
+                    // Use our new utility function for more reliable saving
+                    const saveSuccess = await saveUserProfile(userId, dataToSubmit);
+                    
+                    if (!saveSuccess) {
+                        throw new Error('Failed to save profile after multiple attempts');
+                    }
 
-                    if (updateError) throw updateError;
-
-                    // Redirect to dashboard after successful profile setup
+                    console.log('Profile saved successfully, redirecting to dashboard');
                     router.push('/dashboard');
                     return;
                 } else {
@@ -333,7 +373,54 @@ export default function CreateProfile() {
                 }
             }
 
-            // If we have a user in context, proceed normally
+            // If we have a user in context, proceed with similar logic
+            // Fetch existing user data to preserve Facebook info
+            const { data: existingUserData, error: userDataError } = await supabase
+                .from('users')
+                .select('facebook_access_token, facebook_user_id, facebook_token_valid, facebook_token_updated_at, profile_picture_url')
+                .eq('id', user.id)
+                .single();
+                
+            if (userDataError) {
+                console.warn('Could not fetch existing user data:', userDataError);
+            }
+            
+            // Preserve any Facebook data that might exist
+            const facebookData = existingUserData ? {
+                facebook_access_token: existingUserData.facebook_access_token,
+                facebook_user_id: existingUserData.facebook_user_id,
+                facebook_token_valid: existingUserData.facebook_token_valid,
+                facebook_token_updated_at: existingUserData.facebook_token_updated_at
+            } : {};
+            
+            // Use profile picture from existing data if not set in form
+            if (existingUserData?.profile_picture_url && !formData.profile_picture_url) {
+                formData.profile_picture_url = existingUserData.profile_picture_url;
+            }
+            
+            // If the user authenticated with Facebook, try to get profile picture if not already set
+            if (user.app_metadata?.provider === 'facebook' && !formData.profile_picture_url) {
+                console.log('User authenticated with Facebook, fetching profile picture if needed');
+                try {
+                    const tokenData = await getFacebookToken(user.id);
+                    if (tokenData?.accessToken) {
+                        const pictureUrl = await getFacebookProfilePicture(
+                            tokenData.accessToken,
+                            tokenData.providerId,
+                            user.id
+                        );
+                        
+                        if (pictureUrl) {
+                            console.log('Successfully fetched Facebook profile picture');
+                            formData.profile_picture_url = pictureUrl;
+                        }
+                    }
+                } catch (picError) {
+                    console.error('Error fetching Facebook profile picture:', picError);
+                    // Continue without the picture
+                }
+            }
+
             const metadata = {
                 ...formData.metadata,
                 notification_preferences: {
@@ -343,9 +430,6 @@ export default function CreateProfile() {
                 years_experience: formData.years_experience,
                 title: formData.title
             };
-
-            // Log the exact roles array being submitted
-            console.log('FINAL ROLES BEING SUBMITTED:', formData.roles);
 
             // Ensure roles is always an array with at least 'user'
             let rolesToSubmit = Array.isArray(formData.roles) && formData.roles.length > 0 
@@ -382,11 +466,11 @@ export default function CreateProfile() {
                 rolesToSubmit.push('user');
             }
 
-            // Save to database
+            // Save to database with complete user data
             const dataToSubmit = {
                 first_name: formData.first_name,
                 last_name: formData.last_name,
-                email: formData.email,
+                email: formData.email || user.email, // Ensure email is set
                 alternate_email: formData.alternate_email,
                 phone: formData.phone,
                 city: formData.city,
@@ -398,100 +482,21 @@ export default function CreateProfile() {
                 profile_picture_url: formData.profile_picture_url,
                 metadata: metadata,
                 hasprofile: true,
-                updated_at: new Date().toISOString()
+                updated_at: new Date().toISOString(),
+                // Preserve any existing Facebook data
+                ...facebookData
             };
 
-            console.log('Submitting profile with final roles array:', dataToSubmit.roles);
-
-            // Ensure profile picture is included if we have it
-            if (formData.profile_picture_url) {
-                console.log('Including profile picture URL in profile submission:', formData.profile_picture_url);
-                dataToSubmit.profile_picture_url = formData.profile_picture_url;
-            } else {
-                // Last attempt to get profile picture
-                try {
-                    console.log('Making final attempt to get profile picture');
-                    if (user?.app_metadata?.provider === 'facebook') {
-                        const { data: { session } } = await supabase.auth.getSession();
-                        if (session?.provider_token) {
-                            const response = await fetch('https://graph.facebook.com/me?fields=picture.type(large)&access_token=' + session.provider_token);
-                            const data = await response.json();
-                            
-                            if (data?.picture?.data?.url) {
-                                dataToSubmit.profile_picture_url = data.picture.data.url;
-                                console.log('Found profile picture in final attempt:', dataToSubmit.profile_picture_url);
-                            }
-                        }
-                    }
-                } catch (picError) {
-                    console.error('Final profile picture attempt failed:', picError);
-                }
+            // Verify all required fields are present before submission
+            if (!dataToSubmit.first_name || !dataToSubmit.last_name) {
+                throw new Error('First name and last name are required');
             }
 
-            // If this was a Facebook login, ensure provider data is saved
-            if (user?.app_metadata?.provider === 'facebook') {
-                const { data: providerData } = await supabase
-                    .from('auth_providers')
-                    .select('*')
-                    .eq('user_id', user.id)
-                    .eq('provider', 'facebook')
-                    .single();
-                
-                if (!providerData) {
-                    console.log('No Facebook provider data found, saving from session');
-                    const { data: { session } } = await supabase.auth.getSession();
-                    
-                    if (session?.provider_token) {
-                        // Get identity data
-                        const identity = user.identities?.find(i => i.provider === 'facebook');
-                        
-                        if (identity) {
-                            console.log('Saving Facebook provider data');
-                            await supabase.from('auth_providers').insert({
-                                user_id: user.id,
-                                provider: 'facebook',
-                                provider_user_id: identity.id,
-                                access_token: session.provider_token,
-                                refresh_token: session.provider_refresh_token || null,
-                                created_at: new Date().toISOString(),
-                                updated_at: new Date().toISOString()
-                            });
-                            
-                            // Also update users table with Facebook token
-                            dataToSubmit.facebook_access_token = session.provider_token;
-                            dataToSubmit.facebook_user_id = identity.id;
-                            dataToSubmit.facebook_token_valid = true;
-                            dataToSubmit.facebook_token_updated_at = new Date().toISOString();
-                        }
-                    }
-                }
-            }
+            // Use our new utility function for more reliable saving
+            const saveSuccess = await saveUserProfile(user.id, dataToSubmit);
             
-            // Explicitly add profile picture URL if it exists
-            if (formData.profile_picture_url) {
-                console.log('Including profile picture in submission:', formData.profile_picture_url);
-                dataToSubmit.profile_picture_url = formData.profile_picture_url;
-            }
-
-            console.log('Saving profile with user ID from context:', user.id);
-            const { error } = await supabase
-                .from('users')
-                .update(dataToSubmit)
-                .eq('id', user.id);
-
-            if (error) throw error;
-
-            // Verify the save was successful by retrieving the user data
-            const { data: verifyData, error: verifyError } = await supabase
-                .from('users')
-                .select('roles')
-                .eq('id', user.id)
-                .single();
-                
-            if (verifyError) {
-                console.error('Error verifying saved roles:', verifyError);
-            } else {
-                console.log('VERIFICATION - Roles saved in database:', verifyData.roles);
+            if (!saveSuccess) {
+                throw new Error('Failed to save profile after multiple attempts');
             }
 
             console.log('Completed profile creation, redirecting to dashboard');
