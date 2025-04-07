@@ -5,6 +5,7 @@ import StatsCard from '../components/Dashboard/StatsCard';
 import RecentActivity from '../components/Dashboard/RecentActivity';
 import supabase from '../lib/supabase-setup';
 import { useRouter } from 'next/router';
+// Change the import path to use the proper Reels component
 import Reels from '../components/Reels';
 import Layout from '../components/Layout';
 import { checkFacebookConnection } from '../services/facebookService';
@@ -16,6 +17,7 @@ export default function DashboardPage() {
   const [localLoading, setLocalLoading] = useState(true);
   const [hasFacebookConnection, setHasFacebookConnection] = useState(false);
   const [userId, setUserId] = useState(null);
+  const [fbConnectionChecked, setFbConnectionChecked] = useState(false);
   const router = useRouter();
   
   // Use refs to track if effects have run to prevent loops
@@ -52,6 +54,7 @@ export default function DashboardPage() {
       
       // First try from auth context
       if (user?.id) {
+        console.log("Dashboard: Setting user ID from auth context:", user.id);
         setUserId(user.id);
         return;
       }
@@ -62,8 +65,11 @@ export default function DashboardPage() {
         const sessionUserId = data?.session?.user?.id;
         
         if (sessionUserId) {
+          console.log("Dashboard: Setting user ID from session:", sessionUserId);
           setUserId(sessionUserId);
           return;
+        } else {
+          console.log("Dashboard: No user ID found in session");
         }
       } catch (err) {
         console.error('Error getting session:', err);
@@ -84,6 +90,7 @@ export default function DashboardPage() {
       
       try {
         // Fetch user profile
+        console.log("Dashboard: Fetching profile for user:", userId);
         const { data, error } = await supabase
           .from('users')
           .select('*')
@@ -103,10 +110,20 @@ export default function DashboardPage() {
           
         setProfile(data);
         
-        // Check Facebook connection in a non-blocking way
-        checkFacebookConnection(userId)
-          .then(fbConnected => setHasFacebookConnection(fbConnected))
-          .catch(err => console.error('Error checking Facebook connection:', err));
+        // Check Facebook connection in a non-blocking way if not already checked
+        if (!fbConnectionChecked) {
+          console.log("Dashboard: Checking Facebook connection for user:", userId);
+          checkFacebookConnection(userId)
+            .then(fbConnected => {
+              console.log("Dashboard: Facebook connection check result:", fbConnected);
+              setHasFacebookConnection(fbConnected);
+              setFbConnectionChecked(true);
+            })
+            .catch(err => {
+              console.error('Error checking Facebook connection:', err);
+              setFbConnectionChecked(true); // Mark as checked even on error
+            });
+        }
       } catch (err) {
         console.error('Profile fetch error:', err);
       } finally {
@@ -115,7 +132,7 @@ export default function DashboardPage() {
     };
 
     fetchUserProfile();
-  }, [userId, user]);
+  }, [userId, user, fbConnectionChecked]);
 
   // Fetch activities only once - simplified to avoid loops
   useEffect(() => {
@@ -176,7 +193,7 @@ export default function DashboardPage() {
             : 'Connect your Facebook account to display and manage your real estate reels.'}
         </p>
         
-        {/* Reels component with userId and connection status passed explicitly */}
+        {/* Pass all necessary props to the Reels component */}
         <div className="bg-gray-50 rounded-lg">
           <Reels 
             userId={userId} 

@@ -12,73 +12,287 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { user_id } = req.body;
+    console.log("Refresh API called with body:", req.body);
+    
+    const { user_id, force_fresh = false } = req.body;
+    
+    console.log(`Refresh params: user_id=${user_id}, force_fresh=${force_fresh}`);
     
     if (!user_id) {
-      return res.status(400).json({ error: 'Missing user_id' });
+      console.error("Missing user_id in request body");
+      return res.status(400).json({ error: 'Missing user_id in request body' });
     }
 
-    // Get Facebook access token from database
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('facebook_access_token, facebook_user_id')
-      .eq('id', user_id)
-      .single();
+    console.log(`Getting Facebook token for user: ${user_id}`);
+    
+    // First try to get token from auth_providers
+    let token, fbUserId;
+    
+    try {
+      const { data: providerData, error: providerError } = await supabase
+        .from('auth_providers')
+        .select('access_token, provider_user_id')
+        .eq('user_id', user_id)
+        .eq('provider', 'facebook')
+        .single();
+      
+      if (providerError || !providerData?.access_token) {
+        // Fallback to users table
+        console.log("No token in auth_providers, checking users table");
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('facebook_access_token, facebook_user_id')
+          .eq('id', user_id)
+          .single();
 
-    if (userError || !userData?.facebook_access_token) {
-      return res.status(404).json({ 
-        error: 'Facebook token not found for user',
-        details: userError?.message 
-      });
-    }
-
-    // Use the token to fetch reels from Facebook Graph API
-    const response = await fetch(
-      `https://graph.facebook.com/v19.0/${userData.facebook_user_id}/media?fields=id,media_type,media_url,thumbnail_url,permalink,caption,timestamp,children{media_url,thumbnail_url,media_type}&access_token=${userData.facebook_access_token}&limit=50`,
-      { method: 'GET' }
-    );
-
-    const data = await response.json();
-
-    if (data.error) {
-      return res.status(400).json({ 
-        error: 'Facebook API error', 
-        details: data.error 
-      });
-    }
-
-    // Process and store the reels in your database
-    const reels = data.data.filter(item => 
-      item.media_type === 'VIDEO' || 
-      (item.media_type === 'CAROUSEL_ALBUM' && 
-       item.children?.data.some(child => child.media_type === 'VIDEO'))
-    );
-
-    // Store reels in database
-    for (const reel of reels) {
-      const { error: insertError } = await supabase
-        .from('reels')
-        .upsert({
-          user_id,
-          facebook_id: reel.id,
-          url: reel.permalink,
-          caption: reel.caption || '',
-          thumbnail_url: reel.thumbnail_url || reel.media_url,
-          created_at: reel.timestamp,
-          updated_at: new Date().toISOString(),
-          source: 'facebook',
-          raw_data: reel
-        }, { onConflict: 'facebook_id' });
-
-      if (insertError) {
-        console.error('Error inserting reel:', insertError);
+        if (userError || !userData?.facebook_access_token) {
+          console.error("Facebook token not found for user:", userError || "No token in user record");
+          return res.status(404).json({ 
+            error: 'Facebook token not found for user',
+            details: userError?.message || "No token available",
+            action: "connect_facebook"
+          });
+        }
+        
+        token = userData.facebook_access_token;
+        fbUserId = userData.facebook_user_id || 'me';
+        console.log(`Using token from users table, fbUserId: ${fbUserId || 'me'}`);
+      } else {
+        token = providerData.access_token;
+        fbUserId = providerData.provider_user_id || 'me';
+        console.log(`Using token from auth_providers table, fbUserId: ${fbUserId || 'me'}`);
       }
+    } catch (tokenErr) {
+      console.error("Error retrieving Facebook token:", tokenErr);
+      return res.status(500).json({ 
+        error: 'Error retrieving Facebook token', 
+        details: tokenErr.message 
+      });
     }
 
-    return res.status(200).json({ 
-      success: true, 
-      reels_count: reels.length 
-    });
+    // Validate token first to avoid unnecessary API calls
+    try {
+      console.log("Validating Facebook token");
+      const validateUrl = `https://graph.facebook.com/debug_token?input_token=${token}&access_token=${token}`;
+      const validateResponse = await fetch(validateUrl);
+      const validateData = await validateResponse.json();
+      
+      if (!validateData?.data?.is_valid) {
+        console.error("Token validation failed:", validateData);
+        return res.status(401).json({
+          error: 'Facebook token is invalid',
+          details: validateData,
+          action: "reconnect_facebook" 
+        });
+      }
+      console.log("Token validated successfully");
+    } catch (validationErr) {
+      console.error("Error validating token:", validationErr);
+      // Continue anyway, API might still work
+    }
+
+    // Always fetch fresh videos from Facebook Graph API
+    console.log(`Fetching fresh videos from Facebook Graph API for user ${fbUserId || 'me'}`);
+    try {
+      const videosUrl = `https://graph.facebook.com/v19.0/${fbUserId || 'me'}/videos?fields=id,description,source,permalink_url,created_time,thumbnails,title,picture&video_type=reels&limit=50&access_token=${token}`;
+      const videosResponse = await fetch(videosUrl);
+      
+      if (!videosResponse.ok) {
+        const errorText = await videosResponse.text();
+        console.error(`Facebook API error: ${videosResponse.status} - ${errorText}`);
+        throw new Error(`Facebook API returned ${videosResponse.status}: ${errorText}`);
+      }
+      
+      const data = await videosResponse.json();
+      console.log(`Retrieved ${data.data?.length || 0} videos from Facebook`);
+      
+      // Helper functions
+      function extractHashtags(text) {
+        if (!text) return [];
+        const hashtagRegex = /#(\w+)/g;
+        const matches = text.match(hashtagRegex);
+        return matches ? matches.map(tag => tag.slice(1).toLowerCase()) : [];
+      }
+      
+      function isRealEstateContent(text) {
+        if (!text) return false;
+        
+        // Convert to lowercase for case-insensitive matching
+        const lowerText = text.toLowerCase();
+        
+        // Check for explicit #realestate hashtag first
+        if (/#realestate\b/.test(lowerText)) {
+          return true;
+        }
+        
+        // Extract all hashtags
+        const hashtags = extractHashtags(lowerText);
+        
+        // Real estate related hashtags
+        const realEstateHashtags = [
+          'realestate', 'realtor', 'property', 'listing', 'forsale',
+          'homeforsale', 'house', 'home', 'newhome', 'househunting',
+          'luxuryhome', 'dreamhome', 'mortgage', 'investment',
+          'realty', 'homebuying', 'homeselling', 'openhouse',
+          'realestateagent', 'realestatelife', 'realestatemarket',
+          'realestatesales', 'commercialrealestate'
+        ];
+        
+        // Check if any real estate hashtags are present
+        for (const tag of hashtags) {
+          if (realEstateHashtags.includes(tag)) {
+            return true;
+          }
+        }
+        
+        // If no direct hashtags, check for keyword phrases
+        const realEstateKeywords = [
+          'real estate', 'property', 'home for sale', 'house for sale',
+          'mortgage', 'open house', 'new listing', 'just listed',
+          'acres', 'square feet', 'bedroom', 'bathroom', 'garage',
+          'backyard', 'frontyard', 'pool', 'basement'
+        ];
+        
+        for (const keyword of realEstateKeywords) {
+          if (lowerText.includes(keyword)) {
+            return true;
+          }
+        }
+        
+        return false;
+      }
+      
+      // Process and store the videos as reels
+      let storedCount = 0;
+      if (data.data && data.data.length > 0) {
+        console.log("Found videos, checking for real estate content...");
+        
+        // First check for real estate videos
+        const realEstateVideos = data.data.filter(video => 
+          isRealEstateContent(video.description || video.title || '')
+        );
+        
+        console.log(`Found ${realEstateVideos.length} real estate videos out of ${data.data.length} total`);
+        
+        // Store all videos but prioritize real estate ones
+        const videosToStore = realEstateVideos.length > 0 ? 
+          realEstateVideos : 
+          data.data;
+        
+        for (const video of videosToStore) {
+          try {
+            // Extract hashtags for storage
+            const hashtags = extractHashtags(video.description || '');
+            const isRealEstate = isRealEstateContent(video.description || video.title || '');
+            
+            if (isRealEstate) {
+              console.log(`Video ${video.id} is real estate content: ${hashtags.join(', ')}`);
+            }
+            
+            const { error: insertError } = await supabase
+              .from('reels')
+              .upsert({
+                user_id: user_id,
+                facebook_reel_id: video.id,
+                title: video.title || video.description || 'Untitled Video',
+                caption: video.description || '',
+                media_url: video.source || null,
+                permalink: video.permalink_url || null,
+                thumbnail_url: video.picture || null,
+                created_at: video.created_time || new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                source: 'facebook_video',
+                is_real_estate: isRealEstate,
+                hashtags: hashtags.length > 0 ? JSON.stringify(hashtags) : null
+              }, { onConflict: 'user_id,facebook_reel_id' });
+
+            if (insertError) {
+              console.error('Error inserting video:', insertError);
+            } else {
+              storedCount++;
+            }
+          } catch (storeErr) {
+            console.error(`Error storing video ${video.id}:`, storeErr);
+          }
+        }
+      }
+      
+      // If we couldn't find real estate videos, try posts
+      if (storedCount === 0) {
+        console.log("No real estate videos found, checking posts for video content");
+        
+        const postsUrl = `https://graph.facebook.com/v19.0/${fbUserId || 'me'}/posts?fields=id,message,created_time,permalink_url,attachments{media_type,media,url,description,title,type,target}&limit=50&access_token=${token}`;
+        const postsResponse = await fetch(postsUrl);
+        
+        if (postsResponse.ok) {
+          const postsData = await postsResponse.json();
+          
+          if (postsData.data && postsData.data.length > 0) {
+            console.log(`Found ${postsData.data.length} posts, checking for videos`);
+            
+            for (const post of postsData.data) {
+              if (post.attachments && Array.isArray(post.attachments.data)) {
+                for (const att of post.attachments.data) {
+                  if (att.media_type === 'video') {
+                    const isRealEstate = isRealEstateContent(post.message || att.description || '');
+                    const hashtags = extractHashtags(post.message || att.description || '');
+                    
+                    try {
+                      const { error: insertError } = await supabase
+                        .from('reels')
+                        .upsert({
+                          user_id: user_id,
+                          facebook_reel_id: post.id,
+                          title: att.title || post.message || 'Untitled Video',
+                          caption: post.message || att.description || '',
+                          media_url: att.media?.source || null,
+                          permalink: post.permalink_url || null,
+                          thumbnail_url: att.media?.image?.src || null,
+                          created_at: post.created_time || new Date().toISOString(),
+                          updated_at: new Date().toISOString(),
+                          source: 'facebook_post',
+                          is_real_estate: isRealEstate,
+                          hashtags: hashtags.length > 0 ? JSON.stringify(hashtags) : null
+                        }, { onConflict: 'user_id,facebook_reel_id' });
+                        
+                      if (!insertError) {
+                        storedCount++;
+                      }
+                    } catch (insertErr) {
+                      console.error(`Error storing post video ${post.id}:`, insertErr);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      // Get stored reels to return to client
+      const { data: storedReels, error: fetchError } = await supabase
+        .from('reels')
+        .select('*')
+        .eq('user_id', user_id)
+        .order('created_at', { ascending: false });
+        
+      if (fetchError) {
+        console.error("Error fetching stored reels:", fetchError);
+      }
+
+      return res.status(200).json({ 
+        success: true, 
+        reels_count: storedCount,
+        reels: storedReels || [],
+        message: `${storedCount} reels stored successfully`
+      });
+    } catch (fbError) {
+      console.error("Facebook fetch error:", fbError);
+      return res.status(500).json({ 
+        error: 'Error fetching from Facebook', 
+        details: fbError.message 
+      });
+    }
   } catch (error) {
     console.error('Error refreshing reels:', error);
     return res.status(500).json({ 

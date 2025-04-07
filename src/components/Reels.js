@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/auth-context';
 import supabase from '../lib/supabase-setup';
-import { processAndStoreReels, getFacebookToken, checkFacebookConnection } from '../services/facebookService';
+import { fetchUserReels, getFacebookToken, checkFacebookConnection } from '../services/facebookService';
 import ReelCard from './Reels/ReelCard';
+import FacebookPermissionRequest from './FacebookPermissionRequest';
 
 // Props:
 // - userId: Optional user ID to override the one from auth context
@@ -15,6 +16,8 @@ const Reels = ({ userId: propUserId, hasFacebookConnection: propHasFacebookConne
   const [hasFacebookConnection, setHasFacebookConnection] = useState(propHasFacebookConnection || false);
   const { user, loginWithProvider } = useAuth();
   const [hasAutoFetched, setHasAutoFetched] = useState(false);
+  const [permissionIssue, setPermissionIssue] = useState(false);
+  const [missingPermissions, setMissingPermissions] = useState([]);
   
   // Extra safety check - force load user from session if not available
   const [sessionChecked, setSessionChecked] = useState(false);
@@ -89,7 +92,7 @@ const Reels = ({ userId: propUserId, hasFacebookConnection: propHasFacebookConne
     }
   }, [autofetch, effectiveUserId, hasFacebookConnection, hasAutoFetched]);
 
-  // Fetch reels from database or Facebook API
+  // Fetch reels using facebookService.fetchUserReels
   const fetchReels = useCallback(async (userId = effectiveUserId) => {
     if (!userId) {
       setError('User ID is required to fetch reels');
@@ -99,138 +102,72 @@ const Reels = ({ userId: propUserId, hasFacebookConnection: propHasFacebookConne
     
     setLoading(true);
     setError(null);
+    setPermissionIssue(false); // Reset permission issues
     
     try {
-      // First try to get reels directly from the database for quick loading
+      console.log("Fetch reels called for user:", userId);
+      
+      // Get Facebook token first
+      let fbToken, fbUserId;
       try {
-        const { data: dbReels, error: dbError } = await supabase
-          .from('reels')
-          .select('*')
-          .eq('user_id', userId)
-          .order('created_at', { ascending: false });
-          
-        if (dbError) {
-          // Continue to try Facebook if db error
-        } else if (dbReels && dbReels.length > 0) {
-          setReels(dbReels);
-          setLoading(false);
-          
-          // Fetch fresh reels in the background if we already have some
-          fetchFreshReelsInBackground(userId);
-          return;
-        }
-      } catch (dbError) {
-        // Continue to try Facebook if db error
+        const tokenResult = await getFacebookToken(userId);
+        fbToken = tokenResult.accessToken;
+        
+        // Get the Facebook user ID if needed
+        const { data } = await supabase
+          .from('users')
+          .select('facebook_user_id')
+          .eq('id', userId)
+          .single();
+        
+        fbUserId = data?.facebook_user_id || 'me';
+        
+        console.log(`Got Facebook token for user, FB ID: ${fbUserId}`);
+      } catch (tokenError) {
+        console.error("Error getting Facebook token:", tokenError);
+        throw new Error("Failed to get Facebook access token. Please reconnect your Facebook account.");
       }
       
-      // If we get here, we need to fetch from Facebook directly
-      await fetchReelsFromFacebook(false, userId);
+      // Use the fetchUserReels method from facebookService
+      console.log("Calling fetchUserReels from facebookService");
+      const reelsData = await fetchUserReels(fbToken, fbUserId);
+      
+      if (reelsData && reelsData.length > 0) {
+        console.log(`Fetched ${reelsData.length} reels from Facebook`);
+        
+        // Format to match what the component expects
+        const formattedReels = reelsData.map(reel => ({
+          id: reel.id,
+          title: reel.title || '',
+          description: reel.description || '',
+          video_url: reel.source,
+          permalink_url: reel.permalink_url,
+          thumbnail_url: reel.picture,
+          created_at: reel.created_time,
+          source: 'facebook'
+        }));
+        
+        setReels(formattedReels);
+      } else {
+        console.log('No reels returned from Facebook');
+        setReels([]);
+      }
+      
+      setLoading(false);
     } catch (err) {
+      console.error("Error in fetchReels:", err);
       setError('Failed to load reels: ' + err.message);
       setLoading(false);
     }
   }, [effectiveUserId]);
 
-  // Fetch fresh reels from Facebook in the background
+  // Remove or simplify this function since we're directly using fetchUserReels now
   const fetchFreshReelsInBackground = async (userId = effectiveUserId) => {
-    if (!userId) {
-      return;
-    }
-    
+    if (!userId) return;
     try {
-      await fetchReelsFromFacebook(true, userId);
+      await fetchReels(userId);
     } catch (bgError) {
       // Silent error for background operations
-    }
-  };
-
-  // Core function to fetch reels from Facebook
-  const fetchReelsFromFacebook = async (isBackground = false, userId = effectiveUserId) => {
-    if (!userId) {
-      const errorMsg = 'Cannot fetch from Facebook: no user ID available';
-      
-      if (!isBackground) {
-        setError(errorMsg);
-        setLoading(false);
-      }
-      return;
-    }
-    
-    try {
-      // Get Facebook token
-      const tokenData = await getFacebookToken(userId);
-      
-      if (!tokenData || !tokenData.accessToken) {
-        const errorMsg = 'No Facebook access token available';
-        
-        if (!isBackground) {
-          setError(errorMsg);
-          setLoading(false);
-        }
-        return;
-      }
-      
-      // Process and store reels
-      try {
-        const fetchedReels = await processAndStoreReels(userId, true);
-        
-        // Update UI if we got reels (or if not in background mode)
-        if (fetchedReels?.length > 0) {
-          setReels(fetchedReels);
-          
-          if (!isBackground) setLoading(false);
-        } else if (!isBackground) {
-          setReels([]);
-          setLoading(false);
-        }
-      } catch (fbError) {
-        // Special handling for unique constraint violations
-        let errorMessage = 'Error fetching reels from Facebook';
-        
-        // Special handling for unique constraint violations
-        if (fbError.code === '23505' || 
-            (fbError.message && fbError.message.includes('duplicate key value'))) {
-          
-          try {
-            // Try to load reels from database despite the error
-            const { data: existingReels } = await supabase
-              .from('reels')
-              .select('*')
-              .eq('user_id', userId)
-              .order('created_at', { ascending: false });
-              
-            if (existingReels && existingReels.length > 0) {
-              setReels(existingReels);
-              
-              if (!isBackground) setLoading(false);
-              return;
-            }
-          } catch (recoveryError) {
-            // Silent error during recovery attempt
-          }
-          
-          errorMessage = 'There was an issue syncing some of your reels. Please try again later.';
-        } else if (fbError.response?.data?.error?.message) {
-          errorMessage += `: ${fbError.response.data.error.message}`;
-          
-          // Special handling for common errors
-          if (fbError.response.data.error.code === 190) {
-            errorMessage = "Facebook session expired. Please reconnect your Facebook account.";
-          }
-        } else {
-          errorMessage += `: ${fbError.message}`;
-        }
-        
-        if (!isBackground) {
-          setError(errorMessage);
-          setLoading(false);
-        }
-      }
-    } catch (err) {
-      if (!isBackground) {
-        setError('Failed to load reels: ' + err.message);
-        setLoading(false);
-      }
     }
   };
 
@@ -241,8 +178,12 @@ const Reels = ({ userId: propUserId, hasFacebookConnection: propHasFacebookConne
         throw new Error('Facebook login function not available');
       }
       
-      await loginWithProvider('facebook');
-      // Note: Redirect will happen after successful login
+      // Pass additional options to request specific permissions and force re-request
+      await loginWithProvider('facebook', {
+        scope: 'email,public_profile,user_videos,user_posts',
+        auth_type: 'rerequest'
+      });
+      // Redirect will happen after successful login
     } catch (err) {
       setError('Failed to connect to Facebook: ' + err.message);
     }
@@ -311,6 +252,19 @@ const Reels = ({ userId: propUserId, hasFacebookConnection: propHasFacebookConne
           )}
         </div>
       </div>
+    );
+  }
+
+  // Show permission request if needed
+  if (permissionIssue) {
+    return (
+      <FacebookPermissionRequest 
+        missingPermissions={missingPermissions}
+        onComplete={() => {
+          setPermissionIssue(false);
+          fetchReels();
+        }}
+      />
     );
   }
 

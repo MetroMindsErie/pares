@@ -167,45 +167,11 @@ export const getPermissionRequestUrl = (appId, redirectUri) => {
     client_id: appId,
     redirect_uri: redirectUri,
     scope,
-    response_type: 'code', // Change to 'code' to match your existing flow
+    response_type: 'token',
     auth_type: 'rerequest' // Force permission dialog to show
   });
   
   return `${baseUrl}?${params.toString()}`;
-};
-
-/**
- * Request additional Facebook permissions
- * @param {string} userId - The user ID
- * @returns {Promise<Object>} - Result with URL to request permissions
- */
-export const requestAdditionalPermissions = async (userId) => {
-  try {
-    // Get app ID from environment or configuration
-    const appId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || '';
-    
-    if (!appId) {
-      console.error('Facebook App ID not found in environment variables');
-      return { success: false, error: 'App ID not configured' };
-    }
-    
-    // IMPORTANT: Use the EXACT same redirect URI that's approved in Facebook App settings
-    // This must match what's in your Facebook Developer Console
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : '');
-    const redirectUri = `${baseUrl}/api/auth/facebook/callback`;
-    
-    console.log('Using redirect URI:', redirectUri);
-    
-    const permissionUrl = getPermissionRequestUrl(appId, redirectUri);
-    
-    return {
-      success: true,
-      permissionUrl
-    };
-  } catch (error) {
-    console.error('Error generating permission request:', error);
-    return { success: false, error: error.message };
-  }
 };
 
 /**
@@ -501,32 +467,32 @@ export const fetchUserReels = async (accessToken, providerId = 'me') => {
  * @param {string} userId - The user ID
  * @returns {Promise<Object>} - Result with URL to request permissions
  */
-// export const requestAdditionalPermissions = async (userId) => {
-//   try {
-//     // Get app ID from environment or configuration
-//     const appId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || '';
+export const requestAdditionalPermissions = async (userId) => {
+  try {
+    // Get app ID from environment or configuration
+    const appId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || '';
     
-//     if (!appId) {
-//       console.error('Facebook App ID not found in environment variables');
-//       return { success: false, error: 'App ID not configured' };
-//     }
+    if (!appId) {
+      console.error('Facebook App ID not found in environment variables');
+      return { success: false, error: 'App ID not configured' };
+    }
     
-//     // Determine redirect URL (typically your app's callback URL)
-//     const redirectUri = typeof window !== 'undefined' 
-//       ? `${window.location.origin}/api/auth/facebook/callback`
-//       : '';
+    // Determine redirect URL (typically your app's callback URL)
+    const redirectUri = typeof window !== 'undefined' 
+      ? `${window.location.origin}/api/auth/facebook/callback`
+      : '';
     
-//     const permissionUrl = getPermissionRequestUrl(appId, redirectUri);
+    const permissionUrl = getPermissionRequestUrl(appId, redirectUri);
     
-//     return {
-//       success: true,
-//       permissionUrl
-//     };
-//   } catch (error) {
-//     console.error('Error generating permission request:', error);
-//     return { success: false, error: error.message };
-//   }
-// };
+    return {
+      success: true,
+      permissionUrl
+    };
+  } catch (error) {
+    console.error('Error generating permission request:', error);
+    return { success: false, error: error.message };
+  }
+};
 
 /**
  * Filter reels for real estate relevance
@@ -1079,46 +1045,5 @@ export const ensureUserRecord = async (userId) => {
   } catch (error) {
     console.error('Error ensuring user record:', error);
     return false;
-  }
-};
-
-/**
- * Force a permission re-request by clearing Facebook's permission cache
- */
-export const forcePermissionReRequest = async () => {
-  try {
-    // Get app ID from environment or configuration
-    const appId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || '';
-    
-    if (!appId) {
-      console.error('Facebook App ID not found in environment variables');
-      return { success: false, error: 'App ID not configured' };
-    }
-    
-    // Create a URL that forces the permission dialog to show again
-    const redirectUri = typeof window !== 'undefined' 
-      ? `${window.location.origin}/api/auth/facebook/callback`
-      : '';
-      
-    // Include all the permissions you need
-    const scope = 'email,public_profile,user_videos,user_posts';
-    
-    // The auth_type=rerequest parameter forces Facebook to show the dialog again
-    const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=token&auth_type=rerequest&auth_nonce=${Date.now()}`;
-    
-    // Store the current path to return to after permission grant
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('returnAfterPermission', window.location.pathname);
-    }
-    
-    // Redirect the user
-    if (typeof window !== 'undefined') {
-      window.location.href = authUrl;
-    }
-    
-    return { success: true };
-  } catch (error) {
-    console.error('Error forcing permission request:', error);
-    return { success: false, error: error.message };
   }
 };

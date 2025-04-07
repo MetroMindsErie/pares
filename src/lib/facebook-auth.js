@@ -1,45 +1,61 @@
 import supabase from './supabase-setup';
 
 /**
- * Initiates Facebook login with appropriate scopes for accessing reels
+ * Initiates Facebook login flow
+ * @returns {Promise<void>}
  */
 export const loginWithFacebook = async () => {
-  console.log('Starting Facebook OAuth flow...');
-  
-  let redirectUrl = `${window.location.origin}/auth/callback?provider=facebook&timestamp=${Date.now()}`;
-  // Override with environment variable if provided
-  if (process.env.NEXT_PUBLIC_APP_URL) {
-    redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?provider=facebook&timestamp=${Date.now()}`;
-  }
-
   try {
-    // Include all the permissions we might need
+    console.log('Initiating Facebook login...');
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'facebook',
       options: {
-        scopes: 'email,public_profile,user_videos,user_posts',
-        redirectTo: redirectUrl,
-        queryParams: {
-          // Force re-authentication to ensure we get fresh tokens
-          auth_type: 'rerequest',
-          // Ensure we get back a token with the right permissions
-          response_type: 'token',
-          // Preferred display
-          display: 'popup'
-        }
+        scopes: 'email,public_profile,user_videos,user_photos,pages_show_list,instagram_basic',
+        redirectTo: `${window.location.origin}/dashboard`
       }
     });
-    
+
     if (error) {
-      console.error('Facebook OAuth initialization error:', error);
+      console.error('Facebook login error:', error);
       throw error;
     }
-    
-    console.log('Facebook OAuth flow started successfully');
+
     return data;
   } catch (error) {
-    console.error('Facebook login error:', error);
+    console.error('Facebook login exception:', error);
     throw error;
+  }
+};
+
+/**
+ * Checks if user has a valid Facebook connection
+ * @returns {Promise<boolean>}
+ */
+export const checkFacebookConnection = async () => {
+  try {
+    // First check if the user has a Facebook provider
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return false;
+
+    // Check for Facebook identity in identities array
+    const facebookIdentity = session.user?.identities?.find(
+      (identity) => identity.provider === 'facebook'
+    );
+    
+    if (facebookIdentity) return true;
+
+    // Fallback: check the auth_providers table
+    const { data: providerData } = await supabase
+      .from('auth_providers')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .eq('provider', 'facebook')
+      .single();
+
+    return !!providerData;
+  } catch (error) {
+    console.error('Error checking Facebook connection:', error);
+    return false;
   }
 };
 
