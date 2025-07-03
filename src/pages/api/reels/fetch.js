@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 // Fix the relative import path
-import { processReelsForUser } from '../../../../scripts/process-reels';
+// import { processReelsForUser } from '';
 
 export default async function handler(req, res) {
   console.log('API: Reels fetch endpoint called');
@@ -86,7 +86,7 @@ export default async function handler(req, res) {
     }
     
     // Now directly use the processReelsForUser function from our script
-    console.log(`Calling processReelsForUser for user ${userId} with Facebook ID ${fbUserId}`);
+    // console.log(`Calling processReelsForUser for user ${userId} with Facebook ID ${fbUserId}`);
     console.log(`Facebook token available: ${!!fbToken}`);
     console.log(`Facebook token length: ${fbToken?.length || 0}`);
     
@@ -97,33 +97,33 @@ export default async function handler(req, res) {
       });
     }
     
-    const result = await processReelsForUser(userId, fbToken, fbUserId);
+    // const result = await processReelsForUser(userId, fbToken, fbUserId);
     
-    if (!result.success) {
-      console.error('Failed to process content:', result.error);
+    // if (!result.success) {
+    //   console.error('Failed to process content:', result.error);
       
-      // Handle token expiration specially
-      if (result.errorCode === 'token_invalid') {
-        return res.status(401).json({
-          error: 'Facebook authorization expired',
-          action: 'reconnect_facebook'
-        });
-      }
+    //   // Handle token expiration specially
+    //   if (result.errorCode === 'token_invalid') {
+    //     return res.status(401).json({
+    //       error: 'Facebook authorization expired',
+    //       action: 'reconnect_facebook'
+    //     });
+    //   }
       
-      return res.status(500).json({ 
-        error: 'Failed to process Facebook content',
-        details: result.error
-      });
-    }
+    //   return res.status(500).json({ 
+    //     error: 'Failed to process Facebook content',
+    //     details: result.error
+    //   });
+    // }
     
-    console.log(`Returning ${result.count} content items from Facebook`);
+    // console.log(`Returning ${result.count} content items from Facebook`);
     
     // Return the content directly from the process function
     return res.status(200).json({
-      reels: result.reels,
-      count: result.count,
+      // reels: result.reels,
+      // count: result.count,
       source: 'facebook_api',
-      realEstateCount: result.reels.length // All returned content is real estate related
+      // realEstateCount: result.reels.length // All returned content is real estate related
     });
   } catch (error) {
     console.error('Error in reels fetch handler:', error);

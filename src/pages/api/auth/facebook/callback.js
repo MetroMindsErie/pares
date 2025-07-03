@@ -1,6 +1,6 @@
 import axios from 'axios';
-import supabase from '../lib/supabase-setup';
-import { getAuthHeaders } from '../lib/api-helpers';
+import supabase from '../../../../lib/supabase-setup';
+import { getAuthHeaders } from '../../../../lib/api-helpers';
 
 /**
  * Get Facebook token for user from auth_providers table (preferred) or users table
