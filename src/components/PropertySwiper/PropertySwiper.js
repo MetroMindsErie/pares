@@ -10,7 +10,8 @@ const PropertySwiper = ({
   onLoadMore, 
   loading = false, 
   hasMore = false,
-  onPropertyAction 
+  onPropertyAction,
+  isMobile = false
 }) => {
   const { user } = useAuth();
   const [currentCards, setCurrentCards] = useState([]);
@@ -125,7 +126,7 @@ const PropertySwiper = ({
 
   if (loading && currentCards.length === 0) {
     return (
-      <div className="relative w-full h-[600px] max-w-md mx-auto">
+      <div className={`relative w-full ${isMobile ? 'h-[70vh]' : 'h-[600px]'} max-w-md mx-auto`}>
         <LoadingCard />
       </div>
     );
@@ -133,7 +134,7 @@ const PropertySwiper = ({
 
   if (currentCards.length === 0 && !loading) {
     return (
-      <div className="relative w-full h-[600px] max-w-md mx-auto">
+      <div className={`relative w-full ${isMobile ? 'h-[70vh]' : 'h-[600px]'} max-w-md mx-auto`}>
         <EmptyState onReset={() => {
           setSwipedProperties(new Set());
           setCurrentIndex(0);
@@ -143,7 +144,7 @@ const PropertySwiper = ({
   }
 
   return (
-    <div className="relative w-full h-[600px] max-w-md mx-auto">
+    <div className={`relative w-full ${isMobile ? 'h-[70vh]' : 'h-[600px]'} max-w-md mx-auto`}>
       <AnimatePresence>
         {currentCards.map((property, index) => (
           <PropertyCard
@@ -151,21 +152,31 @@ const PropertySwiper = ({
             property={property}
             onSwipe={handleSwipe}
             isTop={index === 0}
+            isMobile={isMobile}
           />
         ))}
       </AnimatePresence>
 
-      {/* Instructions */}
-      <div className="absolute -bottom-16 left-0 right-0 text-center">
-        <p className="text-sm text-gray-500 mb-2">
-          Swipe or use arrow keys
-        </p>
-        <div className="flex justify-center gap-4 text-xs text-gray-400">
-          <span>← Pass</span>
-          <span>→ Like</span>
-          <span>↑ Connect</span>
-          <span>↓ Hide</span>
-        </div>
+      {/* Instructions - Adjusted for Mobile */}
+      <div className={`absolute ${isMobile ? '-bottom-8' : '-bottom-16'} left-0 right-0 text-center`}>
+        {!isMobile && (
+          <>
+            <p className="text-sm text-gray-500 mb-2">
+              Swipe or use arrow keys
+            </p>
+            <div className="flex justify-center gap-4 text-xs text-gray-400">
+              <span>← Pass</span>
+              <span>→ Like</span>
+              <span>↑ Connect</span>
+              <span>↓ Hide</span>
+            </div>
+          </>
+        )}
+        {isMobile && (
+          <p className="text-xs text-gray-400">
+            Swipe on the image to interact with properties
+          </p>
+        )}
       </div>
     </div>
   );
