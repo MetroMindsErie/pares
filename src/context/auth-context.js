@@ -8,7 +8,8 @@ const AuthContext = createContext({
   login: async () => {},
   logout: async () => {},
   signup: async () => {},
-  error: null
+  error: null,
+  getRedirectPath: () => {} // Add this new function to the context type
 });
 
 export const AuthProvider = ({ children }) => {
@@ -250,16 +251,37 @@ export const AuthProvider = ({ children }) => {
     setError(null);
     
     try {
+      // Clear any provider tokens in localStorage (including Facebook)
+      try {
+        localStorage.removeItem('facebook_token');
+        localStorage.removeItem('fb_access_token');
+        localStorage.removeItem('facebook_expiration');
+        // Clear any other provider tokens that might be stored
+        console.log('Cleared social provider tokens from localStorage');
+      } catch (tokenError) {
+        console.warn('Error clearing tokens from localStorage:', tokenError);
+      }
+      
       const { default: supabaseClient } = await import('../utils/supabaseClient');
-      const { error } = await supabaseClient.auth.signOut();
+      console.log('Logging out user...');
       
-      if (error) throw error;
-      
+      // Force reset auth state regardless of the API call outcome
       setUser(null);
       setIsAuthenticated(false);
       setHasProfile(null);
-      return { error: null };
+      
+      const { error } = await supabaseClient.auth.signOut();
+      
+      if (error) {
+        console.error('Error during signOut API call:', error);
+        setError(error.message);
+        return { error };
+      }
+      
+      console.log('Logout successful');
+      return { success: true };
     } catch (err) {
+      console.error('Unexpected error during logout:', err);
       setError(err.message);
       return { error: err };
     } finally {
@@ -322,7 +344,7 @@ export const AuthProvider = ({ children }) => {
     if (!Array.isArray(user.roles) || user.roles.length === 0) {
       // Try to refresh the user data in the background to load roles
       if (user.id) {
-        refreshUserData(user.id);
+        refreshUserData(user.id);  
       }
       return 'user';
     }
@@ -337,6 +359,33 @@ export const AuthProvider = ({ children }) => {
     return 'user';
   }, [user, refreshUserData]);
 
+  // Add this new function to determine the redirect path based on profile status
+  const getRedirectPath = useCallback(() => {
+    try {
+      if (!isAuthenticated || !user) {
+        return '/login';
+      }
+      
+      if (hasprofile === null) {
+        // If we're still loading profile data, or user logged out
+        // Return null to prevent redirection loops
+        return null;
+      }
+      
+      // If hasprofile is explicitly false, redirect to profile creation
+      if (hasprofile === false) {
+        return '/create-profile?setup=true';
+      }
+      
+      // If hasprofile is true, redirect to dashboard
+      return '/dashboard';
+    } catch (error) {
+      console.error('Error in getRedirectPath:', error);
+      // Default safe path in case of error
+      return '/login';
+    }
+  }, [isAuthenticated, hasprofile, user]);
+
   const value = {
     isAuthenticated,
     user,
@@ -349,7 +398,8 @@ export const AuthProvider = ({ children }) => {
     logout,
     signup,
     getUserRole,
-    refreshUserData
+    refreshUserData,
+    getRedirectPath // Add the new function to the context value
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

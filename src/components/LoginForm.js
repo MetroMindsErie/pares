@@ -6,7 +6,7 @@ import { useAuth } from '../context/auth-context';
 let supabaseClient = null;
 
 const Login = () => {
-  const { isAuthenticated, login, loginWithProvider, loading, error: authError } = useAuth();
+  const { isAuthenticated, login, loginWithProvider, loading, error: authError, getRedirectPath } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
@@ -28,9 +28,12 @@ const Login = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      router.push('/dashboard');
+      const redirectPath = getRedirectPath();
+      if (redirectPath) {
+        router.push(redirectPath);
+      }
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, getRedirectPath, router]);
 
   // Handle form submission
   const handleLogin = async (e) => {
@@ -47,22 +50,10 @@ const Login = () => {
       const { data: loginData, error } = await login(username, password);
       if (error) throw error;
 
-      // Skip profile check if supabase not loaded or no user data
-      if (!supabaseClient || !loginData?.user?.id) {
-        router.push('/dashboard');
-        return;
-      }
-
-      const { data: profileData } = await supabaseClient
-        .from('users')
-        .select('hasprofile')
-        .eq('id', loginData.user.id)
-        .single();
-
-      if (!profileData?.hasprofile) {
-        router.push('/create-profile?setup=true');
-      } else {
-        router.push('/dashboard');
+      // Let the auth context handle redirection based on profile status
+      const redirectPath = getRedirectPath();
+      if (redirectPath) {
+        router.push(redirectPath);
       }
     } catch (err) {
       console.error('Login error:', err);
@@ -74,6 +65,7 @@ const Login = () => {
   const handleSocialLogin = async (provider) => {
     setError(null);
     await loginWithProvider(provider);
+    // No need to handle redirect here as the auth state change will trigger the effect above
   };
 
   // Return the form interface

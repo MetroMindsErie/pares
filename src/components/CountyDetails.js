@@ -151,7 +151,7 @@ const CountyDetails = ({ countyId }) => {
         {/* Properties section */}
         <div className="flex flex-wrap items-center justify-between mb-6">
           <h3 className="text-xl font-bold text-gray-800 mb-2 sm:mb-0">
-            Available Properties 
+            Real Estate Listings
             <span className="ml-2 text-sm font-normal text-gray-500">
               ({properties.length} {status === 'active' ? 'active' : 'closed'} listings)
             </span>

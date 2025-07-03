@@ -59,16 +59,34 @@ export default function Navbar() {
   
   const handleLogout = async () => {
     try {
-      await logout();
+      // Set a timeout to prevent infinite loading state
+      const timeoutId = setTimeout(() => {
+        console.log('Logout timeout triggered - forcing navigation');
+        // Force navigation even if logout API call is stuck
+        router.push('/');
+      }, 3000);
+      
+      const result = await logout();
+      
+      // Clear the timeout if logout completes normally
+      clearTimeout(timeoutId);
       
       // Clear wallet connection data on logout
       setWalletConnected(false);
       setWalletAddress('');
       localStorage.removeItem('walletAddress');
       
+      // Check if there was an error during logout
+      if (result && result.error) {
+        console.error('Error during logout:', result.error);
+      }
+      
+      // Navigate to home page regardless of logout result
       router.push('/');
     } catch (err) {
-      console.error('Logout error:', err);
+      console.error('Unexpected error during logout:', err);
+      // Force navigation even if there's an error
+      router.push('/');
     }
   };
 
