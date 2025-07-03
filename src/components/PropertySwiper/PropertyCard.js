@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useMemo } from 'react';
+import { motion, useMotionValue, useTransform } from 'framer-motion';
 import { useRouter } from 'next/router';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
@@ -11,13 +12,27 @@ import {
   faEyeSlash 
 } from '@fortawesome/free-solid-svg-icons';
 
-const PropertyCard = ({ property, onSwipe, isTop = false, isMobile = false }) => {
+const PropertyCard = ({ property, onSwipe, isTop = false }) => {
   const router = useRouter();
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [dragCurrent, setDragCurrent] = useState({ x: 0, y: 0 });
-  const cardRef = useRef(null);
+  const [exitDirection, setExitDirection] = useState(null);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  
+  // Transform values for rotation and opacity based on drag
+  const rotateX = useTransform(y, [-300, 0, 300], [15, 0, -15]);
+  const rotateZ = useTransform(x, [-300, 0, 300], [-30, 0, 30]);
+  const opacity = useTransform(
+    [x, y],
+    ([latestX, latestY]) => 1 - Math.abs(latestX) / 300 - Math.abs(latestY) / 300
+  );
 
+  // Swipe indicator transforms - always create these hooks
+  const leftIndicatorOpacity = useTransform(x, [-150, -50], [1, 0]);
+  const rightIndicatorOpacity = useTransform(x, [50, 150], [0, 1]);
+  const topIndicatorOpacity = useTransform(y, [-150, -50], [1, 0]);
+  const bottomIndicatorOpacity = useTransform(y, [50, 150], [0, 1]);
+
+  // Swipe threshold
   const SWIPE_THRESHOLD = 100;
 
   const handleActionClick = (action) => {
@@ -27,58 +42,36 @@ const PropertyCard = ({ property, onSwipe, isTop = false, isMobile = false }) =>
       return;
     }
     
-    // For other actions, proceed with normal swipe behavior
+    // Set exit direction and trigger swipe
+    setExitDirection(action);
     onSwipe(property, action);
   };
 
-  // Touch/Mouse event handlers for mobile swipe gestures
-  const handleTouchStart = (e) => {
-    if (!isMobile || !isTop) return;
+  const handleDragEnd = (_, info) => {
+    const { offset, velocity } = info;
+    const swipeDirection = getSwipeDirection(offset, velocity);
     
-    const touch = e.touches?.[0] || e;
-    setIsDragging(true);
-    setDragStart({ x: touch.clientX, y: touch.clientY });
-    setDragCurrent({ x: 0, y: 0 });
+    if (swipeDirection) {
+      handleActionClick(swipeDirection);
+    }
   };
 
-  const handleTouchMove = (e) => {
-    if (!isDragging || !isMobile || !isTop) return;
+  const getSwipeDirection = (offset, velocity) => {
+    const { x: offsetX, y: offsetY } = offset;
+    const { x: velocityX, y: velocityY } = velocity;
     
-    e.preventDefault();
-    const touch = e.touches?.[0] || e;
-    const deltaX = touch.clientX - dragStart.x;
-    const deltaY = touch.clientY - dragStart.y;
-    
-    setDragCurrent({ x: deltaX, y: deltaY });
-  };
-
-  const handleTouchEnd = (e) => {
-    if (!isDragging || !isMobile || !isTop) return;
-    
-    setIsDragging(false);
-    
-    const deltaX = dragCurrent.x;
-    const deltaY = dragCurrent.y;
-    
-    // Determine swipe direction based on the larger movement
-    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+    // Determine primary direction based on offset and velocity
+    if (Math.abs(offsetX) > Math.abs(offsetY)) {
       // Horizontal swipe
-      if (deltaX > SWIPE_THRESHOLD) {
-        handleActionClick('right'); // Like
-      } else if (deltaX < -SWIPE_THRESHOLD) {
-        handleActionClick('left'); // Pass
-      }
+      if (offsetX > SWIPE_THRESHOLD || velocityX > 500) return 'right';
+      if (offsetX < -SWIPE_THRESHOLD || velocityX < -500) return 'left';
     } else {
       // Vertical swipe
-      if (deltaY < -SWIPE_THRESHOLD) {
-        handleActionClick('up'); // Connect
-      } else if (deltaY > SWIPE_THRESHOLD) {
-        handleActionClick('down'); // Hide
-      }
+      if (offsetY < -SWIPE_THRESHOLD || velocityY < -500) return 'up';
+      if (offsetY > SWIPE_THRESHOLD || velocityY > 500) return 'down';
     }
     
-    // Reset drag state
-    setDragCurrent({ x: 0, y: 0 });
+    return null;
   };
 
   const formatPrice = (price) => {
@@ -90,65 +83,40 @@ const PropertyCard = ({ property, onSwipe, isTop = false, isMobile = false }) =>
     }).format(price);
   };
 
-  // Calculate card transform based on drag
-  const getCardStyle = () => {
-    if (!isDragging || !isMobile) return {};
-    
-    const rotation = dragCurrent.x * 0.1; // Subtle rotation effect
-    const opacity = Math.max(0.7, 1 - Math.abs(dragCurrent.x) / 300);
-    
-    return {
-      transform: `translate(${dragCurrent.x}px, ${dragCurrent.y}px) rotate(${rotation}deg)`,
-      opacity,
-      transition: isDragging ? 'none' : 'all 0.3s ease-out'
-    };
-  };
-
-  // Get swipe indicator
-  const getSwipeIndicator = () => {
-    if (!isDragging || !isMobile) return null;
-    
-    const deltaX = dragCurrent.x;
-    const deltaY = dragCurrent.y;
-    
-    if (Math.abs(deltaX) > Math.abs(deltaY)) {
-      if (deltaX > 50) return { text: 'LIKE', color: 'bg-green-500', position: 'right' };
-      if (deltaX < -50) return { text: 'PASS', color: 'bg-gray-500', position: 'left' };
-    } else {
-      if (deltaY < -50) return { text: 'CONNECT', color: 'bg-blue-500', position: 'top' };
-      if (deltaY > 50) return { text: 'HIDE', color: 'bg-red-500', position: 'bottom' };
+  const getExitAnimation = () => {
+    switch (exitDirection) {
+      case 'left':
+        return { x: -1000, rotate: -30, opacity: 0 };
+      case 'right':
+        return { x: 1000, rotate: 30, opacity: 0 };
+      case 'up':
+        return { y: -1000, opacity: 0 };
+      case 'down':
+        return { y: 1000, opacity: 0 };
+      default:
+        return { x: 0, y: 0, rotate: 0, opacity: 1 };
     }
-    
-    return null;
   };
-
-  const swipeIndicator = getSwipeIndicator();
 
   return (
-    <div 
-      ref={cardRef}
-      className="absolute inset-0 w-full h-full"
-      style={getCardStyle()}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      onMouseDown={isMobile ? undefined : handleTouchStart}
-      onMouseMove={isMobile ? undefined : handleTouchMove}
-      onMouseUp={isMobile ? undefined : handleTouchEnd}
+    <motion.div
+      className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing"
+      style={{
+        x,
+        y,
+        rotateX,
+        rotateZ,
+        opacity: isTop ? opacity : 1,
+        zIndex: isTop ? 10 : 1,
+      }}
+      drag={isTop}
+      dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+      onDragEnd={handleDragEnd}
+      animate={exitDirection ? getExitAnimation() : { x: 0, y: 0, rotate: 0 }}
+      transition={{ duration: 0.3 }}
+      whileTap={{ scale: 0.95 }}
     >
       <div className="bg-white rounded-2xl shadow-2xl overflow-hidden h-full flex flex-col">
-        {/* Swipe Indicator */}
-        {swipeIndicator && (
-          <div className={`absolute z-20 ${swipeIndicator.color} text-white px-4 py-2 rounded-lg font-bold text-lg transform -translate-x-1/2 -translate-y-1/2 ${
-            swipeIndicator.position === 'left' ? 'top-1/2 left-8' :
-            swipeIndicator.position === 'right' ? 'top-1/2 right-8' :
-            swipeIndicator.position === 'top' ? 'top-8 left-1/2' :
-            'bottom-8 left-1/2'
-          }`}>
-            {swipeIndicator.text}
-          </div>
-        )}
-
         {/* Property Image */}
         <div className="relative h-1/2 overflow-hidden">
           <img
@@ -167,21 +135,6 @@ const PropertyCard = ({ property, onSwipe, isTop = false, isMobile = false }) =>
           {property.StandardStatus === 'Closed' && (
             <div className="absolute top-4 right-4 bg-red-600 text-white px-3 py-1 rounded-full text-sm font-medium">
               Sold
-            </div>
-          )}
-
-          {/* Mobile Swipe Instructions - Only show on first card */}
-          {isMobile && isTop && !isDragging && (
-            <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center">
-              <div className="bg-white bg-opacity-90 rounded-lg p-4 text-center">
-                <p className="text-sm font-medium text-gray-800 mb-2">Swipe to interact</p>
-                <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-                  <div>← Pass</div>
-                  <div>→ Like</div>
-                  <div>↑ Connect</div>
-                  <div>↓ Hide</div>
-                </div>
-              </div>
             </div>
           )}
         </div>
@@ -213,8 +166,8 @@ const PropertyCard = ({ property, onSwipe, isTop = false, isMobile = false }) =>
             </p>
           </div>
 
-          {/* Action Buttons - Hide on mobile when dragging */}
-          <div className={`grid grid-cols-4 gap-3 mt-6 transition-opacity ${isDragging && isMobile ? 'opacity-50' : ''}`}>
+          {/* Action Buttons */}
+          <div className="grid grid-cols-4 gap-3 mt-6">
             <button
               onClick={() => handleActionClick('left')}
               className="flex flex-col items-center justify-center p-3 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
@@ -249,7 +202,48 @@ const PropertyCard = ({ property, onSwipe, isTop = false, isMobile = false }) =>
           </div>
         </div>
       </div>
-    </div>
+
+      {/* Swipe Indicators - Only show when isTop but hooks are always created */}
+      {isTop && (
+        <>
+          <motion.div
+            className="absolute top-1/2 left-8 transform -translate-y-1/2 bg-gray-500 text-white px-4 py-2 rounded-lg font-bold text-lg"
+            style={{
+              opacity: leftIndicatorOpacity
+            }}
+          >
+            PASS
+          </motion.div>
+          
+          <motion.div
+            className="absolute top-1/2 right-8 transform -translate-y-1/2 bg-green-500 text-white px-4 py-2 rounded-lg font-bold text-lg"
+            style={{
+              opacity: rightIndicatorOpacity
+            }}
+          >
+            LIKE
+          </motion.div>
+          
+          <motion.div
+            className="absolute top-8 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white px-4 py-2 rounded-lg font-bold text-lg"
+            style={{
+              opacity: topIndicatorOpacity
+            }}
+          >
+            CONNECT
+          </motion.div>
+          
+          <motion.div
+            className="absolute bottom-8 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-lg font-bold text-lg"
+            style={{
+              opacity: bottomIndicatorOpacity
+            }}
+          >
+            HIDE
+          </motion.div>
+        </>
+      )}
+    </motion.div>
   );
 };
 
