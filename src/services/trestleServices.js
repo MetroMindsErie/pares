@@ -175,63 +175,83 @@ export async function getMediaUrls(listingKey) {
 
 export const searchProperties = async (searchParams) => {
   try {
-    // Convert searchParams to URL parameters for the API
-    const queryParams = new URLSearchParams();
-    
-    // Map frontend parameters to API parameters
+    // Build filter query for Trestle API
+    const filters = [];
+
+    // Location search - handle various location types
     if (searchParams.location) {
-      // Handle location search - this could be city, zip, address, etc.
-      queryParams.append('location', searchParams.location);
-    }
-    
-    if (searchParams.minPrice) queryParams.append('minPrice', searchParams.minPrice);
-    if (searchParams.maxPrice) queryParams.append('maxPrice', searchParams.maxPrice);
-    if (searchParams.beds) queryParams.append('beds', searchParams.beds);
-    if (searchParams.baths) queryParams.append('baths', searchParams.baths);
-    if (searchParams.propertyType) queryParams.append('propertyType', searchParams.propertyType);
-    if (searchParams.minSqFt) queryParams.append('minSqFt', searchParams.minSqFt);
-    if (searchParams.maxSqFt) queryParams.append('maxSqFt', searchParams.maxSqFt);
-    
-    const apiUrl = `/api/properties?${queryParams.toString()}`;
-    console.log('Searching properties with params:', apiUrl);
-    
-    const response = await fetch(apiUrl);
-    
-    // Handle non-OK responses
-    if (!response.ok) {
-      // Try to parse the error response as JSON
-      let errorMessage = `API error: ${response.status}`;
-      try {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('API error details:', errorData);
-        if (errorData.error) {
-          errorMessage = errorData.error;
-        }
-      } catch (parseError) {
-        console.error('Could not parse error response as JSON');
-      }
+      const location = searchParams.location.trim();
       
-      throw new Error(errorMessage);
+      // Check if it's a county
+      if (location.toLowerCase().includes('county')) {
+        const countyName = location.replace(/county/i, '').trim();
+        filters.push(`CountyOrParish eq '${countyName}'`);
+      }
+      // Check if it's a ZIP code
+      else if (/^\d{5}(-\d{4})?$/.test(location)) {
+        filters.push(`startswith(PostalCode,'${location}')`);
+      }
+      // General location search
+      else {
+        filters.push(`(contains(CountyOrParish,'${location}') or contains(PostalCity,'${location}') or contains(UnparsedAddress,'${location}'))`);
+      }
     }
-    
-    const data = await response.json();
-    
-    // Check if the expected data structure is returned
-    if (!data.value) {
-      console.warn('API returned unexpected data structure:', data);
-      return {
-        properties: [],
-        nextLink: null
-      };
+
+    // Price filters
+    if (searchParams.minPrice) {
+      filters.push(`ListPrice ge ${searchParams.minPrice}`);
     }
+    if (searchParams.maxPrice) {
+      filters.push(`ListPrice le ${searchParams.maxPrice}`);
+    }
+
+    // Bedroom/bathroom filters
+    if (searchParams.beds) {
+      filters.push(`BedroomsTotal ge ${searchParams.beds}`);
+    }
+    if (searchParams.baths) {
+      filters.push(`BathroomsTotalInteger ge ${searchParams.baths}`);
+    }
+
+    // Property type filter
+    if (searchParams.propertyType) {
+      filters.push(`PropertyType eq '${searchParams.propertyType}'`);
+    }
+
+    // Square footage filters
+    if (searchParams.minSqFt) {
+      filters.push(`LivingArea ge ${searchParams.minSqFt}`);
+    }
+    if (searchParams.maxSqFt) {
+      filters.push(`LivingArea le ${searchParams.maxSqFt}`);
+    }
+
+    // Only active listings
+    filters.push(`StandardStatus eq 'Active'`);
+
+    // Build the filter query string - just the filter part
+    const filterQuery = filters.length > 0 ? `$filter=${filters.join(' and ')}` : '';
+
+    // Call getPropertiesByFilter with just the filter and let it handle top/skip/expand
+    const response = await getPropertiesByFilter(filterQuery, 50, 0); // 50 for swiper, 0 for first page
     
+    // Format properties for the swiper
+    const formattedProperties = response.properties.map(property => ({
+      ...property,
+      media: property.Media && property.Media.length > 0 
+        ? property.Media[0].MediaURL 
+        : property.media // fallback to the media property that's already set
+    }));
+
     return {
-      properties: data.value,
-      nextLink: data['@odata.nextLink'] || null
+      properties: formattedProperties,
+      nextLink: response.nextLink,
+      total: formattedProperties.length
     };
+
   } catch (error) {
     console.error('Error searching properties:', error);
-    throw error;
+    throw new Error('Failed to search properties');
   }
 };
 

@@ -37,6 +37,18 @@ const SearchBar = ({ onSearchResults }) => {
         .filter(([_, value]) => value !== '')
         .reduce((obj, [key, value]) => ({ ...obj, [key]: value }), {});
       
+      // Check if user wants swiper experience (you can add this as a toggle)
+      const useSwiper = localStorage.getItem('preferSwiper') === 'true';
+      
+      if (useSwiper && searchParams.location) {
+        // Navigate to swiper page
+        router.push({
+          pathname: '/swipe',
+          query: { q: searchParams.location }
+        });
+        return;
+      }
+      
       const { properties, nextLink } = await searchProperties(query);
       
       // Pass the search results to the parent component
@@ -62,9 +74,12 @@ const SearchBar = ({ onSearchResults }) => {
             name="location"
             value={searchParams.location}
             onChange={handleChange}
-            placeholder="Search by ZIP, City, or Address"
+            placeholder="Enter County, ZIP Code, or Address"
             className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700"
           />
+          <div className="mt-1.5 text-xs text-gray-500">
+            Try searching for "Erie", "Warren", "Crawford" counties or enter a ZIP code
+          </div>
         </div>
         
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -164,6 +179,23 @@ const SearchBar = ({ onSearchResults }) => {
                 Search Properties
               </>
             )}
+          </button>
+          
+          {/* Swiper Mode Toggle */}
+          <button
+            type="button"
+            onClick={() => {
+              if (searchParams.location) {
+                router.push({
+                  pathname: '/swipe',
+                  query: { q: searchParams.location }
+                });
+              }
+            }}
+            disabled={!searchParams.location}
+            className="px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition duration-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Swipe Mode
           </button>
           
           <button

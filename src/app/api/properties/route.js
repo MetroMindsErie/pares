@@ -63,36 +63,45 @@ export async function GET(request) {
     // Format the search parameters for Trestle API
     const formattedParams = new URLSearchParams();
     
-    // Enhanced location search using Trestle-specific fields
+    // Enhanced location search with specific support for counties and ZIP codes
     if (searchParams.has('location')) {
-      const locationTerm = searchParams.get('location');
+      const locationTerm = searchParams.get('location').trim();
       
-      // Check if the location search is potentially a postal code (ZIP code)
-      if (/^\d{5}(-\d{4})?$/.test(locationTerm)) {
-        // If it looks like a ZIP code (5 digits or ZIP+4 format)
+      // Check for specific county names (case insensitive)
+      const countyNames = ['erie', 'warren', 'crawford'];
+      const normalizedLocation = locationTerm.toLowerCase();
+      
+      if (countyNames.includes(normalizedLocation)) {
+        // Direct county search using CountyOrParish field
+        formattedParams.append('$filter', `CountyOrParish eq '${locationTerm.charAt(0).toUpperCase() + locationTerm.slice(1).toLowerCase()} County'`);
+      }
+      // Check if it's a ZIP code
+      else if (/^\d{5}(-\d{4})?$/.test(locationTerm)) {
         formattedParams.append('$filter', `startswith(PostalCode,'${locationTerm}')`);
-      } 
-      // Check if the location might be a city name
-      else if (isNaN(locationTerm)) {
-        // Use both PostalCity and UnparsedAddress for broader results
-        formattedParams.append('$filter', 
-          `contains(PostalCity,'${locationTerm}') or contains(UnparsedAddress,'${locationTerm}')`);
-      } 
-      // Fallback to general address search
+      }
+      // Combination search for anything else (could be partial county name or city)
       else {
-        formattedParams.append('$filter', `contains(UnparsedAddress,'${locationTerm}')`);
+        formattedParams.append('$filter', 
+          `contains(CountyOrParish,'${locationTerm}') or contains(PostalCity,'${locationTerm}') or contains(UnparsedAddress,'${locationTerm}')`);
       }
     } else if (searchParams.has('q')) {
-      const searchTerm = searchParams.get('q');
+      const searchTerm = searchParams.get('q').trim();
       
-      // Same logic for the 'q' parameter
-      if (/^\d{5}(-\d{4})?$/.test(searchTerm)) {
+      // Same county-specific detection
+      const countyNames = ['erie', 'warren', 'crawford'];
+      const normalizedTerm = searchTerm.toLowerCase();
+      
+      if (countyNames.includes(normalizedTerm)) {
+        formattedParams.append('$filter', `CountyOrParish eq '${searchTerm.charAt(0).toUpperCase() + searchTerm.slice(1).toLowerCase()}'`);
+      }
+      // ZIP code detection
+      else if (/^\d{5}(-\d{4})?$/.test(searchTerm)) {
         formattedParams.append('$filter', `startswith(PostalCode,'${searchTerm}')`);
-      } else if (isNaN(searchTerm)) {
+      }
+      // Combination search
+      else {
         formattedParams.append('$filter', 
-          `contains(PostalCity,'${searchTerm}') or contains(UnparsedAddress,'${searchTerm}')`);
-      } else {
-        formattedParams.append('$filter', `contains(UnparsedAddress,'${searchTerm}')`);
+          `contains(CountyOrParish,'${searchTerm}') or contains(PostalCity,'${searchTerm}') or contains(UnparsedAddress,'${searchTerm}')`);
       }
     }
     
