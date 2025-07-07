@@ -154,7 +154,16 @@ export default function DashboardPage() {
 
       try {
         console.log('Fetching property stats for user:', userId);
-        const { getSwipeStats } = await import('../utils/swipeUtils');
+        const { getSwipeStats, cleanupNullPropertyData, cleanupOversizedPropertyData } = await import('../utils/swipeUtils');
+        
+        // Clean up any problematic records first (one-time cleanup)
+        try {
+          await cleanupNullPropertyData(userId);
+          await cleanupOversizedPropertyData(userId);
+        } catch (cleanupError) {
+          console.log('Cleanup not needed or already done:', cleanupError.message);
+        }
+        
         const stats = await getSwipeStats(userId);
         console.log('Dashboard received stats:', stats);
         

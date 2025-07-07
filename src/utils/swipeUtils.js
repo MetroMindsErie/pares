@@ -11,11 +11,76 @@ let sessionCache = {
 const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
 /**
+ * Clean and minimize property data for storage
+ */
+const cleanPropertyData = (property) => {
+  if (!property) return null;
+  
+  // Extract only essential fields and filter out null/undefined values
+  const essentialData = {
+    ListingKey: property.ListingKey,
+    UnparsedAddress: property.UnparsedAddress,
+    ListPrice: property.ListPrice,
+    BedroomsTotal: property.BedroomsTotal,
+    BathroomsTotalInteger: property.BathroomsTotalInteger,
+    LivingArea: property.LivingArea,
+    PropertyType: property.PropertyType,
+    StandardStatus: property.StandardStatus,
+    City: property.City,
+    StateOrProvince: property.StateOrProvince,
+    PostalCode: property.PostalCode,
+    media: property.media, // First image URL
+    // Limit description to 200 chars to keep data small
+    PublicRemarks: property.PublicRemarks ? 
+      property.PublicRemarks.substring(0, 200) + (property.PublicRemarks.length > 200 ? '...' : '') : null
+  };
+  
+  // Filter out null, undefined, and empty string values
+  const cleanedData = Object.fromEntries(
+    Object.entries(essentialData).filter(([key, value]) => 
+      value !== null && 
+      value !== undefined && 
+      value !== '' &&
+      !(typeof value === 'string' && value.trim() === '')
+    )
+  );
+  
+  // Only return data if we have essential fields and data is reasonable size
+  if (cleanedData.ListingKey) {
+    const dataSize = JSON.stringify(cleanedData).length;
+    if (dataSize > 2048) { // 2KB limit
+      console.warn('Property data still too large after cleaning:', dataSize, 'bytes');
+      // Further reduce data if still too large
+      return {
+        ListingKey: cleanedData.ListingKey,
+        UnparsedAddress: cleanedData.UnparsedAddress,
+        ListPrice: cleanedData.ListPrice,
+        BedroomsTotal: cleanedData.BedroomsTotal,
+        BathroomsTotalInteger: cleanedData.BathroomsTotalInteger,
+        LivingArea: cleanedData.LivingArea,
+        media: cleanedData.media
+      };
+    }
+    return cleanedData;
+  }
+  
+  return null;
+};
+
+/**
  * Save a swipe action to the database and update session cache
  */
 export const saveSwipeAction = async (userId, swipeAction) => {
   try {
-    console.log('Saving swipe action:', { userId, swipeAction });
+    console.log('Saving swipe action:', { userId, propertyId: swipeAction.propertyId, direction: swipeAction.direction });
+    
+    // Clean and minimize property data
+    const cleanedPropertyData = cleanPropertyData(swipeAction.propertyData);
+    
+    if (!cleanedPropertyData) {
+      console.warn('No valid property data to save, skipping database save');
+      return null;
+    }
     
     // Add to session cache immediately with proper direction handling
     sessionCache.swipedProperties.add(swipeAction.propertyId);
@@ -31,16 +96,14 @@ export const saveSwipeAction = async (userId, swipeAction) => {
     // Add to appropriate category based on direction
     if (swipeAction.direction === 'right') {
       sessionCache.likedProperties.unshift({
-        ...swipeAction.propertyData,
-        swipe_date: swipeAction.timestamp,
-        ListingKey: swipeAction.propertyData.ListingKey || swipeAction.propertyId
+        ...cleanedPropertyData,
+        swipe_date: swipeAction.timestamp
       });
       console.log('Added to liked properties cache');
     } else if (swipeAction.direction === 'up') {
       sessionCache.connectionProperties.unshift({
-        ...swipeAction.propertyData,
-        swipe_date: swipeAction.timestamp,
-        ListingKey: swipeAction.propertyData.ListingKey || swipeAction.propertyId
+        ...cleanedPropertyData,
+        swipe_date: swipeAction.timestamp
       });
       console.log('Added to connection properties cache');
     }
@@ -67,7 +130,7 @@ export const saveSwipeAction = async (userId, swipeAction) => {
         .from('property_swipes')
         .update({
           swipe_direction: swipeAction.direction,
-          property_data: swipeAction.propertyData,
+          property_data: cleanedPropertyData,
           updated_at: new Date().toISOString()
         })
         .eq('id', existingSwipe.id)
@@ -77,7 +140,7 @@ export const saveSwipeAction = async (userId, swipeAction) => {
         console.error('Update error:', error);
         throw error;
       }
-      console.log('Swipe updated successfully:', data);
+      console.log('Swipe updated successfully');
       return data;
     } else {
       console.log('Creating new swipe');
@@ -88,7 +151,7 @@ export const saveSwipeAction = async (userId, swipeAction) => {
           user_id: userId,
           property_id: swipeAction.propertyId,
           swipe_direction: swipeAction.direction,
-          property_data: swipeAction.propertyData,
+          property_data: cleanedPropertyData,
           created_at: new Date().toISOString()
         })
         .select();
@@ -97,7 +160,7 @@ export const saveSwipeAction = async (userId, swipeAction) => {
         console.error('Insert error:', error);
         throw error;
       }
-      console.log('Swipe created successfully:', data);
+      console.log('Swipe created successfully');
       return data;
     }
   } catch (error) {
@@ -268,6 +331,7 @@ export const getLikedPropertiesWithData = async (userId) => {
       .select('property_id, property_data, created_at')
       .eq('user_id', userId)
       .eq('swipe_direction', 'right')
+      .not('property_data', 'is', null) // Filter out null property_data
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -282,18 +346,13 @@ export const getLikedPropertiesWithData = async (userId) => {
       return [];
     }
 
-    const formattedProperties = data.map(item => {
-      if (!item.property_data) {
-        console.warn('Property data is null for:', item.property_id);
-        return null;
-      }
-      
-      return {
+    const formattedProperties = data
+      .filter(item => item.property_data && typeof item.property_data === 'object')
+      .map(item => ({
         ...item.property_data,
         swipe_date: item.created_at,
         ListingKey: item.property_data.ListingKey || item.property_id
-      };
-    }).filter(Boolean);
+      }));
 
     // Update session cache
     sessionCache.likedProperties = formattedProperties;
@@ -303,7 +362,7 @@ export const getLikedPropertiesWithData = async (userId) => {
     return formattedProperties;
   } catch (error) {
     console.error('Error fetching liked properties with data:', error);
-    return sessionCache.likedProperties;
+    return sessionCache.likedProperties || [];
   }
 };
 
@@ -327,6 +386,7 @@ export const getConnectionPropertiesWithData = async (userId) => {
       .select('property_id, property_data, created_at')
       .eq('user_id', userId)
       .eq('swipe_direction', 'up')
+      .not('property_data', 'is', null) // Filter out null property_data
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -341,18 +401,13 @@ export const getConnectionPropertiesWithData = async (userId) => {
       return [];
     }
 
-    const formattedProperties = data.map(item => {
-      if (!item.property_data) {
-        console.warn('Property data is null for:', item.property_id);
-        return null;
-      }
-      
-      return {
+    const formattedProperties = data
+      .filter(item => item.property_data && typeof item.property_data === 'object')
+      .map(item => ({
         ...item.property_data,
         swipe_date: item.created_at,
         ListingKey: item.property_data.ListingKey || item.property_id
-      };
-    }).filter(Boolean);
+      }));
 
     // Update session cache
     sessionCache.connectionProperties = formattedProperties;
@@ -362,7 +417,7 @@ export const getConnectionPropertiesWithData = async (userId) => {
     return formattedProperties;
   } catch (error) {
     console.error('Error fetching connection properties with data:', error);
-    return sessionCache.connectionProperties;
+    return sessionCache.connectionProperties || [];
   }
 };
 
@@ -388,4 +443,86 @@ export const getSessionCacheStats = () => {
     connectionCount: sessionCache.connectionProperties.length,
     lastUpdated: sessionCache.lastUpdated
   };
+};
+
+/**
+ * Clean up existing null property_data records (admin function)
+ */
+export const cleanupNullPropertyData = async (userId) => {
+  try {
+    const { data, error } = await supabase
+      .from('property_swipes')
+      .delete()
+      .eq('user_id', userId)
+      .is('property_data', null);
+
+    if (error) throw error;
+    
+    console.log('Cleaned up null property_data records:', data);
+    return data;
+  } catch (error) {
+    console.error('Error cleaning up null property_data:', error);
+    throw error;
+  }
+};
+
+/**
+ * Clean up existing oversized property_data records (admin function)
+ */
+export const cleanupOversizedPropertyData = async (userId) => {
+  try {
+    // First, get all oversized records
+    const { data: oversizedRecords, error: fetchError } = await supabase
+      .from('property_swipes')
+      .select('id, property_id, property_data, swipe_direction')
+      .eq('user_id', userId);
+
+    if (fetchError) throw fetchError;
+
+    let cleanedCount = 0;
+    let deletedCount = 0;
+
+    for (const record of oversizedRecords) {
+      const dataSize = JSON.stringify(record.property_data).length;
+      
+      if (dataSize > 5120) { // 5KB
+        console.log(`Processing oversized record: ${record.property_id}, size: ${dataSize} bytes`);
+        
+        // Try to clean the data
+        const cleanedData = cleanPropertyData(record.property_data);
+        
+        if (cleanedData) {
+          // Update with cleaned data
+          const { error: updateError } = await supabase
+            .from('property_swipes')
+            .update({ property_data: cleanedData })
+            .eq('id', record.id);
+            
+          if (updateError) {
+            console.error('Failed to update record:', updateError);
+          } else {
+            cleanedCount++;
+          }
+        } else {
+          // Delete if can't be cleaned
+          const { error: deleteError } = await supabase
+            .from('property_swipes')
+            .delete()
+            .eq('id', record.id);
+            
+          if (deleteError) {
+            console.error('Failed to delete record:', deleteError);
+          } else {
+            deletedCount++;
+          }
+        }
+      }
+    }
+    
+    console.log(`Cleanup complete: ${cleanedCount} records cleaned, ${deletedCount} records deleted`);
+    return { cleanedCount, deletedCount };
+  } catch (error) {
+    console.error('Error cleaning up oversized property_data:', error);
+    throw error;
+  }
 };

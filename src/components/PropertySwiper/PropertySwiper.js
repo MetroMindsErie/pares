@@ -74,6 +74,11 @@ const PropertySwiper = ({
       return;
     }
     
+    // Validate that we have essential property data
+    if (!property.UnparsedAddress && !property.ListPrice) {
+      console.warn('Property missing essential data, saving swipe without property_data');
+    }
+    
     const swipeAction = {
       propertyId: property.ListingKey,
       direction,
@@ -89,9 +94,28 @@ const PropertySwiper = ({
         console.log(`${direction} swipe saved successfully`);
       } else {
         console.log(`Saving ${direction} swipe to localStorage for non-authenticated user`);
-        // Save to localStorage for non-authenticated users
+        // For localStorage, also clean the data to keep it manageable
+        const cleanedAction = {
+          ...swipeAction,
+          propertyData: {
+            ListingKey: property.ListingKey,
+            UnparsedAddress: property.UnparsedAddress,
+            ListPrice: property.ListPrice,
+            BedroomsTotal: property.BedroomsTotal,
+            BathroomsTotalInteger: property.BathroomsTotalInteger,
+            LivingArea: property.LivingArea,
+            media: property.media
+          }
+        };
+        
         const localSwipes = JSON.parse(localStorage.getItem('swipeActions') || '[]');
-        localSwipes.push(swipeAction);
+        localSwipes.push(cleanedAction);
+        
+        // Keep only the last 100 swipes in localStorage to prevent it from growing too large
+        if (localSwipes.length > 100) {
+          localSwipes.splice(0, localSwipes.length - 100);
+        }
+        
         localStorage.setItem('swipeActions', JSON.stringify(localSwipes));
       }
 
