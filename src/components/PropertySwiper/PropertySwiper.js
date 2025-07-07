@@ -4,6 +4,7 @@ import PropertyCard from './PropertyCard';
 import LoadingCard from './LoadingCard';
 import EmptyState from './EmptyState';
 import { useAuth } from '../../context/auth-context';
+import { saveSwipeAction, getSwipedProperties } from '../../utils/swipeUtils';
 
 const PropertySwiper = ({ 
   properties = [], 
@@ -17,31 +18,62 @@ const PropertySwiper = ({
   const [currentCards, setCurrentCards] = useState([]);
   const [swipedProperties, setSwipedProperties] = useState(new Set());
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [cardKey, setCardKey] = useState(0); // Add unique key counter
 
   // Initialize cards when properties change
   useEffect(() => {
     if (properties.length > 0) {
       const filtered = properties.filter(
-        property => !swipedProperties.has(property.ListingKey)
+        property => property.ListingKey && !swipedProperties.has(property.ListingKey)
       );
-      setCurrentCards(filtered.slice(0, 3)); // Show max 3 cards at once
+      
+      // Add unique keys to prevent duplicate key errors
+      const cardsWithKeys = filtered.slice(0, 3).map((property, index) => ({
+        ...property,
+        _cardKey: `${property.ListingKey}-${Date.now()}-${index}`
+      }));
+      
+      setCurrentCards(cardsWithKeys);
     }
   }, [properties, swipedProperties]);
 
-  // Load user's swipe history from localStorage if no user
+  // Load user's swipe history
   useEffect(() => {
-    if (!user?.id) {
-      try {
-        const localSwipes = JSON.parse(localStorage.getItem('swipeActions') || '[]');
-        const swipedIds = localSwipes.map(swipe => swipe.propertyId);
-        setSwipedProperties(new Set(swipedIds));
-      } catch (error) {
-        console.error('Failed to load local swipe history:', error);
+    const loadSwipeHistory = async () => {
+      if (user?.id) {
+        try {
+          const swipedIds = await getSwipedProperties(user.id);
+          setSwipedProperties(new Set(swipedIds));
+        } catch (error) {
+          console.error('Failed to load swipe history:', error);
+        }
+      } else {
+        try {
+          const localSwipes = JSON.parse(localStorage.getItem('swipeActions') || '[]');
+          const swipedIds = localSwipes.map(swipe => swipe.propertyId);
+          setSwipedProperties(new Set(swipedIds));
+        } catch (error) {
+          console.error('Failed to load local swipe history:', error);
+        }
       }
-    }
+    };
+
+    loadSwipeHistory();
   }, [user?.id]);
 
   const handleSwipe = useCallback(async (property, direction) => {
+    console.log('Handling swipe:', { 
+      property: property.ListingKey, 
+      direction, 
+      userId: user?.id,
+      timestamp: new Date().toISOString()
+    });
+    
+    if (!property.ListingKey) {
+      console.error('Property missing ListingKey:', property);
+      return;
+    }
+    
     const swipeAction = {
       propertyId: property.ListingKey,
       direction,
@@ -52,10 +84,11 @@ const PropertySwiper = ({
     // Save swipe action
     try {
       if (user?.id) {
-        // For authenticated users, you could save to Supabase here
-        // await saveSwipeAction(user.id, swipeAction);
-        console.log('Would save to Supabase for user:', user.id);
+        console.log(`Saving ${direction} swipe for authenticated user:`, user.id);
+        await saveSwipeAction(user.id, swipeAction);
+        console.log(`${direction} swipe saved successfully`);
       } else {
+        console.log(`Saving ${direction} swipe to localStorage for non-authenticated user`);
         // Save to localStorage for non-authenticated users
         const localSwipes = JSON.parse(localStorage.getItem('swipeActions') || '[]');
         localSwipes.push(swipeAction);
@@ -72,6 +105,7 @@ const PropertySwiper = ({
 
     } catch (error) {
       console.error('Failed to save swipe action:', error);
+      // Still allow the UI to update even if save fails
     }
 
     // Remove the swiped card and advance to next
@@ -82,8 +116,13 @@ const PropertySwiper = ({
       const nextIndex = currentIndex + prev.length;
       if (nextIndex < properties.length) {
         const nextProperty = properties[nextIndex];
-        if (!swipedProperties.has(nextProperty.ListingKey)) {
-          newCards.push(nextProperty);
+        if (nextProperty.ListingKey && !swipedProperties.has(nextProperty.ListingKey)) {
+          // Add unique key to prevent duplicate key errors
+          const cardWithKey = {
+            ...nextProperty,
+            _cardKey: `${nextProperty.ListingKey}-${Date.now()}-${nextIndex}`
+          };
+          newCards.push(cardWithKey);
         }
       }
       
@@ -91,6 +130,7 @@ const PropertySwiper = ({
     });
 
     setCurrentIndex(prev => prev + 1);
+    setCardKey(prev => prev + 1); // Increment unique key counter
 
     // Load more properties if running low
     if (currentIndex >= properties.length - 5 && hasMore && !loading) {
@@ -148,7 +188,7 @@ const PropertySwiper = ({
       <AnimatePresence>
         {currentCards.map((property, index) => (
           <PropertyCard
-            key={property.ListingKey}
+            key={property._cardKey || `${property.ListingKey}-${index}`}
             property={property}
             onSwipe={handleSwipe}
             isTop={index === 0}

@@ -36,9 +36,17 @@ const PropertyCard = ({ property, onSwipe, isTop = false }) => {
   const SWIPE_THRESHOLD = 100;
 
   const handleActionClick = (action) => {
-    // For "Connect" action, navigate immediately without swiping
+    console.log('PropertyCard action clicked:', action, 'for property:', property.ListingKey);
+    
+    // For "Connect" action, still trigger the swipe to save the action
     if (action === 'up') {
-      router.push(`/property/${property.ListingKey}?action=contact`);
+      console.log('Connection action - triggering swipe and navigation');
+      // First save the swipe action
+      onSwipe(property, action);
+      // Then navigate to property details
+      setTimeout(() => {
+        router.push(`/property/${property.ListingKey}?action=contact`);
+      }, 100);
       return;
     }
     

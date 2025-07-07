@@ -18,6 +18,7 @@ export default function DashboardPage() {
   const [hasFacebookConnection, setHasFacebookConnection] = useState(false);
   const [userId, setUserId] = useState(null);
   const [fbConnectionChecked, setFbConnectionChecked] = useState(false);
+  const [propertyStats, setPropertyStats] = useState({ liked: 0, connections: 0 });
   const router = useRouter();
   
   // Use refs to track if effects have run to prevent loops
@@ -146,6 +147,29 @@ export default function DashboardPage() {
     ]);
   }, []);
 
+  // Fetch property stats
+  useEffect(() => {
+    const fetchPropertyStats = async () => {
+      if (!userId) return;
+
+      try {
+        console.log('Fetching property stats for user:', userId);
+        const { getSwipeStats } = await import('../utils/swipeUtils');
+        const stats = await getSwipeStats(userId);
+        console.log('Dashboard received stats:', stats);
+        
+        setPropertyStats({
+          liked: stats.liked || 0,
+          connections: stats.connections || 0
+        });
+      } catch (error) {
+        console.error('Error fetching property stats:', error);
+      }
+    };
+
+    fetchPropertyStats();
+  }, [userId]);
+
   // Simplified loading check
   const isLoading = loading || (localLoading && !profile);
 
@@ -166,41 +190,73 @@ export default function DashboardPage() {
         {profile && <WelcomeBanner profile={profile} />}
         
         <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
-        <StatsCard
-          title="Profile Views"
-          value="123"
-          change={12}
-          icon="eye"
-        />
-        <StatsCard
-          title="Connections"
-          value="45"
-          change={5}
-          icon="handshake"
-        />
-        {/* Add more StatsCard components as needed */}
-      </div>
-
-      <div className="mt-8">
-        <RecentActivity activities={activities} />
-      </div>
-
-      <div className="mt-8 bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Your Facebook Reels</h2>
-        <p className="text-gray-600 mb-6">
-          {hasFacebookConnection 
-            ? 'Here are your real estate reels from Facebook.' 
-            : 'Connect your Facebook account to display and manage your real estate reels.'}
-        </p>
-        
-        {/* Pass all necessary props to the Reels component */}
-        <div className="bg-gray-50 rounded-lg">
-          <Reels 
-            userId={userId} 
-            hasFacebookConnection={hasFacebookConnection}
-            autofetch={true}
+          <StatsCard
+            title="Profile Views"
+            value="123"
+            change={12}
+            icon="eye"
+          />
+          <StatsCard
+            title="Saved Properties"
+            value={propertyStats.liked.toString()}
+            change={0}
+            icon="heart"
+          />
+          <StatsCard
+            title="Connection Requests"
+            value={propertyStats.connections.toString()}
+            change={0}
+            icon="phone"
           />
         </div>
+
+        {/* Add Quick Actions */}
+        <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
+            <div className="space-y-3">
+              <button
+                onClick={() => router.push('/swipe')}
+                className="w-full text-left px-4 py-2 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+              >
+                🏠 Browse Properties
+              </button>
+              <button
+                onClick={() => router.push('/profile')}
+                className="w-full text-left px-4 py-2 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
+              >
+                ❤️ View Saved Properties ({propertyStats.liked})
+              </button>
+              <button
+                onClick={() => router.push('/profile')}
+                className="w-full text-left px-4 py-2 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
+              >
+                📞 Connection Requests ({propertyStats.connections})
+              </button>
+            </div>
+          </div>
+          
+          <div className="md:col-span-2">
+            <RecentActivity activities={activities} />
+          </div>
+        </div>
+
+        <div className="mt-8 bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4">Your Facebook Reels</h2>
+          <p className="text-gray-600 mb-6">
+            {hasFacebookConnection 
+              ? 'Here are your real estate reels from Facebook.' 
+              : 'Connect your Facebook account to display and manage your real estate reels.'}
+          </p>
+          
+          {/* Pass all necessary props to the Reels component */}
+          <div className="bg-gray-50 rounded-lg">
+            <Reels 
+              userId={userId} 
+              hasFacebookConnection={hasFacebookConnection}
+              autofetch={true}
+            />
+          </div>
         </div>
       </div>
     </Layout>

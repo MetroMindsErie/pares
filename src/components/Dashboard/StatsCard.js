@@ -1,6 +1,25 @@
 import { motion } from 'framer-motion';
+import React from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEye, faHandshake, faHeart, faUser, faHome, faPhone } from '@fortawesome/free-solid-svg-icons';
 
-const StatsCard = ({ title, value, icon: Icon, change }) => {
+const getIcon = (iconName) => {
+  const iconMap = {
+    'eye': faEye,
+    'handshake': faHandshake,
+    'heart': faHeart,
+    'user': faUser,
+    'home': faHome,
+    'phone': faPhone
+  };
+  
+  return iconMap[iconName] || faUser;
+};
+
+const StatsCard = ({ title, value, change, icon }) => {
+  const iconComponent = getIcon(icon);
+  const isPositiveChange = change >= 0;
+
   return (
     <motion.div
       whileHover={{ y: -5 }}
@@ -13,24 +32,24 @@ const StatsCard = ({ title, value, icon: Icon, change }) => {
           <p className="text-sm text-secondary-500 font-medium">{title}</p>
           <p className="text-2xl font-bold mt-1 font-display">{value}</p>
         </div>
-        {Icon && (
+        {icon && (
           <div className="p-3 bg-primary-50 rounded-lg">
-            <Icon className="h-6 w-6 text-primary-500" />
+            <FontAwesomeIcon icon={iconComponent} className="text-primary-500 text-xl" />
           </div>
         )}
       </div>
       
-      {change && (
+      {change !== undefined && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
           className={`mt-2 text-sm flex items-center ${
-            change > 0 ? 'text-success-500' : 'text-error-500'
+            isPositiveChange ? 'text-success-500' : 'text-error-500'
           }`}
         >
-          {change > 0 ? '↑' : '↓'}
-          <span className="ml-1">{Math.abs(change)}% from last month</span>
+          {isPositiveChange ? '+' : ''}{change}%
+          <span className="text-sm text-gray-500 ml-2">from last month</span>
         </motion.div>
       )}
     </motion.div>
