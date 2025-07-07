@@ -178,24 +178,36 @@ export const searchProperties = async (searchParams) => {
     // Build filter query for Trestle API
     const filters = [];
 
-    // Location search - handle various location types
+    // Location search - handle various location types with improved accuracy
     if (searchParams.location) {
       const location = searchParams.location.trim();
       
-      // Check if it's a county
-      if (location.toLowerCase().includes('county')) {
+      // Check if it's a county (more flexible matching)
+      if (location.toLowerCase().includes('county') || 
+          ['erie', 'warren', 'crawford'].includes(location.toLowerCase())) {
         const countyName = location.replace(/county/i, '').trim();
         filters.push(`CountyOrParish eq '${countyName}'`);
       }
       // Check if it's a ZIP code
       else if (/^\d{5}(-\d{4})?$/.test(location)) {
-        filters.push(`startswith(PostalCode,'${location}')`);
+        filters.push(`PostalCode eq '${location}'`);
       }
-      // General location search
+      // General location search with exact and partial matches
       else {
-        filters.push(`(contains(CountyOrParish,'${location}') or contains(PostalCity,'${location}') or contains(UnparsedAddress,'${location}'))`);
+        const locationFilters = [
+          `CountyOrParish eq '${location}'`,
+          `PostalCity eq '${location}'`,
+          `contains(tolower(CountyOrParish), '${location.toLowerCase()}')`,
+          `contains(tolower(PostalCity), '${location.toLowerCase()}')`,
+          `contains(tolower(UnparsedAddress), '${location.toLowerCase()}')`
+        ];
+        filters.push(`(${locationFilters.join(' or ')})`);
       }
     }
+
+    // StandardStatus filter - defaults to Active if not specified
+    const status = searchParams.status || 'Active';
+    filters.push(`StandardStatus eq '${status}'`);
 
     // Price filters
     if (searchParams.minPrice) {
@@ -226,21 +238,18 @@ export const searchProperties = async (searchParams) => {
       filters.push(`LivingArea le ${searchParams.maxSqFt}`);
     }
 
-    // Only active listings
-    filters.push(`StandardStatus eq 'Active'`);
-
     // Build the filter query string - just the filter part
     const filterQuery = filters.length > 0 ? `$filter=${filters.join(' and ')}` : '';
 
     // Call getPropertiesByFilter with just the filter and let it handle top/skip/expand
-    const response = await getPropertiesByFilter(filterQuery, 50, 0); // 50 for swiper, 0 for first page
+    const response = await getPropertiesByFilter(filterQuery, 50, 0);
     
     // Format properties for the swiper
     const formattedProperties = response.properties.map(property => ({
       ...property,
       media: property.Media && property.Media.length > 0 
         ? property.Media[0].MediaURL 
-        : property.media // fallback to the media property that's already set
+        : property.media
     }));
 
     return {

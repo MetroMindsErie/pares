@@ -9,6 +9,7 @@ const SearchBar = ({ onSearchResults }) => {
   const [error, setError] = useState(null);
   const [searchParams, setSearchParams] = useState({
     location: '',
+    status: 'Active', // Default to Active
     minPrice: '',
     maxPrice: '',
     beds: '',
@@ -82,7 +83,28 @@ const SearchBar = ({ onSearchResults }) => {
           </div>
         </div>
         
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          {/* Status Filter */}
+          <div>
+            <select
+              id="status"
+              name="status"
+              value={searchParams.status}
+              onChange={handleChange}
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700 text-sm"
+            >
+              <option value="Active">Active</option>
+              <option value="ActiveUnderContract">Under Contract</option>
+              <option value="Pending">Pending</option>
+              <option value="Closed">Sold</option>
+              <option value="ComingSoon">Coming Soon</option>
+              <option value="Hold">Hold</option>
+              <option value="Withdrawn">Withdrawn</option>
+              <option value="Canceled">Canceled</option>
+              <option value="Expired">Expired</option>
+            </select>
+          </div>
+
           {/* Price Range */}
           <div>
             <select

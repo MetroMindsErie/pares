@@ -35,8 +35,14 @@ const AutocompleteSearch = ({ onSearch, onSuggestionSelect, loading = false }) =
     const suggestions = [];
     const lowerQuery = searchQuery.toLowerCase();
 
-    // Pennsylvania counties
-    const counties = ['Erie', 'Warren', 'Crawford', 'Allegheny', 'Philadelphia'];
+    // Pennsylvania counties - more comprehensive list
+    const counties = [
+      'Erie', 'Warren', 'Crawford', 'Allegheny', 'Philadelphia', 
+      'Bucks', 'Chester', 'Delaware', 'Montgomery', 'Lancaster',
+      'York', 'Dauphin', 'Lebanon', 'Berks', 'Schuylkill',
+      'Luzerne', 'Lackawanna', 'Northampton', 'Lehigh', 'Carbon'
+    ];
+    
     counties.forEach(county => {
       if (county.toLowerCase().includes(lowerQuery)) {
         suggestions.push({
@@ -48,11 +54,14 @@ const AutocompleteSearch = ({ onSearch, onSuggestionSelect, loading = false }) =
       }
     });
 
-    // Major cities
+    // Major cities with better matching
     const cities = [
       'Pittsburgh', 'Philadelphia', 'Allentown', 'Erie', 'Reading',
-      'Scranton', 'Bethlehem', 'Lancaster', 'Harrisburg', 'York'
+      'Scranton', 'Bethlehem', 'Lancaster', 'Harrisburg', 'York',
+      'Altoona', 'Wilkes-Barre', 'Chester', 'Easton', 'McKeesport',
+      'Norristown', 'Upper Darby', 'Levittown', 'New Castle', 'Johnstown'
     ];
+    
     cities.forEach(city => {
       if (city.toLowerCase().includes(lowerQuery)) {
         suggestions.push({
@@ -64,8 +73,8 @@ const AutocompleteSearch = ({ onSearch, onSuggestionSelect, loading = false }) =
       }
     });
 
-    // ZIP code suggestion
-    if (/^\d{1,5}$/.test(searchQuery)) {
+    // ZIP code suggestion with better validation
+    if (/^\d{1,5}$/.test(searchQuery) && searchQuery.length >= 3) {
       suggestions.push({
         type: 'zipcode',
         text: `ZIP Code: ${searchQuery}`,
