@@ -16,6 +16,20 @@ const getIcon = (iconName) => {
   return iconMap[iconName] || faUser;
 };
 
+const getPropertyDisplayImage = (property) => {
+  // Always use the first image in the array
+  if (property.media && Array.isArray(property.media) && property.media.length > 0) {
+    return property.media[0];
+  }
+  if (property.media && typeof property.media === 'string') {
+    return property.media;
+  }
+  if (property.mediaArray && Array.isArray(property.mediaArray) && property.mediaArray.length > 0) {
+    return property.mediaArray[0];
+  }
+  return null;
+};
+
 const StatsCard = ({ title, value, change, icon }) => {
   const iconComponent = getIcon(icon);
   const isPositiveChange = change >= 0;

@@ -106,6 +106,29 @@ const PropertyCard = ({ property, onSwipe, isTop = false }) => {
     }
   };
 
+  // Function to get the display image
+  const getDisplayImage = (property) => {
+    // Always use the first image in mediaArray if available
+    if (property.mediaArray && Array.isArray(property.mediaArray) && property.mediaArray.length > 0) {
+      return property.mediaArray[0];
+    }
+    // Fallback to media field
+    if (property.media) {
+      return property.media;
+    }
+    // Check original Media array structure
+    if (property.Media && Array.isArray(property.Media) && property.Media.length > 0) {
+      return property.Media[0].MediaURL || property.Media[0];
+    }
+    // Fallback to any media field that might exist
+    if (property.Media && typeof property.Media === 'string') {
+      return property.Media;
+    }
+    return '/fallback-property.jpg';
+  };
+
+  const displayImage = getDisplayImage(property);
+
   return (
     <motion.div
       className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing"
@@ -128,7 +151,7 @@ const PropertyCard = ({ property, onSwipe, isTop = false }) => {
         {/* Property Image */}
         <div className="relative h-1/2 overflow-hidden">
           <img
-            src={property.media || '/properties.jpg'}
+            src={displayImage || '/properties.jpg'}
             alt={property.UnparsedAddress || 'Property'}
             className="w-full h-full object-cover"
             draggable={false}

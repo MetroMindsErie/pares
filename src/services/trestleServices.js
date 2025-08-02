@@ -18,7 +18,10 @@ export async function getPropertyById(listingKey) {
     const response = await axios.get(
       `${API_BASE_URL}/trestle/odata/Property`,
       {
-        params: { $filter: `ListingKey eq '${listingKey}'` },
+        params: { 
+          $filter: `ListingKey eq '${listingKey}'`,
+          $expand: 'Media,SaleHistory'  // Include sale history if available
+        },
         headers: {
           Authorization: `Bearer ${await fetchToken()}`,
           Accept: 'application/json'
@@ -37,7 +40,10 @@ export async function getPropertyDetails(listingKey) {
     const response = await axios.get(
       `${API_BASE_URL}/trestle/odata/Property`,
       {
-        params: { $filter: `ListingKey eq '${listingKey}'` },
+        params: { 
+          $filter: `ListingKey eq '${listingKey}'`,
+          $expand: 'Media,SaleHistory'  // Include sale history if available
+        },
         headers: {
           Authorization: `Bearer ${await fetchToken()}`,
           Accept: 'application/json'
@@ -66,10 +72,28 @@ export const getPropertiesByFilter = async (filterQuery, top = 9, skip = 0) => {
     const data = await response.json();
     const properties = Array.isArray(data.value) ? data.value : [];
     return {
-      properties: properties.map(property => ({
-        ...property,
-        media: property.Media?.[0]?.MediaURL || '/fallback-property.jpg'
-      })),
+      properties: properties.map(property => {
+        // Sort Media array by Order, fallback to original order
+        let mediaArray = [];
+        if (property.Media && Array.isArray(property.Media) && property.Media.length > 0) {
+          mediaArray = property.Media
+            .slice()
+            .sort((a, b) => {
+              if (a.Order !== undefined && b.Order !== undefined) {
+                return a.Order - b.Order;
+              }
+              return 0;
+            })
+            .map(mediaItem => mediaItem.MediaURL)
+            .filter(url => !!url);
+        }
+        // Always set media to the first image in the array
+        return {
+          ...property,
+          media: mediaArray.length > 0 ? mediaArray[0] : '/fallback-property.jpg',
+          mediaArray: mediaArray
+        };
+      }),
       nextLink: data['@odata.nextLink'] || null
     };
   } catch (error) {
@@ -247,9 +271,8 @@ export const searchProperties = async (searchParams) => {
     // Format properties for the swiper
     const formattedProperties = response.properties.map(property => ({
       ...property,
-      media: property.Media && property.Media.length > 0 
-        ? property.Media[0].MediaURL 
-        : property.media
+      media: property.media, // always first image
+      mediaArray: property.mediaArray // all images
     }));
 
     return {
@@ -282,13 +305,50 @@ export const getNextProperties = async (nextLink) => {
     }
     
     const data = await response.json();
-    
+    const properties = Array.isArray(data.value) ? data.value : [];
     return {
-      properties: data.value || [],
+      properties: properties.map(property => {
+        let mediaArray = [];
+        if (property.Media && Array.isArray(property.Media) && property.Media.length > 0) {
+          mediaArray = property.Media
+            .slice()
+            .sort((a, b) => {
+              if (a.Order !== undefined && b.Order !== undefined) {
+                return a.Order - b.Order;
+              }
+              return 0;
+            })
+            .map(mediaItem => mediaItem.MediaURL)
+            .filter(url => !!url);
+        }
+        return {
+          ...property,
+          media: mediaArray.length > 0 ? mediaArray[0] : '/fallback-property.jpg',
+          mediaArray: mediaArray
+        };
+      }),
       nextLink: data['@odata.nextLink'] || null
     };
   } catch (error) {
     console.error('Error fetching next properties:', error);
     throw error;
+  }
+};
+
+// In the property processing function, ensure media is properly structured
+const processProperty = (property) => {
+  // Ensure media array is properly ordered with display image first
+  if (property.Media && Array.isArray(property.Media)) {
+    // Sort media to ensure the main/featured image comes first
+    property.media = property.Media.sort((a, b) => {
+      // If there's an Order field, use it
+      if (a.Order !== undefined && b.Order !== undefined) {
+        return a.Order - b.Order;
+      }
+      // Otherwise maintain original order (first is primary)
+      return 0;
+    }).map(mediaItem => mediaItem.MediaURL || mediaItem.url || mediaItem);
+  } else if (property.Media) {
+    property.media = [property.Media];
   }
 };

@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { motion, AnimatePresence } from 'framer-motion';
-import dynamic from 'next/dynamic';
+// import dynamic from 'next/dynamic';
 import { Hero } from '../components/Hero';
 import { Contact } from '../components/Contact';
 import Reels from '../components/Reels';
@@ -13,34 +13,34 @@ import { useAuth } from '../context/auth-context';
 import { handleProfileNavigation } from '../utils/profileUtils';
 import Layout from '../components/Layout';
 import '../styles/animations.css';
-import ReactDOM from 'react-dom';
-import CountyDetails from '../components/CountyDetails';
+// import ReactDOM from 'react-dom';
+// import CountyDetails from '../components/CountyDetails';
 import SearchBar from '../components/SearchBar';
 import SearchResults from '../components/SearchResults';
 
 // Dynamically import the map component to prevent SSR issues
-const InteractiveRealEstateMap = dynamic(
-  () => import('../../interactive-real-estate-map'),
-  { ssr: false }
-);
+// const InteractiveRealEstateMap = dynamic(
+//   () => import('../../interactive-real-estate-map'),
+//   { ssr: false }
+// );
 
 // Updated center coordinates to match the map component
-const PENNSYLVANIA_CENTER = { lat: 40.95, lng: -77.85 }; 
-const PA_ZOOM_LEVEL = 7;
+// const PENNSYLVANIA_CENTER = { lat: 40.95, lng: -77.85 }; 
+// const PA_ZOOM_LEVEL = 7;
 
 const HomePage = ({ featuredListings = [], heroContent }) => {
   const router = useRouter();
-  const [showMapGuide, setShowMapGuide] = useState(true);
-  const [hasInteractedWithMap, setHasInteractedWithMap] = useState(false);
-  const mapRef = useRef(null);
+  // const [showMapGuide, setShowMapGuide] = useState(true);
+  // const [hasInteractedWithMap, setHasInteractedWithMap] = useState(false);
+  // const mapRef = useRef(null);
   const { user, isAuthenticated } = useAuth();
   // Track if user has seen instructions
-  const hasSeenInstructions = useRef(false);
-  const [isMapExpanded, setIsMapExpanded] = useState(true);
-  const [selectedCountyId, setSelectedCountyId] = useState(null);
-  const countyDetailsRef = useRef(null);
-  const [countyDetails, setCountyDetails] = useState(null);
-  const [isDetailsLoading, setIsDetailsLoading] = useState(false);
+  // const hasSeenInstructions = useRef(false);
+  // const [isMapExpanded, setIsMapExpanded] = useState(true);
+  // const [selectedCountyId, setSelectedCountyId] = useState(null);
+  // const countyDetailsRef = useRef(null);
+  // const [countyDetails, setCountyDetails] = useState(null);
+  // const [isDetailsLoading, setIsDetailsLoading] = useState(false);
   
   // New state for search results
   const [searchResults, setSearchResults] = useState(null);
@@ -63,31 +63,31 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
     }
   };
 
-  useEffect(() => {
-    // Check if user has seen map instructions before
-    const hasSeenMapGuide = localStorage.getItem('hasSeenMapGuide');
-    if (hasSeenMapGuide) {
-      setShowMapGuide(false);
-      hasSeenInstructions.current = true;
-    }
-  }, []);
+  // useEffect(() => {
+  //   // Check if user has seen map instructions before
+  //   const hasSeenMapGuide = localStorage.getItem('hasSeenMapGuide');
+  //   if (hasSeenMapGuide) {
+  //     setShowMapGuide(false);
+  //     hasSeenInstructions.current = true;
+  //   }
+  // }, []);
   
-  const dismissMapGuide = () => {
-    setShowMapGuide(false);
-    localStorage.setItem('hasSeenMapGuide', 'true');
-    hasSeenInstructions.current = true;
-  };
+  // const dismissMapGuide = () => {
+  //   setShowMapGuide(false);
+  //   localStorage.setItem('hasSeenMapGuide', 'true');
+  //   hasSeenInstructions.current = true;
+  // };
   
-  const handleMapInteraction = () => {
-    if (!hasInteractedWithMap) {
-      setHasInteractedWithMap(true);
-      if (showMapGuide) {
-        setTimeout(() => {
-          setShowMapGuide(false);
-        }, 2000);
-      }
-    }
-  };
+  // const handleMapInteraction = () => {
+  //   if (!hasInteractedWithMap) {
+  //     setHasInteractedWithMap(true);
+  //     if (showMapGuide) {
+  //       setTimeout(() => {
+  //         setShowMapGuide(false);
+  //       }, 2000);
+  //     }
+  //   }
+  // };
 
   const handleEmailClick = async (e) => {
     e.preventDefault();
@@ -99,48 +99,48 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
   };
 
   // Enhanced county selection handler with shorter loading time and debug logs
-  const handleCountySelected = (countyId) => {
-    console.log("County selected in parent:", countyId);
-    
-    // Set selected county ID immediately
-    setSelectedCountyId(countyId);
-    
-    // Start loading state immediately
-    setIsDetailsLoading(true);
-    
-    // End loading after a very short delay - this helps content appear faster
-    setTimeout(() => {
-      console.log("Ending loading state for county details");
-      setIsDetailsLoading(false);
-      
-      // Replace the require with a proper rendering approach
-      const detailsContent = document.querySelector('.county-details-content');
-      
-      if (detailsContent && typeof window !== 'undefined') {
-        try {
-          // Use createRoot API for React 18
-          const root = ReactDOM.createRoot(detailsContent);
-          root.render(<CountyDetails countyId={countyId} />);
-          console.log("County details rendered:", countyId);
-        } catch (err) {
-          console.error("Error rendering county details:", err);
-          // Fallback rendering for older React versions or errors
-          detailsContent.innerHTML = `
-            <div class="p-6 text-center">
-              <p class="text-gray-800 font-medium">
-                Showing details for county ID: ${countyId}
-              </p>
-              <p class="text-gray-500 mt-2">
-                (Loading county information...)
-              </p>
-            </div>
-          `;
-        }
-      } else {
-        console.error("County details container not found");
-      }
-    }, 200);
-  };
+  // const handleCountySelected = (countyId) => {
+  //   console.log("County selected in parent:", countyId);
+  //   
+  //   // Set selected county ID immediately
+  //   setSelectedCountyId(countyId);
+  //   
+  //   // Start loading state immediately
+  //   setIsDetailsLoading(true);
+  //   
+  //   // End loading after a very short delay - this helps content appear faster
+  //   setTimeout(() => {
+  //     console.log("Ending loading state for county details");
+  //     setIsDetailsLoading(false);
+  //     
+  //     // Replace the require with a proper rendering approach
+  //     const detailsContent = document.querySelector('.county-details-content');
+  //     
+  //     if (detailsContent && typeof window !== 'undefined') {
+  //       try {
+  //         // Use createRoot API for React 18
+  //         const root = ReactDOM.createRoot(detailsContent);
+  //         root.render(<CountyDetails countyId={countyId} />);
+  //         console.log("County details rendered:", countyId);
+  //       } catch (err) {
+  //         console.error("Error rendering county details:", err);
+  //         // Fallback rendering for older React versions or errors
+  //         detailsContent.innerHTML = `
+  //           <div class="p-6 text-center">
+  //             <p class="text-gray-800 font-medium">
+  //               Showing details for county ID: ${countyId}
+  //             </p>
+  //             <p class="text-gray-500 mt-2">
+  //               (Loading county information...)
+  //             </p>
+  //           </div>
+  //         `;
+  //       }
+  //     } else {
+  //       console.error("County details container not found");
+  //     }
+  //   }, 200);
+  // };
 
   // Dynamic background patterns for visual interest
   const backgroundPattern = {
@@ -180,7 +180,7 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
                 Find Your Perfect Pennsylvania Home
               </h1>
               <p className="text-lg md:text-xl text-blue-100 max-w-2xl mx-auto leading-relaxed drop-shadow mb-8">
-                Search properties across the market or explore our interactive county map
+                Search properties across the market {/* or explore our interactive county map */}
               </p>
             </motion.div>
             
@@ -195,7 +195,7 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
             </motion.div>
             
             {/* Map Exploration Button */}
-            <motion.div
+            {/* <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.8, duration: 0.5 }}
@@ -210,7 +210,7 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
                 </svg>
                 Explore County Map
               </button>
-            </motion.div>
+            </motion.div> */}
           </div>
         </motion.div>
 
@@ -228,7 +228,7 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
         </div>
         
         {/* Map Section with Improved Layout */}
-        <div id="map-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 relative z-20" ref={mapRef}>
+        {/* <div id="map-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 relative z-20" ref={mapRef}>
           {!searchResults && (
             <motion.div
               initial={{ y: 20, opacity: 0 }}
@@ -236,7 +236,6 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
               transition={{ delay: 0.4, duration: 0.8 }}
               className="bg-white rounded-xl p-0 overflow-visible shadow-xl border border-gray-100" 
             >
-              {/* Map Header with Toggle Button */}
               <div className="bg-gray-50 p-4 flex items-center justify-between border-b border-gray-200">
                 <div className="flex items-center">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-3 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -282,7 +281,6 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
                 </div>
               </div>
               
-              {/* Map Container - Explicit positioning */}
               <div 
                 className="transition-all duration-500 ease-in-out"
                 style={{ 
@@ -296,7 +294,6 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
                 }}
               >
                 <div className="relative h-full w-full">
-                  {/* Map Legend - Top Right - HIDDEN ON MOBILE */}
                   <div className="absolute top-4 right-4 z-10 bg-white bg-opacity-95 backdrop-blur-sm rounded-lg shadow-lg p-3 border border-gray-200 max-w-xs hidden md:block">
                     <div className="text-xs font-medium text-gray-500 mb-2">MAP LEGEND</div>
                     <div className="grid grid-cols-2 gap-x-3 gap-y-1">
@@ -319,13 +316,11 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
                     </div>
                   </div>
                   
-                  {/* Interactive Map Component with onCountySelected handler */}
                   <InteractiveRealEstateMap
                     onInteraction={handleMapInteraction}
                     onCountySelected={handleCountySelected}
                   />
                   
-                  {/* Map Instructions Overlay */}
                   {showMapGuide && (
                     <div className="absolute inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-10">
                       <div className="bg-white rounded-xl p-6 max-w-lg shadow-2xl">
@@ -383,7 +378,6 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
                     </div>
                   )}
                   
-                  {/* First-time User Hint */}
                   {!hasSeenInstructions.current && !showMapGuide && !hasInteractedWithMap && (
                     <div className="absolute top-16 right-4 bg-blue-50 rounded-lg p-3 shadow-lg border border-blue-200 max-w-xs animate-bounce-subtle">
                       <p className="text-sm text-blue-800">
@@ -394,7 +388,6 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
                 </div>
               </div>
               
-              {/* Simplified County Details Container */}
               <div 
                 id="county-details-container" 
                 className="county-details-wrapper border-t border-gray-200 relative"
@@ -409,7 +402,6 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
                   transition: 'all 0.5s ease-in-out'
                 }}
               >
-                {/* Back to map button for mobile users */}
                 {selectedCountyId && (
                   <div className="sticky top-0 z-10 bg-white border-b border-gray-200 p-2 flex justify-between items-center shadow-sm">
                     <button 
@@ -442,15 +434,14 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
                   </div>
                 ) : null}
                 <div className="county-details-content">
-                  {/* This will be populated by the map component's direct DOM manipulation */}
                 </div>
               </div>
             </motion.div>
           )}
-        </div>
+        </div> */}
 
         {/* How to Use Guide Section */}
-        {!searchResults && (
+        {/* {!searchResults && (
           <div id="how-to-use" className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
             <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100">
               <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
@@ -516,7 +507,7 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
               </div>
             </div>
           </div>
-        )}
+        )} */}
 
         {/* Section Divider */}
         <div className="max-w-5xl mx-auto py-4">
@@ -646,11 +637,11 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
 };
 
 // Add this to make the county styles available globally
-const COUNTY_STYLES = {
-  '42049': { name: 'Erie', color: '#0000FF' },
-  '42121': { name: 'Warren', color: '#FFFF00' },
-  '42039': { name: 'Crawford', color: '#800080' }
-};
+// const COUNTY_STYLES = {
+//   '42049': { name: 'Erie', color: '#0000FF' },
+//   '42121': { name: 'Warren', color: '#FFFF00' },
+//   '42039': { name: 'Crawford', color: '#800080' }
+// };
 
 export async function getStaticProps() {
   try {
@@ -667,5 +658,14 @@ export async function getStaticProps() {
     return { props: { heroContent: null, featuredListings: [] } };
   }
 }
+
+// export default HomePage;
+//       }
+//     };
+//   } catch (error) {
+//     console.error('Error fetching content:', error);
+//     return { props: { heroContent: null, featuredListings: [] } };
+//   }
+// }
 
 export default HomePage;

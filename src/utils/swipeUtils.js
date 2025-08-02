@@ -15,7 +15,30 @@ const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
  */
 const cleanPropertyData = (property) => {
   if (!property) return null;
-  
+
+  // Always use mediaArray for all images, and media for the first image
+  let mediaArray = [];
+  if (property.mediaArray && Array.isArray(property.mediaArray)) {
+    mediaArray = property.mediaArray;
+  } else if (property.Media && Array.isArray(property.Media)) {
+    mediaArray = property.Media
+      .slice()
+      .sort((a, b) => {
+        if (a.Order !== undefined && b.Order !== undefined) {
+          return a.Order - b.Order;
+        }
+        return 0;
+      })
+      .map(mediaItem => mediaItem.MediaURL)
+      .filter(url => !!url);
+  } else if (property.media && Array.isArray(property.media)) {
+    mediaArray = property.media;
+  }
+
+  let displayImage = mediaArray.length > 0 ? mediaArray[0] : (
+    property.media && typeof property.media === 'string' ? property.media : null
+  );
+
   // Extract only essential fields and filter out null/undefined values
   const essentialData = {
     ListingKey: property.ListingKey,
@@ -29,7 +52,10 @@ const cleanPropertyData = (property) => {
     City: property.City,
     StateOrProvince: property.StateOrProvince,
     PostalCode: property.PostalCode,
-    media: property.media, // First image URL
+    // Store the first image as the primary display image
+    media: displayImage,
+    // Store additional images if space allows (limit to first 3 images)
+    mediaArray: mediaArray,
     // Limit description to 200 chars to keep data small
     PublicRemarks: property.PublicRemarks ? 
       property.PublicRemarks.substring(0, 200) + (property.PublicRemarks.length > 200 ? '...' : '') : null
