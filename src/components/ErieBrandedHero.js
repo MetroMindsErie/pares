@@ -56,7 +56,7 @@ const ErieBrandedHero = ({ onSearchResults }) => {
       </div>
 
       {/* Brand Badge */}
-      <motion.div
+      {/* <motion.div
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.3, duration: 0.8 }}
@@ -65,7 +65,7 @@ const ErieBrandedHero = ({ onSearchResults }) => {
         <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl px-4 py-2">
           <span className="text-white font-semibold text-sm tracking-wide">ERIE, PENNSYLVANIA</span>
         </div>
-      </motion.div>
+      </motion.div> */}
 
       {/* Image Navigation Dots */}
       <div className="absolute bottom-8 right-8 z-20 flex space-x-2">
