@@ -268,12 +268,18 @@ export const searchProperties = async (searchParams) => {
     // Call getPropertiesByFilter with just the filter and let it handle top/skip/expand
     const response = await getPropertiesByFilter(filterQuery, 50, 0);
     
-    // Format properties for the swiper
-    const formattedProperties = response.properties.map(property => ({
-      ...property,
-      media: property.media, // always first image
-      mediaArray: property.mediaArray // all images
-    }));
+    // Format properties for the swiper and sort by price (least to most expensive)
+    const formattedProperties = response.properties
+      .map(property => ({
+        ...property,
+        media: property.media, // always first image
+        mediaArray: property.mediaArray // all images
+      }))
+      .sort((a, b) => {
+        const priceA = a.ListPrice || 0;
+        const priceB = b.ListPrice || 0;
+        return priceA - priceB; // Sort ascending (least to most expensive)
+      });
 
     return {
       properties: formattedProperties,

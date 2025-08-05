@@ -21,17 +21,22 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
   
-  // New state for search results
+  // Enhanced state for search results with loading
   const [searchResults, setSearchResults] = useState(null);
   const [nextLink, setNextLink] = useState(null);
+  const [isSearching, setIsSearching] = useState(false);
   const searchResultsRef = useRef(null);
 
-  // Handler for search results
+  // Enhanced handler for search results with debugging
   const handleSearchResults = (properties, nextLinkUrl) => {
+    console.log('Search results received:', properties); // Debug log
+    console.log('Properties count:', properties?.length); // Debug log
+    
+    setIsSearching(false);
     setSearchResults(properties);
     setNextLink(nextLinkUrl);
     
-    // If we got search results, scroll to them
+    // Scroll to results if we have them
     if (properties && properties.length > 0) {
       setTimeout(() => {
         searchResultsRef.current?.scrollIntoView({ 
@@ -42,6 +47,11 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
     }
   };
 
+  // Add search start handler
+  const handleSearchStart = () => {
+    setIsSearching(true);
+    setSearchResults(null);
+  };
 
   const handleEmailClick = async (e) => {
     e.preventDefault();
@@ -69,24 +79,57 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
       </Head>
       
       <main className="pt-16 min-h-screen bg-gradient-to-br from-white to-gray-50" style={backgroundPattern}>
-        {/* New Branded Hero Section */}
-        <ErieBrandedHero onSearchResults={handleSearchResults} />
+        {/* Enhanced Branded Hero Section */}
+        <ErieBrandedHero 
+          onSearchResults={handleSearchResults}
+          onSearchStart={handleSearchStart}
+        />
 
-        {/* Search Results Section */}
+        {/* Enhanced Search Results Section */}
         <div 
           ref={searchResultsRef} 
-          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
+          className="w-full"
         >
+          {isSearching && (
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+              <div className="text-center">
+                <div className="inline-flex items-center px-4 py-2 bg-blue-50 rounded-lg">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span className="text-blue-700">Searching properties...</span>
+                </div>
+              </div>
+            </div>
+          )}
+          
           {searchResults && searchResults.length > 0 && (
-            <SearchResults 
-              listings={searchResults} 
-              nextLink={nextLink} 
-            />
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 bg-white shadow-sm">
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Search Results ({searchResults.length} properties found)
+                </h2>
+              </div>
+              <SearchResults 
+                listings={searchResults} 
+                nextLink={nextLink} 
+              />
+            </div>
+          )}
+          
+          {searchResults && searchResults.length === 0 && (
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+              <div className="text-center bg-gray-50 rounded-lg p-8">
+                <p className="text-gray-600 text-lg">No properties found matching your search criteria.</p>
+                <p className="text-gray-500 mt-2">Try adjusting your search filters or location.</p>
+              </div>
+            </div>
           )}
         </div>
 
-        {/* City Features Section */}
-        <CityFeatures />
+        {/* Only show City Features if no search results */}
+        {!searchResults && <CityFeatures />}
         
         {/* Section Divider */}
         <div className="max-w-5xl mx-auto py-4">
