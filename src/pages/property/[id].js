@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { SoldProperty } from '../../components/SoldProperty';
 import PropertyView from '../../components/Property/PropertyView';
 import axios from 'axios';
+import BuyerAgent from '../../components/Property/BuyerAgent';
 
 // Mock tax data as fallback
 // const getMockTaxData = () => ({
@@ -679,6 +680,12 @@ const PropertyDetailWithTabs = ({ property, isSold, taxData, historyData }) => {
           </nav>
         </div>
 
+        {/* Buyer Agent Section - Always visible */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-4 text-gray-900">Your Buyer Agent</h2>
+          <BuyerAgent />
+        </div>
+
         {/* Tab Content */}
         {activeTab === 'details' && (
           <>
@@ -794,11 +801,11 @@ export async function getServerSideProps({ params }) {
       ].filter(Boolean),
       taxes: rawProperty.TaxAnnualAmount || 0,
       agent: {
-        name: rawProperty.ListAgentFullName || 'Unknown Agent',
-        brokerage: rawProperty.ListOfficeName || 'Unknown Brokerage',
-        photo: rawProperty.ListAgentPhotoURL || '/default-agent.jpg',
-        phone: rawProperty.ListAgentPhone || 'Phone not available',
-        email: rawProperty.ListAgentEmail || 'Email not available'
+        name: 'John Easter',
+        brokerage: 'Pennington Lines', 
+        photo: '/default-agent.jpg',
+        phone: '814-873-5810',
+        email: 'easterjo106@yahoo.com'
       },
       
       // Image arrays - both formats for compatibility
@@ -811,7 +818,7 @@ export async function getServerSideProps({ params }) {
         soldDate: rawProperty.CloseDate ?
           new Date(rawProperty.CloseDate).toLocaleDateString() :
           'Date not available',
-        buyerAgent: rawProperty.BuyerAgentFullName || 'Unknown Buyer Agent'
+        buyerAgent: 'John Easter' // Override buyer agent too
       })
     };
 
@@ -849,7 +856,15 @@ export async function getServerSideProps({ params }) {
         property: {
           address: 'Property not found',
           price: 0,
-          mediaUrls: ['/fallback-property.jpg']
+          mediaUrls: ['/fallback-property.jpg'],
+          // Add static agent info even for fallback
+          agent: {
+            name: 'John Easter',
+            brokerage: 'Pennington Lines',
+            photo: '/default-agent.jpg', 
+            phone: '814-873-5810',
+            email: 'easterjo106@yahoo.com'
+          }
         },
         isSold: false,
         taxData: getMockTaxData(),
@@ -862,6 +877,57 @@ export async function getServerSideProps({ params }) {
 export default function PropertyDetail({ property, isSold, taxData, historyData }) {
   const router = useRouter();
 
+  const handleBackToListings = () => {
+    // Check if there's a stored search state in sessionStorage
+    const searchState = sessionStorage.getItem('propertySearchState');
+    const searchFilters = sessionStorage.getItem('propertySearchFilters');
+    
+    if (searchState || searchFilters) {
+      // If we have stored search state, go back to search results
+      const parsedState = searchState ? JSON.parse(searchState) : {};
+      const parsedFilters = searchFilters ? JSON.parse(searchFilters) : {};
+      
+      // Check if we have a specific return path stored
+      if (parsedState.returnPath) {
+        router.push(parsedState.returnPath);
+        return;
+      }
+      
+      // Build query string from stored filters
+      const queryParams = new URLSearchParams();
+      
+      if (parsedFilters.priceMin) queryParams.set('priceMin', parsedFilters.priceMin);
+      if (parsedFilters.priceMax) queryParams.set('priceMax', parsedFilters.priceMax);
+      if (parsedFilters.bedrooms) queryParams.set('bedrooms', parsedFilters.bedrooms);
+      if (parsedFilters.bathrooms) queryParams.set('bathrooms', parsedFilters.bathrooms);
+      if (parsedFilters.propertyType) queryParams.set('propertyType', parsedFilters.propertyType);
+      if (parsedFilters.location) queryParams.set('location', parsedFilters.location);
+      if (parsedFilters.sqftMin) queryParams.set('sqftMin', parsedFilters.sqftMin);
+      if (parsedFilters.sqftMax) queryParams.set('sqftMax', parsedFilters.sqftMax);
+      if (parsedState.currentPage) queryParams.set('page', parsedState.currentPage);
+      
+      const queryString = queryParams.toString();
+      // Try different potential search paths
+      let searchUrl = '/search';
+      if (queryString) {
+        searchUrl = `/search?${queryString}`;
+      } else if (Object.keys(parsedFilters).length === 0) {
+        // If no filters, might be coming from swipe page
+        searchUrl = '/swipe';
+      }
+      
+      router.push(searchUrl);
+    } else {
+      // Fallback: try browser back first, then appropriate default page
+      if (window.history.length > 1 && document.referrer && document.referrer.includes(window.location.origin)) {
+        router.back();
+      } else {
+        // If no referrer or external referrer, go to swipe page as default
+        router.push('/swipe');
+      }
+    }
+  };
+
   return (
     <>
       <PropertyDetailWithTabs property={property} isSold={isSold} taxData={taxData} historyData={historyData} />
@@ -869,7 +935,7 @@ export default function PropertyDetail({ property, isSold, taxData, historyData 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         <div className="text-center">
           <button
-            onClick={() => router.back()}
+            onClick={handleBackToListings}
             className="bg-gray-100 text-black py-2 px-6 rounded-lg border border-black hover:bg-gray-200 transition-colors"
           >
             ← Back to Listings

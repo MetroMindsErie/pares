@@ -129,6 +129,15 @@ const PropertyCard = ({ property, onSwipe, isTop = false }) => {
 
   const displayImage = getDisplayImage(property);
 
+  // Static buyer agent information
+  const buyerAgent = {
+    name: 'John Easter',
+    email: 'easterjo106@yahoo.com',
+    phone: '814-873-5810',
+    agency: 'Pennington Lines',
+    photo: '/dad.jpg' // You can add John's photo here
+  };
+
   return (
     <motion.div
       className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing"
