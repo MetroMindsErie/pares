@@ -157,6 +157,18 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
                 className="section-transition"
               >
                 <Blog />
+                {/* Added: link to full blog page */}
+                <div className="mt-4 flex justify-end">
+                  <a
+                    href="/blog"
+                    className="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-blue-700 hover:bg-blue-50"
+                  >
+                    View all posts
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </a>
+                </div>
               </motion.section>
               
               {/* <motion.section 
