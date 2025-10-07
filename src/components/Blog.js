@@ -1,121 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
+import { fetchPosts, fetchPost, fetchRelatedPosts, engageWithPost, fetchCategories } from '../api/blogApi';
 
 const TABS = ['All', 'Videos', 'Stories'];
-
-const seedPosts = [
-	{
-		kind: 'video',
-		id: 'vid-101',
-		slug: 'tour-modern-luxury-condo',
-		title: 'Tour: Modern Luxury Condo in Downtown',
-		excerpt:
-			'Walkthrough of a stunning 2BD/2BA luxury condo with skyline views, amenities, and staging tips.',
-		cover: {
-			url: 'https://images.unsplash.com/photo-1505691723518-36a5ac3b2a59?q=80&w=1600&auto=format&fit=crop',
-			alt: 'Modern luxury condo living room with skyline view',
-			aspectRatio: '16/9',
-		},
-		categories: ['Videos', 'Luxury', 'Neighborhoods'],
-		tags: ['condo', 'tour', 'staging', 'amenities'],
-		author: { name: 'Jordan Easter' },
-		datePublished: '2025-07-10T10:00:00.000Z',
-		neighborhood: 'Downtown',
-		priceRange: '$1.2M - $1.4M',
-		durationSec: 540,
-		featured: true,
-		views: 4120,
-		youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-	},
-	{
-		kind: 'article',
-		id: 'art-202',
-		slug: '2025-market-outlook',
-		title: '2025 Market Outlook: Rates, Inventory, and Opportunities',
-		excerpt:
-			'We break down interest rate trends, inventory shifts, and how buyers and sellers can win this year.',
-		cover: {
-			url: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=1600&auto=format&fit=crop',
-			alt: 'Graphs showing housing market trends',
-			aspectRatio: '16/9',
-		},
-		categories: ['Stories', 'Market'],
-		tags: ['rates', 'inventory', 'strategy'],
-		author: { name: 'Jordan Easter' },
-		datePublished: '2025-06-20T09:00:00.000Z',
-		views: 2312,
-		html: `
-      <p>The real estate market in 2025 is defined by shifting rate expectations and a gradual return of inventory.</p>
-      <h3>Key Takeaways</h3>
-      <ul>
-        <li>Mortgage rates are stabilizing.</li>
-        <li>Inventory is trending upward, slowly.</li>
-        <li>Buyers have more leverage in select neighborhoods.</li>
-      </ul>
-      <p>For sellers, high-quality presentation and thoughtful pricing still win. For buyers, patience and pre-approval are key.</p>
-    `,
-	},
-	{
-		kind: 'article',
-		id: 'art-203',
-		slug: 'neighborhood-guide-river-park',
-		title: 'Neighborhood Guide: River Park',
-		excerpt:
-			'Parks, cafes, and riverfront views—here’s what you need to know about living in River Park.',
-		cover: {
-			url: 'https://images.unsplash.com/photo-1501183638710-841dd1904471?q=80&w=1600&auto=format&fit=crop',
-			alt: 'Riverfront neighborhood at sunset',
-			aspectRatio: '16/9',
-		},
-		categories: ['Stories', 'Neighborhoods', 'Tips'],
-		tags: ['guide', 'walkability', 'schools'],
-		author: { name: 'Jordan Easter' },
-		datePublished: '2025-05-28T12:00:00.000Z',
-		neighborhood: 'River Park',
-		html: `
-      <p>River Park blends suburban calm with city convenience. Expect tree-lined streets and weekend farmers markets.</p>
-      <p>Schools score well above average and commute options include express bus and bike lanes.</p>
-    `,
-	},
-	{
-		kind: 'video',
-		id: 'vid-104',
-		slug: 'how-to-price-your-home',
-		title: 'How to Price Your Home to Sell in 2025',
-		excerpt: 'Pricing strategy walkthrough with comps, absorption rate, and presentation tips.',
-		cover: {
-			url: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=1600&auto=format&fit=crop',
-			alt: 'Suburban home exterior',
-			aspectRatio: '16/9',
-		},
-		categories: ['Videos', 'Tips'],
-		tags: ['pricing', 'comps', 'sellers'],
-		author: { name: 'Jordan Easter' },
-		datePublished: '2025-05-01T10:00:00.000Z',
-		durationSec: 420,
-		views: 980,
-		youtubeUrl: 'https://youtu.be/aqz-KE-bpKQ',
-	},
-	{
-		kind: 'article',
-		id: 'art-205',
-		slug: 'investing-duplex-vs-condo',
-		title: 'Investing 101: Duplex vs. Condo in Erie',
-		excerpt: 'Cash flow vs HOA, maintenance, tenant profiles, and exit strategies.',
-		cover: {
-			url: 'https://images.unsplash.com/photo-1560518883-9e77a9d1d5a0?q=80&w=1600&auto=format&fit=crop',
-			alt: 'Duplex exterior',
-			aspectRatio: '16/9',
-		},
-		categories: ['Stories', 'Investing'],
-		tags: ['cashflow', 'hoa', 'duplex', 'condo'],
-		author: { name: 'Team Pares' },
-		datePublished: '2025-04-15T12:00:00.000Z',
-		html: `
-      <p>Duplexes can outperform condos on cash-on-cash returns, but they demand more hands-on management.</p>
-      <p>Condos can shine for low-maintenance portfolios and proximity to amenities.</p>
-    `,
-	},
-];
 
 function extractYouTubeId(url) {
 	if (!url) return null;
@@ -139,89 +25,187 @@ function extractYouTubeId(url) {
 	return m ? m[1] : null;
 }
 
+function EngagementButtons({ post, onEngage }) {
+	const [engagement, setEngagement] = useState({
+		likes: post.likes || 0,
+		loves: post.loves || 0,
+		shares: post.shares || 0,
+	});
+
+	const [userEngagement, setUserEngagement] = useState({
+		like: false,
+		love: false,
+		share: false,
+	});
+
+	// Handle engagement action
+	const handleEngagement = async (type) => {
+		try {
+			// Only allow one like/love per session
+			if ((type === 'like' || type === 'love') && userEngagement[type]) {
+				return;
+			}
+
+			const response = await engageWithPost(post.id, type);
+
+			// Update counts
+			setEngagement({
+				likes: response.likes,
+				loves: response.loves,
+				shares: response.shares,
+			});
+
+			// Update user engagement state
+			setUserEngagement((prev) => ({
+				...prev,
+				[type]: true,
+			}));
+
+			if (onEngage) {
+				onEngage(type, response);
+			}
+		} catch (error) {
+			console.error(`Error with ${type}:`, error);
+		}
+	};
+
+	return (
+		<div className="mt-4 flex items-center gap-3">
+			<button
+				onClick={() => handleEngagement('like')}
+				className={`flex items-center gap-1 rounded-full px-3 py-1 text-sm ${
+					userEngagement.like
+						? 'bg-blue-100 text-blue-700'
+						: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+				}`}
+			>
+				<span>👍</span> {engagement.likes}
+			</button>
+
+			<button
+				onClick={() => handleEngagement('love')}
+				className={`flex items-center gap-1 rounded-full px-3 py-1 text-sm ${
+					userEngagement.love
+						? 'bg-red-100 text-red-700'
+						: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+				}`}
+			>
+				<span>❤️</span> {engagement.loves}
+			</button>
+
+			<button className="flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-700 hover:bg-gray-200">
+				<span>🔗</span> {engagement.shares}
+			</button>
+		</div>
+	);
+}
+
 function BlogCard({ post, onClick }) {
 	const isVideo = post.kind === 'video';
 	return (
-		<button
-			type="button"
-			onClick={onClick}
-			className="group w-full overflow-hidden rounded-xl border border-gray-200 bg-white hover:shadow-lg transition"
-			aria-label={`Open ${post.title}`}
-		>
-			<div className="relative aspect-video overflow-hidden bg-gray-100">
-				{post.cover?.url && (
-					<img
-						src={post.cover.url}
-						alt={post.cover.alt || post.title}
-						className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-					/>
-				)}
-				<div className="absolute left-3 top-3">
-					<span className="inline-flex items-center rounded-full border border-white/30 bg-black/50 px-2 py-1 text-xs text-white backdrop-blur">
-						{post.categories?.[0] || (isVideo ? 'Videos' : 'Stories')}
-					</span>
-				</div>
-				{isVideo && (
-					<div className="absolute inset-0 grid place-items-center">
-						<div className="grid h-14 w-14 place-items-center rounded-full border border-white/30 bg-black/40">
-							<svg
-								width="20"
-								height="20"
-								viewBox="0 0 24 24"
-								className="fill-white translate-x-0.5"
-							>
-								<path d="M8 5v14l11-7z"></path>
-							</svg>
-						</div>
+		<div className="group w-full overflow-hidden rounded-xl border border-gray-200 bg-white hover:shadow-lg transition">
+			<button
+				type="button"
+				onClick={onClick}
+				className="w-full text-left"
+				aria-label={`Open ${post.title}`}
+			>
+				<div className="relative aspect-video overflow-hidden bg-gray-100">
+					{post.cover?.url && (
+						<img
+							src={post.cover.url}
+							alt={post.cover.alt || post.title}
+							className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+						/>
+					)}
+					<div className="absolute left-3 top-3">
+						<span className="inline-flex items-center rounded-full border border-white/30 bg-black/50 px-2 py-1 text-xs text-white backdrop-blur">
+							{post.categories?.[0] || (isVideo ? 'Videos' : 'Stories')}
+						</span>
 					</div>
-				)}
-			</div>
-			<div className="p-4 text-left">
-				<h3 className="text-base font-semibold text-gray-900 line-clamp-2">
-					{post.title}
-				</h3>
-				{post.excerpt && (
-					<p className="mt-2 text-sm text-gray-600 line-clamp-3">
-						{post.excerpt}
-					</p>
-				)}
-				<div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-gray-500">
-					{post.neighborhood && <span>🏙️ {post.neighborhood}</span>}
-					{post.priceRange && <span>💲 {post.priceRange}</span>}
-					<span>
-						📅{' '}
-						{new Date(post.datePublished).toLocaleDateString(undefined, {
-							month: 'short',
-							day: 'numeric',
-							year: 'numeric',
-						})}
-					</span>
-					{isVideo && post.durationSec ? (
-						<span>⏱ {Math.round(post.durationSec / 60)}m</span>
-					) : null}
-					{typeof post.views === 'number' && (
-						<span>👁 {post.views.toLocaleString()}</span>
+					{isVideo && (
+						<div className="absolute inset-0 grid place-items-center">
+							<div className="grid h-14 w-14 place-items-center rounded-full border border-white/30 bg-black/40">
+								<svg
+									width="20"
+									height="20"
+									viewBox="0 0 24 24"
+									className="fill-white translate-x-0.5"
+								>
+									<path d="M8 5v14l11-7z"></path>
+								</svg>
+							</div>
+						</div>
 					)}
 				</div>
-				{!!(post.tags || []).length && (
-					<div className="mt-3 flex flex-wrap gap-2">
-						{post.tags.slice(0, 3).map((t) => (
-							<span
-								key={t}
-								className="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-700"
-							>
-								#{t}
-							</span>
-						))}
+				<div className="p-4">
+					<h3 className="text-base font-semibold text-gray-900 line-clamp-2">
+						{post.title}
+					</h3>
+					{post.excerpt && (
+						<p className="mt-2 text-sm text-gray-600 line-clamp-3">
+							{post.excerpt}
+						</p>
+					)}
+					<div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-gray-500">
+						{post.neighborhood && <span>🏙️ {post.neighborhood}</span>}
+						{post.priceRange && <span>💲 {post.priceRange}</span>}
+						<span>
+							📅{' '}
+							{new Date(post.datePublished).toLocaleDateString(undefined, {
+								month: 'short',
+								day: 'numeric',
+								year: 'numeric',
+							})}
+						</span>
+						{isVideo && post.durationSec ? (
+							<span>⏱ {Math.round(post.durationSec / 60)}m</span>
+						) : null}
+						{typeof post.views === 'number' && (
+							<span>👁 {post.views.toLocaleString()}</span>
+						)}
 					</div>
-				)}
+					{!!(post.tags || []).length && (
+						<div className="mt-3 flex flex-wrap gap-2">
+							{post.tags.slice(0, 3).map((t) => (
+								<span
+									key={t}
+									className="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-700"
+								>
+									#{t}
+								</span>
+							))}
+						</div>
+					)}
+				</div>
+			</button>
+			<div className="px-4 pb-4">
+				<EngagementButtons
+					post={post}
+					onEngage={async (type, response) => {
+						// This is handled by the EngagementButtons component internally
+					}}
+				/>
 			</div>
-		</button>
+		</div>
 	);
 }
 
 function PostDetail({ post, onBack, related = [] }) {
 	const ytId = post.kind === 'video' ? extractYouTubeId(post.youtubeUrl) : null;
+
+	// Track view when the detail page is loaded
+	useEffect(() => {
+		async function trackView() {
+			try {
+				await engageWithPost(post.id, 'view');
+			} catch (error) {
+				console.error('Failed to track view:', error);
+			}
+		}
+
+		trackView();
+	}, [post.id]);
 
 	return (
 		<article className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 lg:p-8">
@@ -249,6 +233,7 @@ function PostDetail({ post, onBack, related = [] }) {
 					{post.kind === 'video' && post.durationSec ? (
 						<span>⏱ {Math.round(post.durationSec / 60)}m</span>
 					) : null}
+					<span>👁 {(post.views || 0).toLocaleString()} views</span>
 				</div>
 			</header>
 
@@ -281,12 +266,19 @@ function PostDetail({ post, onBack, related = [] }) {
 				/>
 			)}
 
+			<EngagementButtons
+				post={post}
+				onEngage={(type, data) => {
+					// We can add additional handling here if needed
+				}}
+			/>
+
 			{!!related.length && (
 				<section className="mt-8">
 					<h3 className="mb-3 text-lg font-semibold text-gray-900">Related</h3>
 					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-						{related.slice(0, 3).map((rp) => (
-							<BlogCard key={rp.id} post={rp} onClick={() => {}} />
+						{related.map((rp) => (
+							<BlogCard key={rp.id} post={rp} onClick={() => onBack()} />
 						))}
 					</div>
 				</section>
@@ -308,64 +300,98 @@ const Blog = ({
 	const [category, setCategory] = useState('All');
 	const [page, setPage] = useState(1);
 	const [active, setActive] = useState(null);
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState(null);
 
-	const posts = postsProp || seedPosts;
+	// States for database-loaded content
+	const [posts, setPosts] = useState([]);
+	const [totalPages, setTotalPages] = useState(1);
+	const [currentPost, setCurrentPost] = useState(null);
+	const [relatedPosts, setRelatedPosts] = useState([]);
+	const [allCategories, setAllCategories] = useState(['All']);
 
-	const allCategories = useMemo(() => {
-		const set = new Set(['All']);
-		posts.forEach((p) => (p.categories || []).forEach((c) => set.add(c)));
-		return Array.from(set);
-	}, [posts]);
+	// Fetch posts based on current filters
+	useEffect(() => {
+		async function loadPosts() {
+			if (postsProp) {
+				// Use provided posts if available (for testing/SSR)
+				setPosts(postsProp);
+				setLoading(false);
+				return;
+			}
 
-	const filtered = useMemo(() => {
-		let list = posts.slice();
+			setLoading(true);
+			try {
+				const data = await fetchPosts({
+					tab,
+					category,
+					query: q,
+					page,
+					pageSize,
+				});
 
-		if (tab === 'Videos') list = list.filter((p) => p.kind === 'video');
-		if (tab === 'Stories') list = list.filter((p) => p.kind === 'article');
-
-		if (category !== 'All') {
-			list = list.filter((p) => (p.categories || []).includes(category));
+				setPosts(data.posts);
+				setTotalPages(data.pagination.totalPages);
+				setLoading(false);
+			} catch (err) {
+				console.error('Failed to load posts:', err);
+				setError('Failed to load blog posts. Please try again.');
+				setLoading(false);
+			}
 		}
 
-		if (q.trim()) {
-			const s = q.toLowerCase();
-			list = list.filter((p) => {
-				const hay = [
-					p.title,
-					p.excerpt || '',
-					p.neighborhood || '',
-					p.priceRange || '',
-					...(p.tags || []),
-				]
-					.join(' ')
-					.toLowerCase();
-				return hay.includes(s);
-			});
+		loadPosts();
+	}, [tab, category, q, page, pageSize, postsProp]);
+
+	// Fetch all categories for filter
+	useEffect(() => {
+		async function loadCategories() {
+			try {
+				const { categories } = await fetchCategories();
+				setAllCategories(['All', ...categories]);
+			} catch (err) {
+				console.error('Failed to load categories:', err);
+			}
 		}
 
-		list.sort((a, b) => Number(!!b.featured) - Number(!!a.featured));
-		return list;
-	}, [posts, tab, q, category]);
+		if (!postsProp && showFilters) {
+			loadCategories();
+		}
+	}, [postsProp, showFilters]);
 
-	const totalPages = disablePagination
-		? 1
-		: Math.max(1, Math.ceil(filtered.length / pageSize));
-	const pageItems = useMemo(() => {
-		if (disablePagination) return filtered;
-		const start = (page - 1) * pageSize;
-		return filtered.slice(start, start + pageSize);
-	}, [filtered, page, pageSize, disablePagination]);
+	// Fetch post details when active changes
+	useEffect(() => {
+		async function loadPostDetails() {
+			if (!active) {
+				setCurrentPost(null);
+				setRelatedPosts([]);
+				return;
+			}
 
+			setLoading(true);
+			try {
+				const [postData, relatedData] = await Promise.all([
+					fetchPost(active),
+					fetchRelatedPosts(active),
+				]);
+
+				setCurrentPost(postData);
+				setRelatedPosts(relatedData.posts);
+				setLoading(false);
+			} catch (err) {
+				console.error('Failed to load post details:', err);
+				setError('Failed to load post details. Please try again.');
+				setLoading(false);
+			}
+		}
+
+		if (enableDetail) {
+			loadPostDetails();
+		}
+	}, [active, enableDetail]);
+
+	// Reset page when filters change
 	React.useEffect(() => setPage(1), [tab, q, category]);
-
-	const current = active ? posts.find((p) => p.id === active) : null;
-	const related = useMemo(() => {
-		if (!current) return [];
-		const set = new Set(current.categories || []);
-		return posts.filter(
-			(p) => p.id !== current.id && (p.categories || []).some((c) => set.has(c))
-		);
-	}, [current, posts]);
 
 	return (
 		<section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
@@ -377,7 +403,7 @@ const Blog = ({
 					</p>
 				</div>
 
-				{!current && showFilters && (
+				{!currentPost && showFilters && (
 					<div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
 						<div className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 p-1">
 							{TABS.map((t) => (
@@ -406,7 +432,21 @@ const Blog = ({
 				)}
 			</div>
 
-			{!current ? (
+			{loading ? (
+				<div className="my-12 flex justify-center">
+					<div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></div>
+				</div>
+			) : error ? (
+				<div className="my-8 rounded-lg bg-red-50 p-4 text-center text-red-700">
+					{error}
+					<button
+						onClick={() => window.location.reload()}
+						className="ml-2 text-blue-700 underline"
+					>
+						Reload
+					</button>
+				</div>
+			) : !currentPost ? (
 				<>
 					<div className="mb-4 flex flex-wrap items-center gap-2">
 						{showFilters &&
@@ -426,17 +466,23 @@ const Blog = ({
 							))}
 					</div>
 
-					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-						{pageItems.map((p) => (
-							<BlogCard
-								key={p.id}
-								post={p}
-								onClick={() => {
-									if (enableDetail) setActive(p.id);
-								}}
-							/>
-						))}
-					</div>
+					{posts.length === 0 ? (
+						<div className="my-12 text-center text-gray-500">
+							No posts found matching your criteria.
+						</div>
+					) : (
+						<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+							{posts.map((p) => (
+								<BlogCard
+									key={p.id}
+									post={p}
+									onClick={() => {
+										if (enableDetail) setActive(p.id);
+									}}
+								/>
+							))}
+						</div>
+					)}
 
 					{!disablePagination && (
 						<div className="mt-6 flex items-center justify-center gap-3">
@@ -462,9 +508,9 @@ const Blog = ({
 				</>
 			) : (
 				<PostDetail
-					post={current}
+					post={currentPost}
 					onBack={() => setActive(null)}
-					related={related}
+					related={relatedPosts}
 				/>
 			)}
 		</section>
