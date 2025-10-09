@@ -112,6 +112,7 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
                 </h2>
               </div>
               <SearchResults 
+                key={`search-results-${searchResults.length}-${Date.now()}`}
                 listings={searchResults} 
                 nextLink={nextLink} 
               />

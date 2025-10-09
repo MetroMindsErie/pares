@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import MapWrapper from './MapWrapper';
 import Link from 'next/link';
@@ -12,6 +12,12 @@ const SearchResults = ({ listings, nextLink: initialNextLink }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [allListings, setAllListings] = useState(listings);
+
+  useEffect(() => {
+    console.log('Search listings updated:', listings?.length);
+    setAllListings(listings);
+    setNextLink(initialNextLink);
+  }, [listings, initialNextLink]);
 
   const loadMoreProperties = async () => {
     if (nextLink) {

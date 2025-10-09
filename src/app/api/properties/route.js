@@ -62,87 +62,144 @@ export async function GET(request) {
     
     // Format the search parameters for Trestle API
     const formattedParams = new URLSearchParams();
+    let filters = [];
     
-    // Enhanced location search with specific support for counties and ZIP codes
-    if (searchParams.has('location')) {
-      const locationTerm = searchParams.get('location').trim();
+    // Location search handling (ZIP, County, City)
+    if (searchParams.has('location') || searchParams.has('q')) {
+      const locationTerm = (searchParams.get('location') || searchParams.get('q') || '').trim();
       
-      // Check for specific county names (case insensitive)
-      const countyNames = ['erie', 'warren', 'crawford'];
-      const normalizedLocation = locationTerm.toLowerCase();
-      
-      if (countyNames.includes(normalizedLocation)) {
-        // Direct county search using CountyOrParish field
-        formattedParams.append('$filter', `CountyOrParish eq '${locationTerm.charAt(0).toUpperCase() + locationTerm.slice(1).toLowerCase()} County'`);
-      }
-      // Check if it's a ZIP code
-      else if (/^\d{5}(-\d{4})?$/.test(locationTerm)) {
-        formattedParams.append('$filter', `startswith(PostalCode,'${locationTerm}')`);
-      }
-      // Combination search for anything else (could be partial county name or city)
-      else {
-        formattedParams.append('$filter', 
-          `contains(CountyOrParish,'${locationTerm}') or contains(PostalCity,'${locationTerm}') or contains(UnparsedAddress,'${locationTerm}')`);
-      }
-    } else if (searchParams.has('q')) {
-      const searchTerm = searchParams.get('q').trim();
-      
-      // Same county-specific detection
-      const countyNames = ['erie', 'warren', 'crawford'];
-      const normalizedTerm = searchTerm.toLowerCase();
-      
-      if (countyNames.includes(normalizedTerm)) {
-        formattedParams.append('$filter', `CountyOrParish eq '${searchTerm.charAt(0).toUpperCase() + searchTerm.slice(1).toLowerCase()}'`);
-      }
-      // ZIP code detection
-      else if (/^\d{5}(-\d{4})?$/.test(searchTerm)) {
-        formattedParams.append('$filter', `startswith(PostalCode,'${searchTerm}')`);
-      }
-      // Combination search
-      else {
-        formattedParams.append('$filter', 
-          `contains(CountyOrParish,'${searchTerm}') or contains(PostalCity,'${searchTerm}') or contains(UnparsedAddress,'${searchTerm}')`);
+      if (locationTerm) {
+        // Check if it's a ZIP code
+        if (/^\d{5}(-\d{4})?$/.test(locationTerm)) {
+          filters.push(`PostalCode eq '${locationTerm}'`);
+        } 
+        // Check for specific county names
+        else if (['erie', 'warren', 'crawford'].includes(locationTerm.toLowerCase())) {
+          const countyName = locationTerm.charAt(0).toUpperCase() + locationTerm.slice(1).toLowerCase() + ' County';
+          filters.push(`CountyOrParish eq '${countyName}'`);
+        }
+        // General search
+        else {
+          filters.push(`(contains(CountyOrParish,'${locationTerm}') or contains(PostalCity,'${locationTerm}') or contains(UnparsedAddress,'${locationTerm}'))`);
+        }
       }
     }
     
-    // Map price filters to OData format
+    // ZIP code specific search
+    if (searchParams.has('zipCode')) {
+      const zipCode = searchParams.get('zipCode').trim();
+      if (zipCode) {
+        filters.push(`PostalCode eq '${zipCode}'`);
+      }
+    }
+    
+    // Property type filter (residential or commercial)
+    if (searchParams.has('propertyType')) {
+      const propertyType = searchParams.get('propertyType').trim();
+      if (propertyType.toLowerCase() === 'residential') {
+        filters.push(`(PropertyType eq 'Residential' or PropertyType eq 'Residential Lease')`);
+      } else if (propertyType.toLowerCase() === 'commercial') {
+        filters.push(`(PropertyType eq 'Commercial Sale' or PropertyType eq 'Commercial Lease')`);
+      } else {
+        // If specific property type is provided, use it directly
+        filters.push(`PropertyType eq '${propertyType}'`);
+      }
+    }
+    
+    // Price range filters
     if (searchParams.has('minPrice')) {
-      const currentFilter = formattedParams.get('$filter') || '';
-      const priceFilter = `ListPrice ge ${searchParams.get('minPrice')}`;
-      formattedParams.set('$filter', currentFilter ? `${currentFilter} and ${priceFilter}` : priceFilter);
+      const minPrice = parseInt(searchParams.get('minPrice'));
+      if (!isNaN(minPrice) && minPrice > 0) {
+        filters.push(`ListPrice ge ${minPrice}`);
+      }
     }
     
     if (searchParams.has('maxPrice')) {
-      const currentFilter = formattedParams.get('$filter') || '';
-      const priceFilter = `ListPrice le ${searchParams.get('maxPrice')}`;
-      formattedParams.set('$filter', currentFilter ? `${currentFilter} and ${priceFilter}` : priceFilter);
+      const maxPrice = parseInt(searchParams.get('maxPrice'));
+      if (!isNaN(maxPrice) && maxPrice > 0) {
+        filters.push(`ListPrice le ${maxPrice}`);
+      }
     }
     
-    // Map beds filter to OData format
+    // Bedroom filters - support both exact and minimum
     if (searchParams.has('beds')) {
-      const currentFilter = formattedParams.get('$filter') || '';
-      const bedsFilter = `BedroomsTotal ge ${searchParams.get('beds')}`;
-      formattedParams.set('$filter', currentFilter ? `${currentFilter} and ${bedsFilter}` : bedsFilter);
+      const beds = parseInt(searchParams.get('beds'));
+      if (!isNaN(beds)) {
+        if (searchParams.has('bedsExact') && searchParams.get('bedsExact') === 'true') {
+          filters.push(`BedroomsTotal eq ${beds}`);
+        } else {
+          filters.push(`BedroomsTotal ge ${beds}`);
+        }
+      }
     }
     
-    // Map baths filter to OData format
+    // Bathroom filters - support both exact and minimum
     if (searchParams.has('baths')) {
-      const currentFilter = formattedParams.get('$filter') || '';
-      const bathsFilter = `BathroomsTotalInteger ge ${searchParams.get('baths')}`;
-      formattedParams.set('$filter', currentFilter ? `${currentFilter} and ${bathsFilter}` : bathsFilter);
+      const baths = parseInt(searchParams.get('baths'));
+      if (!isNaN(baths)) {
+        if (searchParams.has('bathsExact') && searchParams.get('bathsExact') === 'true') {
+          filters.push(`BathroomsTotalInteger eq ${baths}`);
+        } else {
+          filters.push(`BathroomsTotalInteger ge ${baths}`);
+        }
+      }
     }
     
-    // Add standard status filter for active listings
-    const currentFilter = formattedParams.get('$filter') || '';
-    const statusFilter = `StandardStatus eq 'Active'`;
-    formattedParams.set('$filter', currentFilter ? `${currentFilter} and ${statusFilter}` : statusFilter);
+    // Default status filter for active listings (unless overridden)
+    if (!searchParams.has('status')) {
+      filters.push(`StandardStatus eq 'Active'`);
+    } else {
+      const status = searchParams.get('status');
+      filters.push(`StandardStatus eq '${status}'`);
+    }
+    
+    // Square footage filter
+    if (searchParams.has('minSqFt')) {
+      const minSqFt = parseInt(searchParams.get('minSqFt'));
+      if (!isNaN(minSqFt) && minSqFt > 0) {
+        filters.push(`LivingArea/SquareFeet ge ${minSqFt}`);
+      }
+    }
+    
+    // Lot size filter
+    if (searchParams.has('minLotSize')) {
+      const minLotSize = parseInt(searchParams.get('minLotSize'));
+      if (!isNaN(minLotSize) && minLotSize > 0) {
+        filters.push(`LotSize/SquareFeet ge ${minLotSize}`);
+      }
+    }
+    
+    // Combine all filters with AND operator
+    if (filters.length > 0) {
+      formattedParams.append('$filter', filters.join(' and '));
+    }
     
     // Add other standard parameters
-    formattedParams.append('$top', '20'); // Limit results
+    const pageSize = searchParams.get('pageSize') || '20';
+    formattedParams.append('$top', pageSize); // Limit results
     formattedParams.append('$expand', 'Media'); // Include media/images
     
+    // Add sorting options if specified
+    if (searchParams.has('sort')) {
+      const sortOption = searchParams.get('sort');
+      switch (sortOption) {
+        case 'price-asc':
+          formattedParams.append('$orderby', 'ListPrice asc');
+          break;
+        case 'price-desc':
+          formattedParams.append('$orderby', 'ListPrice desc');
+          break;
+        case 'newest':
+          formattedParams.append('$orderby', 'ModificationTimestamp desc');
+          break;
+        default:
+          formattedParams.append('$orderby', 'ListingKeyNumeric desc');
+      }
+    } else {
+      formattedParams.append('$orderby', 'ListingKeyNumeric desc');
+    }
+    
     // Build the Trestle API URL with formatted parameters
-    // The API endpoint should be the "Property" resource
     const trestleUrl = `${trestleBaseUrl}/trestle/odata/Property?${formattedParams.toString()}`;
     
     console.log('Fetching from Trestle API:', trestleUrl);
@@ -187,10 +244,20 @@ export async function GET(request) {
       
       // Map the response to include property images and format data
       const properties = (data.value || []).map(property => {
-        // Find the primary property image if available
-        const mediaUrl = property.Media && property.Media.length > 0
-          ? property.Media[0].MediaURL
-          : null;
+        // Try to find the preferred property image, otherwise use the first one
+        let mediaUrl = null;
+        
+        if (property.Media && property.Media.length > 0) {
+          // Look for preferred photo based on PreferredPhotoYN flag
+          const preferredPhoto = property.Media.find(media => 
+            media.PreferredPhotoYN === true || 
+            media.PreferredPhotoYN === 'Y' || 
+            media.PreferredPhotoYN === 'Yes'
+          );
+          
+          // Use preferred photo if found, otherwise use first photo
+          mediaUrl = preferredPhoto ? preferredPhoto.MediaURL : property.Media[0].MediaURL;
+        }
           
         return {
           ListingKey: property.ListingKey || '',
@@ -209,6 +276,9 @@ export async function GET(request) {
           YearBuilt: property.YearBuilt,
           Latitude: property.Latitude,
           Longitude: property.Longitude,
+          PostalCode: property.PostalCode,
+          CountyOrParish: property.CountyOrParish,
+          PostalCity: property.PostalCity
         };
       });
       
@@ -260,81 +330,98 @@ export async function GET(request) {
 // Helper function to generate mock listings for development
 function getMockListings(searchParams) {
   // Extract search parameters to filter mock data
-  const location = searchParams?.get('q') || '';
-  const minPrice = parseInt(searchParams?.get('ListPrice.gte') || '0');
-  const maxPrice = parseInt(searchParams?.get('ListPrice.lte') || '10000000');
-  const minBeds = parseInt(searchParams?.get('BedroomsTotal.gte') || '0');
-  const minBaths = parseInt(searchParams?.get('BathroomsTotalInteger.gte') || '0');
+  const location = searchParams?.get('location') || searchParams?.get('q') || '';
+  const minPrice = parseInt(searchParams?.get('minPrice') || '0');
+  const maxPrice = parseInt(searchParams?.get('maxPrice') || '10000000');
+  const beds = parseInt(searchParams?.get('beds') || '0');
+  const baths = parseInt(searchParams?.get('baths') || '0');
+  const propertyType = searchParams?.get('propertyType') || '';
+  const zipCode = searchParams?.get('zipCode') || '';
   
-  // Base mock listings
-  const mockListings = [
-    // ...existing mock listings...
-    {
-      ListingKey: "mock-listing-1",
-      UnparsedAddress: "123 Main St, Erie, PA 16501",
-      StandardStatus: "Active",
-      BedroomsTotal: 3,
-      BathroomsTotalInteger: 2,
-      LivingAreaSqFt: 1850,
-      ListPrice: 275000,
-      PropertyType: "SingleFamilyResidence",
-      media: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80",
-      MlsStatus: "Active",
-      PublicRemarks: "Beautiful single family home in the heart of Erie",
-      YearBuilt: 1985
-    },
-    {
-      ListingKey: "mock-listing-2",
-      UnparsedAddress: "456 Lake View Dr, Warren, PA 16365",
-      StandardStatus: "Active",
-      BedroomsTotal: 4,
-      BathroomsTotalInteger: 3,
-      LivingAreaSqFt: 2200,
-      ListPrice: 349000,
-      PropertyType: "SingleFamilyResidence",
-      media: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80",
-      MlsStatus: "Active",
-      PublicRemarks: "Spacious family home with beautiful lake views",
-      YearBuilt: 2005
-    },
-    {
-      ListingKey: "mock-listing-4",
-      UnparsedAddress: "101 Pine Street, Erie, PA 16504",
-      StandardStatus: "Active",
-      BedroomsTotal: 5,
-      BathroomsTotalInteger: 4,
-      LivingAreaSqFt: 3200,
-      ListPrice: 525000,
-      PropertyType: "SingleFamilyResidence",
-      media: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=1175&q=80",
-      MlsStatus: "Active",
-      PublicRemarks: "Luxury home in Erie's most desirable neighborhood",
-      YearBuilt: 2015
-    }
-  ];
+  // Generate 10 mock properties
+  const mockProperties = [];
+  const countyOptions = ['Erie County', 'Warren County', 'Crawford County'];
+  const cityOptions = ['Erie', 'Warren', 'Meadville', 'Corry', 'Edinboro'];
+  const zipOptions = ['16501', '16502', '16503', '16504', '16505', '16506'];
+  const propertyTypeOptions = ['Residential', 'Commercial Sale', 'Residential Lease', 'Commercial Lease'];
   
-  // Filter the mock listings based on search parameters
-  return mockListings.filter(listing => {
-    // Filter by location (zipcode, city, or address)
-    if (location && !listing.UnparsedAddress.toLowerCase().includes(location.toLowerCase())) {
-      return false;
+  // Filter the property type based on search parameters
+  let filteredPropertyTypes = propertyTypeOptions;
+  if (propertyType.toLowerCase() === 'residential') {
+    filteredPropertyTypes = propertyTypeOptions.filter(type => 
+      type === 'Residential' || type === 'Residential Lease');
+  } else if (propertyType.toLowerCase() === 'commercial') {
+    filteredPropertyTypes = propertyTypeOptions.filter(type => 
+      type === 'Commercial Sale' || type === 'Commercial Lease');
+  }
+  
+  for (let i = 0; i < 10; i++) {
+    // Generate random property data
+    const mockPrice = Math.floor(Math.random() * 900000) + 100000;
+    const mockBeds = Math.floor(Math.random() * 5) + 1;
+    const mockBaths = Math.floor(Math.random() * 4) + 1;
+    const mockSqFt = Math.floor(Math.random() * 3000) + 1000;
+    const mockCounty = countyOptions[Math.floor(Math.random() * countyOptions.length)];
+    const mockCity = cityOptions[Math.floor(Math.random() * cityOptions.length)];
+    const mockZip = zipOptions[Math.floor(Math.random() * zipOptions.length)];
+    const mockType = filteredPropertyTypes[Math.floor(Math.random() * filteredPropertyTypes.length)];
+    
+    // Apply filters
+    if ((minPrice > 0 && mockPrice < minPrice) || 
+        (maxPrice < 10000000 && mockPrice > maxPrice) ||
+        (beds > 0 && mockBeds < beds) ||
+        (baths > 0 && mockBaths < baths) ||
+        (zipCode && mockZip !== zipCode)) {
+      // Skip this property if it doesn't match filters
+      continue;
     }
     
-    // Filter by price range
-    if (listing.ListPrice < minPrice || (maxPrice > 0 && listing.ListPrice > maxPrice)) {
-      return false;
+    // Create the mock property
+    mockProperties.push({
+      ListingKey: `mock-${i}-${Date.now()}`,
+      UnparsedAddress: `${100 + i} Main St, ${mockCity}, PA ${mockZip}`,
+      StandardStatus: 'Active',
+      BedroomsTotal: mockBeds,
+      BathroomsTotalInteger: mockBaths,
+      LivingAreaSqFt: mockSqFt,
+      ListPrice: mockPrice,
+      PropertyType: mockType,
+      media: `https://picsum.photos/id/${(i + 10)}/800/600`,
+      MlsStatus: 'Active',
+      PublicRemarks: `Beautiful ${mockBeds} bedroom, ${mockBaths} bathroom home in ${mockCity}. This property features ${mockSqFt} square feet of living space.`,
+      YearBuilt: Math.floor(Math.random() * 70) + 1950,
+      Latitude: 42.0 + (Math.random() * 2),
+      Longitude: -80.0 - (Math.random() * 2),
+      PostalCode: mockZip,
+      CountyOrParish: mockCounty,
+      PostalCity: mockCity
+    });
+  }
+  
+  // Return at least some properties even if filters are strict
+  if (mockProperties.length < 3) {
+    for (let i = 0; i < 3; i++) {
+      mockProperties.push({
+        ListingKey: `mock-backup-${i}-${Date.now()}`,
+        UnparsedAddress: `${200 + i} State St, Erie, PA 16501`,
+        StandardStatus: 'Active',
+        BedroomsTotal: beds > 0 ? beds : 3,
+        BathroomsTotalInteger: baths > 0 ? baths : 2,
+        LivingAreaSqFt: 1800,
+        ListPrice: minPrice > 0 ? minPrice + 10000 : 250000,
+        PropertyType: propertyType ? (propertyType.toLowerCase() === 'commercial' ? 'Commercial Sale' : 'Residential') : 'Residential',
+        media: `https://picsum.photos/id/${(i + 20)}/800/600`,
+        MlsStatus: 'Active',
+        PublicRemarks: 'Mock property generated to ensure search results.',
+        YearBuilt: 2000,
+        Latitude: 42.1292,
+        Longitude: -80.0851,
+        PostalCode: zipCode || '16501',
+        CountyOrParish: 'Erie County',
+        PostalCity: 'Erie'
+      });
     }
-    
-    // Filter by bedrooms
-    if (listing.BedroomsTotal < minBeds) {
-      return false;
-    }
-    
-    // Filter by bathrooms
-    if (listing.BathroomsTotalInteger < minBaths) {
-      return false;
-    }
-    
-    return true;
-  });
+  }
+  
+  return mockProperties;
 }
