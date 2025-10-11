@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
+import Head from 'next/head';
 import { SoldProperty } from '../../components/SoldProperty';
 import PropertyView from '../../components/Property/PropertyView';
 import BackToListingsButton from '../../components/BackToListingsButton';
+import Layout from '../../components/Layout';
 import axios from 'axios';
 import BuyerAgent from '../../components/Property/BuyerAgent';
 
@@ -185,10 +187,6 @@ const extractHistoryData = (property) => {
     }
 
     // Check for additional sale history fields that might exist in Trestle
-    const historicalSaleFields = [
-      'PreviousSalePrice', 'PreviousSaleDate', 'PreviousBuyerName', 'PreviousSellerName',
-      'LastSalePrice', 'LastSaleDate', 'LastBuyerName', 'LastSellerName'
-    ];
 
     if (property.PreviousSalePrice && property.PreviousSaleDate) {
       saleHistory.push({
@@ -557,7 +555,12 @@ const PropertyDetailWithTabs = ({ property, isSold, taxData, historyData }) => {
   return (
     <div className="min-h-screen bg-white text-black">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Tab Navigation */}
+        {/* Back button at top of content */}
+        <div className="mb-6">
+          <BackToListingsButton />
+        </div>
+
+        {/* Tab Navigation - Fixed structure */}
         <div className="border-b border-gray-200 mb-8">
           <nav className="-mb-px flex space-x-8">
             {tabs.map((tab) => (
@@ -601,6 +604,11 @@ const PropertyDetailWithTabs = ({ property, isSold, taxData, historyData }) => {
         {activeTab === 'history' && (
           <HistoryInformation historyData={historyData} />
         )}
+
+        {/* Back button at bottom for consistency */}
+        <div className="text-center mt-8 pt-8 border-t border-gray-200">
+          <BackToListingsButton className="bg-gray-100 text-black py-2 px-6 rounded-lg border border-black hover:bg-gray-200 transition-colors" />
+        </div>
       </div>
     </div>
   );
@@ -772,74 +780,16 @@ export async function getServerSideProps({ params }) {
 }
 
 export default function PropertyDetail({ property, isSold, taxData, historyData }) {
-  const router = useRouter();
 
-  const handleBackToListings = () => {
-    // Check if there's a stored search state in sessionStorage
-    const searchState = sessionStorage.getItem('propertySearchState');
-    const searchFilters = sessionStorage.getItem('propertySearchFilters');
-    
-    if (searchState || searchFilters) {
-      // If we have stored search state, go back to search results
-      const parsedState = searchState ? JSON.parse(searchState) : {};
-      const parsedFilters = searchFilters ? JSON.parse(searchFilters) : {};
-      
-      // Check if we have a specific return path stored
-      if (parsedState.returnPath) {
-        router.push(parsedState.returnPath);
-        return;
-      }
-      
-      // Build query string from stored filters
-      const queryParams = new URLSearchParams();
-      
-      if (parsedFilters.priceMin) queryParams.set('priceMin', parsedFilters.priceMin);
-      if (parsedFilters.priceMax) queryParams.set('priceMax', parsedFilters.priceMax);
-      if (parsedFilters.bedrooms) queryParams.set('bedrooms', parsedFilters.bedrooms);
-      if (parsedFilters.bathrooms) queryParams.set('bathrooms', parsedFilters.bathrooms);
-      if (parsedFilters.propertyType) queryParams.set('propertyType', parsedFilters.propertyType);
-      if (parsedFilters.location) queryParams.set('location', parsedFilters.location);
-      if (parsedFilters.sqftMin) queryParams.set('sqftMin', parsedFilters.sqftMin);
-      if (parsedFilters.sqftMax) queryParams.set('sqftMax', parsedFilters.sqftMax);
-      if (parsedState.currentPage) queryParams.set('page', parsedState.currentPage);
-      
-      const queryString = queryParams.toString();
-      // Try different potential search paths
-      let searchUrl = '/search';
-      if (queryString) {
-        searchUrl = `/search?${queryString}`;
-      } else if (Object.keys(parsedFilters).length === 0) {
-        // If no filters, might be coming from swipe page
-        searchUrl = '/swipe';
-      }
-      
-      router.push(searchUrl);
-    } else {
-      // Fallback: try browser back first, then appropriate default page
-      if (window.history.length > 1 && document.referrer && document.referrer.includes(window.location.origin)) {
-        router.back();
-      } else {
-        // If no referrer or external referrer, go to swipe page as default
-        router.push('/swipe');
-      }
-    }
-  };
 
   return (
-    <>
-      {/* Add BackToListingsButton at the top */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
-        <BackToListingsButton />
-      </div>
+    <Layout>
+      <Head>
+        <title>{property.address || 'Property Details'} | Erie Pennsylvania Real Estate</title>
+        <meta name="description" content={`View detailed information for ${property.address || 'this property'} including photos, features, and pricing.`} />
+      </Head>
 
       <PropertyDetailWithTabs property={property} isSold={isSold} taxData={taxData} historyData={historyData} />
-      
-      {/* Keep existing back button at bottom for consistency */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        <div className="text-center">
-          <BackToListingsButton className="bg-gray-100 text-black py-2 px-6 rounded-lg border border-black hover:bg-gray-200 transition-colors" />
-        </div>
-      </div>
-    </>
+    </Layout>
   );
 }

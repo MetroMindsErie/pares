@@ -8,7 +8,7 @@ const BuyerAgent = ({ className = "" }) => {
     email: 'easterjo106@yahoo.com',
     phone: '814-873-5810',
     agency: 'Pennington Lines',
-    photo: '/dad.jpg',
+    photo: '/dad.png',
     title: 'Buyer Agent'
   };
 
