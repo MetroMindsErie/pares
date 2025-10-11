@@ -2,112 +2,9 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import { SoldProperty } from '../../components/SoldProperty';
 import PropertyView from '../../components/Property/PropertyView';
+import BackToListingsButton from '../../components/BackToListingsButton';
 import axios from 'axios';
 import BuyerAgent from '../../components/Property/BuyerAgent';
-
-// Mock tax data as fallback
-// const getMockTaxData = () => ({
-//   ownerInformation: {
-//     ownerName: "Property Owner",
-//     mailingAddress: "123 Main St",
-//     taxBillingCity: "Erie PA",
-//     taxBillingZip: "16508",
-//     taxBillingZipPlus4: "1557",
-//     ownerOccupied: "O"
-//   },
-//   locationInformation: {
-//     schoolDistrict: "City Of Erie School",
-//     censusTrack: "002200",
-//     carrierRoute: "C014",
-//     subdivision: "Sample Add",
-//     zoning: "1661",
-//     mapPageGrid: "19-6219",
-//     topography: "FLAT/LEVEL"
-//   },
-//   estimatedValue: {
-//     realAVM: "$134,500",
-//     realAVMRangeHigh: "$167,900",
-//     realAVMRangeLow: "$101,200",
-//     valueAsOf: "07/14/2025",
-//     confidenceScore: "49",
-//     forecastStandardDeviation: "25"
-//   },
-//   taxInformation: {
-//     taxId: "19-062-019.0-108.00",
-//     percentImproved: "77",
-//     taxArea: "19",
-//     lotNumber: "10800",
-//     legalDescription: "Sample Legal Description",
-//     townshipTax: "$1,016.80",
-//     countyTax: "$512.28",
-//     schoolTax: "$1,535.16",
-//     taxYear: "2025"
-//   },
-//   assessmentAndTaxes: {
-//     assessmentYears: ["2025", "2024", "2023"],
-//     assessedValueTotal: ["$77,500", "$77,500", "$77,500"],
-//     assessedValueLand: ["$18,100", "$18,100", "$18,100"],
-//     assessedValueImproved: ["$59,400", "$59,400", "$59,400"],
-//     yoyAssessedChange: ["$", "$", "$"],
-//     yoyAssessedChangePercent: ["0%", "0%", "0%"],
-//     marketValueTotal: ["$77,500", "$77,500", "$77,500"],
-//     marketValueLand: ["$18,100", "$18,100", "$18,100"],
-//     marketValueImproved: ["$59,400", "$59,400", "$59,400"]
-//   }
-// });
-
-// // Mock history data as fallback
-// const getMockHistoryData = () => ({
-//   listingHistory: [
-//     {
-//       dom: "4",
-//       changeType: "New Listing",
-//       price: "$170,000",
-//       changeDetails: "->ACT",
-//       whenChanged: "07/25/25 @ 12:34 PM",
-//       effDate: "07/25/25",
-//       modBy: "CUMMINGS100",
-//       propType: "RES",
-//       address: "1119 W 31ST Street",
-//       listingId: "187084",
-//       imageUrl: "/fallback-property.jpg"
-//     }
-//   ],
-//   saleHistory: [
-//     {
-//       recDate: "04/27/98",
-//       saleDate: "04/27/98",
-//       salePrice: "$63,500",
-//       nomBuyerNames: "Sullivan Christine E",
-//       sellerNames: "Monahan Kevin M & Amy R",
-//       titleCompany: "",
-//       docNumber: "556-1955",
-//       documentType: "Warranty Deed"
-//     },
-//     {
-//       recDate: "05/22/97",
-//       saleDate: "05/22/97",
-//       salePrice: "$63,800",
-//       nomBuyerNames: "Brock Amy R",
-//       sellerNames: "Gaidula James",
-//       titleCompany: "",
-//       docNumber: "499-1480",
-//       documentType: "Warranty Deed"
-//     }
-//   ],
-//   mortgageHistory: [
-//     {
-//       date: "05/22/1997",
-//       amount: "$51,000",
-//       mortgageLender: "Northwest Svgs Bk",
-//       mortgageType: "CONVENTIONAL",
-//       mortgageTypeCode: "",
-//       term: "",
-//       intRate: "",
-//       titleCompany: ""
-//     }
-//   ]
-// });
 
 // Extract tax information from Trestle property data
 const extractTaxData = (property) => {
@@ -930,16 +827,17 @@ export default function PropertyDetail({ property, isSold, taxData, historyData 
 
   return (
     <>
+      {/* Add BackToListingsButton at the top */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+        <BackToListingsButton />
+      </div>
+
       <PropertyDetailWithTabs property={property} isSold={isSold} taxData={taxData} historyData={historyData} />
       
+      {/* Keep existing back button at bottom for consistency */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         <div className="text-center">
-          <button
-            onClick={handleBackToListings}
-            className="bg-gray-100 text-black py-2 px-6 rounded-lg border border-black hover:bg-gray-200 transition-colors"
-          >
-            ← Back to Listings
-          </button>
+          <BackToListingsButton className="bg-gray-100 text-black py-2 px-6 rounded-lg border border-black hover:bg-gray-200 transition-colors" />
         </div>
       </div>
     </>

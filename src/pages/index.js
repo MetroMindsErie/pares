@@ -1,20 +1,17 @@
 "use client";
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { motion } from 'framer-motion';
 import { Hero } from '../components/Hero';
-import { Contact } from '../components/Contact';
-import Reels from '../components/Reels';
 import Blog from '../components/Blog';
-import Stablecoin from '../components/Stablecoin';
 import { useAuth } from '../context/auth-context';
-import { handleProfileNavigation } from '../utils/profileUtils';
 import Layout from '../components/Layout';
 import '../styles/animations.css';
 import SearchResults from '../components/SearchResults';
 import ErieBrandedHero from '../components/ErieBrandedHero';
 import CityFeatures from '../components/CityFeatures';
+import { getCachedSearchResults, hasCachedSearchResults, cacheSearchResults } from '../lib/searchCache';
 
 
 const HomePage = ({ featuredListings = [], heroContent }) => {
@@ -27,7 +24,22 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
   const [isSearching, setIsSearching] = useState(false);
   const searchResultsRef = useRef(null);
 
-  // Enhanced handler for search results with debugging
+  // Check for cached results on component mount
+  useEffect(() => {
+    const cachedResults = getCachedSearchResults();
+    if (cachedResults && cachedResults.length > 0) {
+      setSearchResults(cachedResults);
+      // Scroll to results if we have them
+      setTimeout(() => {
+        searchResultsRef.current?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start' 
+        });
+      }, 500);
+    }
+  }, []);
+
+  // Enhanced handler for search results with caching
   const handleSearchResults = (properties, nextLinkUrl) => {
     console.log('Search results received:', properties); // Debug log
     console.log('Properties count:', properties?.length); // Debug log
@@ -36,8 +48,10 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
     setSearchResults(properties);
     setNextLink(nextLinkUrl);
     
-    // Scroll to results if we have them
+    // Cache the search results
     if (properties && properties.length > 0) {
+      cacheSearchResults(properties);
+      
       setTimeout(() => {
         searchResultsRef.current?.scrollIntoView({ 
           behavior: 'smooth', 
