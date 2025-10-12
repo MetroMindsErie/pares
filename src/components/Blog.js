@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { fetchPosts, fetchPost, fetchRelatedPosts, engageWithPost, fetchCategories } from '../api/blogApi';
+import BiggerPocketsSection from './BiggerPocketsSection';
 
 const TABS = ['All', 'Videos', 'Stories'];
 
@@ -294,6 +295,10 @@ const Blog = ({
 	disablePagination = false,
 	heading = 'PARES Blog',
 	showFilters = true,
+	showBiggerPockets = true,
+	showSeeAllButton = true,
+	onSeeAllClick, // Callback for "See all" button click
+	blogListingPath = '/blog', // Default path for blog listing page
 }) => {
 	const [tab, setTab] = useState('All');
 	const [q, setQ] = useState('');
@@ -309,6 +314,16 @@ const Blog = ({
 	const [currentPost, setCurrentPost] = useState(null);
 	const [relatedPosts, setRelatedPosts] = useState([]);
 	const [allCategories, setAllCategories] = useState(['All']);
+
+	// Handle "See All Posts" click
+	const handleSeeAllClick = () => {
+		if (onSeeAllClick) {
+			onSeeAllClick();
+		} else {
+			// Default navigation if no custom handler provided
+			window.location.href = blogListingPath;
+		}
+	};
 
 	// Fetch posts based on current filters
 	useEffect(() => {
@@ -394,126 +409,159 @@ const Blog = ({
 	React.useEffect(() => setPage(1), [tab, q, category]);
 
 	return (
-		<section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-			<div className="mb-6 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<div>
-					<h2 className="text-2xl font-bold text-gray-900">{heading}</h2>
-					<p className="text-sm text-gray-600">
-						Videos, market insights, neighborhood guides, and investing tips.
-					</p>
+		<div className="space-y-8">
+			{/* Original PARES Blog Section */}
+			<section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+				<div className="mb-6">
+					{/* Header section with improved layout */}
+					<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
+						<div>
+							<h2 className="text-2xl font-bold text-gray-900">{heading}</h2>
+							<p className="text-sm text-gray-600 mt-1">
+								Videos, market insights, neighborhood guides, and investing tips.
+							</p>
+						</div>
+						
+						{/* See All Button - Updated to match BiggerPockets styling */}
+						{!currentPost && showSeeAllButton && (
+							<button
+								onClick={handleSeeAllClick}
+								className="mt-3 sm:mt-0 inline-flex items-center gap-1 rounded-md bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-100 transition-colors"
+								aria-label="View all blog posts"
+							>
+								See all posts
+								<svg width="12" height="12" viewBox="0 0 24 24" className="fill-current">
+									<path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12l-4.58 4.59z"/>
+								</svg>
+							</button>
+						)}
+					</div>
+
+					{/* Filters section */}
+					{!currentPost && showFilters && (
+						<div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center">
+							<div className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 p-1">
+								{TABS.map((t) => (
+									<button
+										key={t}
+										onClick={() => setTab(t)}
+										className={`rounded-lg px-3 py-1.5 text-sm ${
+											tab === t
+												? 'bg-white text-gray-900 shadow-sm'
+												: 'text-gray-600 hover:text-gray-900'
+										}`}
+										aria-pressed={tab === t}
+									>
+										{t}
+									</button>
+								))}
+							</div>
+
+							<input
+								className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 sm:w-64"
+								placeholder="Search neighborhoods, tours, tips..."
+								value={q}
+								onChange={(e) => setQ(e.target.value)}
+								aria-label="Search blog posts"
+							/>
+						</div>
+					)}
 				</div>
 
-				{!currentPost && showFilters && (
-					<div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
-						<div className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 p-1">
-							{TABS.map((t) => (
-								<button
-									key={t}
-									onClick={() => setTab(t)}
-									className={`rounded-lg px-3 py-1.5 text-sm ${
-										tab === t
-											? 'bg-white text-gray-900 shadow-sm'
-											: 'text-gray-600 hover:text-gray-900'
-									}`}
-									aria-pressed={tab === t}
-								>
-									{t}
-								</button>
-							))}
+				{/* Loading, error, and content states */}
+				{loading ? (
+					<div className="my-12 flex justify-center">
+						<div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" aria-label="Loading"></div>
+					</div>
+				) : error ? (
+					<div className="my-8 rounded-lg bg-red-50 p-4 text-center text-red-700" role="alert">
+						{error}
+						<button
+							onClick={() => window.location.reload()}
+							className="ml-2 text-blue-700 underline"
+						>
+							Reload
+						</button>
+					</div>
+				) : !currentPost ? (
+					<>
+						{/* Category filters */}
+						<div className="mb-4 flex flex-wrap items-center gap-2">
+							{showFilters &&
+								allCategories.map((c) => (
+									<button
+										key={c}
+										onClick={() => setCategory(c)}
+										className={`inline-flex items-center rounded-full border px-3 py-1 text-xs ${
+											category === c
+												? 'border-blue-300 bg-blue-50 text-blue-700'
+												: 'border-gray-200 bg-gray-100 text-gray-700 hover:bg-gray-200'
+										}`}
+										aria-pressed={category === c}
+									>
+										{c}
+									</button>
+								))}
 						</div>
 
-						<input
-							className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 sm:w-64"
-							placeholder="Search neighborhoods, tours, tips..."
-							value={q}
-							onChange={(e) => setQ(e.target.value)}
-						/>
-					</div>
+						{/* Post grid or empty state */}
+						{posts.length === 0 ? (
+							<div className="my-12 text-center text-gray-500">
+								No posts found matching your criteria.
+							</div>
+						) : (
+							<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+								{posts.map((p) => (
+									<BlogCard
+										key={p.id}
+										post={p}
+										onClick={() => {
+											if (enableDetail) setActive(p.id);
+										}}
+									/>
+								))}
+							</div>
+						)}
+
+						{/* Pagination */}
+						{!disablePagination && totalPages > 1 && (
+							<div className="mt-6 flex items-center justify-center gap-3">
+								<button
+									onClick={() => setPage((n) => Math.max(1, n - 1))}
+									disabled={page <= 1}
+									className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 disabled:opacity-50 hover:bg-gray-50"
+									aria-label="Previous page"
+								>
+									Prev
+								</button>
+								<span className="text-sm text-gray-500">
+									Page {page} of {totalPages}
+								</span>
+								<button
+									onClick={() => setPage((n) => Math.min(totalPages, n + 1))}
+									disabled={page >= totalPages}
+									className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 disabled:opacity-50 hover:bg-gray-50"
+									aria-label="Next page"
+								>
+									Next
+								</button>
+							</div>
+						)}
+					</>
+				) : (
+					<PostDetail
+						post={currentPost}
+						onBack={() => setActive(null)}
+						related={relatedPosts}
+					/>
 				)}
-			</div>
+			</section>
 
-			{loading ? (
-				<div className="my-12 flex justify-center">
-					<div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></div>
-				</div>
-			) : error ? (
-				<div className="my-8 rounded-lg bg-red-50 p-4 text-center text-red-700">
-					{error}
-					<button
-						onClick={() => window.location.reload()}
-						className="ml-2 text-blue-700 underline"
-					>
-						Reload
-					</button>
-				</div>
-			) : !currentPost ? (
-				<>
-					<div className="mb-4 flex flex-wrap items-center gap-2">
-						{showFilters &&
-							allCategories.map((c) => (
-								<button
-									key={c}
-									onClick={() => setCategory(c)}
-									className={`inline-flex items-center rounded-full border px-3 py-1 text-xs ${
-										category === c
-											? 'border-blue-300 bg-blue-50 text-blue-700'
-											: 'border-gray-200 bg-gray-100 text-gray-700 hover:bg-gray-200'
-									}`}
-									aria-pressed={category === c}
-								>
-									{c}
-								</button>
-							))}
-					</div>
-
-					{posts.length === 0 ? (
-						<div className="my-12 text-center text-gray-500">
-							No posts found matching your criteria.
-						</div>
-					) : (
-						<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-							{posts.map((p) => (
-								<BlogCard
-									key={p.id}
-									post={p}
-									onClick={() => {
-										if (enableDetail) setActive(p.id);
-									}}
-								/>
-							))}
-						</div>
-					)}
-
-					{!disablePagination && (
-						<div className="mt-6 flex items-center justify-center gap-3">
-							<button
-								onClick={() => setPage((n) => Math.max(1, n - 1))}
-								disabled={page <= 1}
-								className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 disabled:opacity-50"
-							>
-								Prev
-							</button>
-							<span className="text-sm text-gray-500">
-								Page {page} of {totalPages}
-							</span>
-							<button
-								onClick={() => setPage((n) => Math.min(totalPages, n + 1))}
-								disabled={page >= totalPages}
-								className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 disabled:opacity-50"
-							>
-								Next
-							</button>
-						</div>
-					)}
-				</>
-			) : (
-				<PostDetail
-					post={currentPost}
-					onBack={() => setActive(null)}
-					related={relatedPosts}
-				/>
+			{/* BiggerPockets Section - Only show when not viewing post details */}
+			{showBiggerPockets && !currentPost && (
+				<BiggerPocketsSection />
 			)}
-		</section>
+		</div>
 	);
 };
 
