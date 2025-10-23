@@ -105,7 +105,7 @@ const Reels = ({ userId: propUserId, hasFacebookConnection: propHasFacebookConne
     setPermissionIssue(false); // Reset permission issues
     
     try {
-      console.log("Fetch reels called for user:", userId);
+
       
       // Get Facebook token first
       let fbToken, fbUserId;
@@ -122,18 +122,18 @@ const Reels = ({ userId: propUserId, hasFacebookConnection: propHasFacebookConne
         
         fbUserId = data?.facebook_user_id || 'me';
         
-        console.log(`Got Facebook token for user, FB ID: ${fbUserId}`);
+
       } catch (tokenError) {
         console.error("Error getting Facebook token:", tokenError);
         throw new Error("Failed to get Facebook access token. Please reconnect your Facebook account.");
       }
       
       // Use the fetchUserReels method from facebookService
-      console.log("Calling fetchUserReels from facebookService");
+
       const reelsData = await fetchUserReels(fbToken, fbUserId);
       
       if (reelsData && reelsData.length > 0) {
-        console.log(`Fetched ${reelsData.length} reels from Facebook`);
+
         
         // Format to match what the component expects
         const formattedReels = reelsData.map(reel => ({
@@ -149,7 +149,7 @@ const Reels = ({ userId: propUserId, hasFacebookConnection: propHasFacebookConne
         
         setReels(formattedReels);
       } else {
-        console.log('No reels returned from Facebook');
+
         setReels([]);
       }
       

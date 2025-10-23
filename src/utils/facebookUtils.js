@@ -32,7 +32,7 @@ export async function getFacebookProfilePicture(facebookId, accessToken, size = 
       );
       
       if (response.data && response.data.data && !response.data.data.is_silhouette) {
-        console.log('Successfully retrieved Facebook profile image');
+
         return response.data.data.url;
       }
     } catch (directError) {
@@ -53,7 +53,7 @@ export async function getFacebookProfilePicture(facebookId, accessToken, size = 
           fieldsResponse.data.picture && 
           fieldsResponse.data.picture.data && 
           !fieldsResponse.data.picture.data.is_silhouette) {
-        console.log('Successfully retrieved Facebook profile image using fields param');
+
         return fieldsResponse.data.picture.data.url;
       }
     } catch (fieldsError) {
@@ -64,7 +64,7 @@ export async function getFacebookProfilePicture(facebookId, accessToken, size = 
     try {
       // This URL will work even without authentication but may return a default image
       const publicUrl = `https://graph.facebook.com/${facebookId}/picture?type=${size}`;
-      console.log('Using public Facebook profile image URL as fallback');
+
       return publicUrl;
     } catch (publicError) {
       console.warn('Failed to use public profile picture URL');

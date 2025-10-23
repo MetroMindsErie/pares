@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createSupabaseClient } from '../lib/supabase/client';
+import { clearCachedSearchResults } from '../lib/searchCache';
 
 /**
  * Custom hook for Supabase authentication
@@ -142,23 +143,68 @@ export function useSupabaseAuth() {
       const supabase = createSupabaseClient();
       setIsLoading(true);
       
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) throw error;
-      
-      // Clear cached user data
+      // Set a flag in session to indicate we're in logout process
       if (typeof window !== 'undefined') {
+        sessionStorage.setItem('isLoggingOut', 'true');
+      }
+      
+      // Clear ALL cache data before signing out
+      if (typeof window !== 'undefined') {
+        // Clear specific application caches
         localStorage.removeItem('pares_user');
         localStorage.removeItem('pares_user_profile');
         localStorage.removeItem('pares_favorites');
         localStorage.removeItem('pares_recent_searches');
+        localStorage.removeItem('walletAddress');
+        
+        // Clear search cache using the utility
+        clearCachedSearchResults();
+        
+        // For good measure, try to clear everything with these patterns
+        for (const key in localStorage) {
+          if (key.includes('pares_') || key.includes('supabase')) {
+            localStorage.removeItem(key);
+          }
+        }
+        
+        for (const key in sessionStorage) {
+          if (key.includes('pares_') || key.includes('supabase')) {
+            sessionStorage.removeItem(key);
+          }
+        }
       }
       
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) throw error;
+      
+      // Update local state
       setUser(null);
       setSession(null);
+      
+      // Remove logout flag
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('isLoggingOut');
+        
+        // Force a full page reload and redirect to home
+        window.location.href = '/';
+      }
+      
+      return { success: true };
     } catch (e) {
       console.error('Error signing out:', e);
       setError(e.message);
+      
+      // Clean up even on error
+      if (typeof window !== 'undefined') {
+        clearCachedSearchResults();
+        sessionStorage.removeItem('isLoggingOut');
+        
+        // Force reload even on error
+        window.location.href = '/';
+      }
+      
+      return { success: false, error: e };
     } finally {
       setIsLoading(false);
     }

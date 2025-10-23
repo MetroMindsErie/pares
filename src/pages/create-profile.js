@@ -53,14 +53,14 @@ export default function CreateProfile() {
         // Only redirect if we're certain the user isn't authenticated
         // after the auth check has completed
         if (authChecked && !loading && !isAuthenticated) {
-            console.log('No authenticated user found after auth check, redirecting to login');
+
             router.replace('/login'); // Use replace instead of push to avoid adding to history
         }
     }, [authChecked, loading, isAuthenticated, router]);
 
     // Debug logging
     useEffect(() => {
-        console.log('Auth state:', { 
+        ('Auth state:', { 
             isAuthenticated, 
             loading, 
             authChecked,
@@ -81,7 +81,7 @@ export default function CreateProfile() {
             if (!user || !user.id || profilePictureFetched) return;
             
             try {
-                console.log('Checking for user profile picture');
+
                 
                 // First check if user already has a picture in the database
                 const { data: userData, error: userError } = await supabase
@@ -91,7 +91,7 @@ export default function CreateProfile() {
                     .single();
                 
                 if (!userError && userData?.profile_picture_url) {
-                    console.log('User already has profile picture in database:', userData.profile_picture_url);
+
                     setFormData(prev => ({
                         ...prev,
                         profile_picture_url: userData.profile_picture_url
@@ -102,11 +102,11 @@ export default function CreateProfile() {
                 
                 // If the user signed up with Facebook, get their profile picture
                 if (user.app_metadata?.provider === 'facebook') {
-                    console.log('User authenticated with Facebook, fetching picture');
+
                     
                     // Try to get picture from user metadata first (fastest)
                     if (user.user_metadata?.avatar_url) {
-                        console.log('Found avatar in user metadata:', user.user_metadata.avatar_url);
+
                         setFormData(prev => ({
                             ...prev,
                             profile_picture_url: user.user_metadata.avatar_url
@@ -121,7 +121,7 @@ export default function CreateProfile() {
                             })
                             .eq('id', user.id);
                             
-                        console.log('Saved profile picture from metadata to database');
+
                         setProfilePictureFetched(true);
                         return;
                     }
@@ -130,7 +130,7 @@ export default function CreateProfile() {
                     const tokenData = await getFacebookToken(user.id);
                     
                     if (tokenData?.accessToken) {
-                        console.log('Found Facebook token, fetching picture directly');
+
                         // Pass user ID to ensure it's saved to database
                         const pictureUrl = await getFacebookProfilePicture(
                             tokenData.accessToken, 
@@ -139,19 +139,19 @@ export default function CreateProfile() {
                         );
                         
                         if (pictureUrl) {
-                            console.log('Got Facebook picture URL:', pictureUrl);
+
                             setFormData(prev => ({
                                 ...prev,
                                 profile_picture_url: pictureUrl
                             }));
                         }
                     } else {
-                        console.log('No Facebook token available, trying session');
+
                         
                         // Try to get from current session if token not found
                         const { data: { session } } = await supabase.auth.getSession();
                         if (session?.provider_token) {
-                            console.log('Found token in session, trying to fetch picture');
+
                             
                             // Try direct Facebook Graph API request
                             try {
@@ -160,7 +160,7 @@ export default function CreateProfile() {
                                 
                                 if (data?.picture?.data?.url) {
                                     const pictureUrl = data.picture.data.url;
-                                    console.log('Got picture URL from session token:', pictureUrl);
+
                                     
                                     setFormData(prev => ({
                                         ...prev,
@@ -176,7 +176,7 @@ export default function CreateProfile() {
                                         })
                                         .eq('id', user.id);
                                         
-                                    console.log('Saved profile picture from session to database');
+
                                 }
                             } catch (fbError) {
                                 console.error('Error fetching picture from session token:', fbError);
@@ -234,7 +234,7 @@ export default function CreateProfile() {
                     const parsedRoles = JSON.parse(savedRoles);
                     if (Array.isArray(parsedRoles) && parsedRoles.length > 0) {
                         // Ensure we don't lose roles when going to the last step
-                        console.log('Preserving roles from session storage:', parsedRoles);
+
                         setFormData(prev => ({
                             ...prev,
                             roles: parsedRoles
@@ -248,7 +248,7 @@ export default function CreateProfile() {
     }, [currentStep]);
 
     const handleInterestChange = (selectedInterests) => {
-        console.log('Interest selection changed:', selectedInterests);
+
         setFormData(prev => ({
             ...prev,
             interests: selectedInterests
@@ -271,7 +271,7 @@ export default function CreateProfile() {
         
         try {
             // Log the current user state for debugging
-            console.log('Current user state during submission:', { 
+            ('Current user state during submission:', { 
                 hasUser: !!user, 
                 userId: user?.id,
                 isAuthenticated,
@@ -286,12 +286,12 @@ export default function CreateProfile() {
 
             // Check if user exists in context
             if (!user) {
-                console.log('User missing in context, attempting to refresh session');
+
                 // Try to refresh the session
                 const { data: sessionData } = await supabase.auth.getSession();
                 
                 if (sessionData?.session?.user) {
-                    console.log('Retrieved user from session refresh:', sessionData.session.user.id);
+
                     // Use the refreshed user
                     const userId = sessionData.session.user.id;
                     
@@ -356,7 +356,7 @@ export default function CreateProfile() {
                         throw new Error('First name and last name are required');
                     }
 
-                    console.log('Saving profile with refreshed user ID:', userId);
+
                     
                     // Use our new utility function for more reliable saving
                     const saveSuccess = await saveUserProfile(userId, dataToSubmit);
@@ -365,7 +365,7 @@ export default function CreateProfile() {
                         throw new Error('Failed to save profile after multiple attempts');
                     }
 
-                    console.log('Profile saved successfully, redirecting to dashboard');
+
                     router.push('/dashboard');
                     return;
                 } else {
@@ -400,7 +400,7 @@ export default function CreateProfile() {
             
             // If the user authenticated with Facebook, try to get profile picture if not already set
             if (user.app_metadata?.provider === 'facebook' && !formData.profile_picture_url) {
-                console.log('User authenticated with Facebook, fetching profile picture if needed');
+
                 try {
                     const tokenData = await getFacebookToken(user.id);
                     if (tokenData?.accessToken) {
@@ -411,7 +411,7 @@ export default function CreateProfile() {
                         );
                         
                         if (pictureUrl) {
-                            console.log('Successfully fetched Facebook profile picture');
+
                             formData.profile_picture_url = pictureUrl;
                         }
                     }
@@ -443,7 +443,7 @@ export default function CreateProfile() {
                 document.querySelector('[aria-checked="true"][role="checkbox"]')?.textContent.includes('Crypto Investor');
                 
             if (hasCryptoInvestor && !rolesToSubmit.includes('crypto_investor')) {
-                console.log('Re-adding crypto_investor role that was lost');
+
                 rolesToSubmit.push('crypto_investor');
             }
 
@@ -453,7 +453,7 @@ export default function CreateProfile() {
                 try {
                     const parsedRoles = JSON.parse(savedRoles);
                     if (Array.isArray(parsedRoles) && parsedRoles.includes('crypto_investor')) {
-                        console.log('Restoring crypto_investor role from session storage');
+
                         rolesToSubmit = parsedRoles;
                     }
                 } catch (e) {
@@ -499,7 +499,7 @@ export default function CreateProfile() {
                 throw new Error('Failed to save profile after multiple attempts');
             }
 
-            console.log('Completed profile creation, redirecting to dashboard');
+
             
             // Remove all session storage items to prevent loop
             sessionStorage.clear();

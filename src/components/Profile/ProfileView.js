@@ -120,14 +120,14 @@ const ProfileView = ({ profile }) => {
       }
 
       try {
-        console.log('Loading properties for user:', user.id);
+
         const [liked, connections] = await Promise.all([
           getLikedPropertiesWithData(user.id),
           getConnectionPropertiesWithData(user.id)
         ]);
 
-        console.log('Loaded liked properties:', liked);
-        console.log('Loaded connection properties:', connections);
+
+
 
         setLikedProperties(liked || []);
         setConnectionProperties(connections || []);
@@ -142,7 +142,7 @@ const ProfileView = ({ profile }) => {
   }, [user?.id]);
 
   const handlePropertyClick = (property) => {
-    console.log('Property clicked:', property);
+
     // You can implement modal or navigation here
   };
 
@@ -199,7 +199,7 @@ const ProfileView = ({ profile }) => {
                 alt={`${first_name || ''} ${last_name || ''}`}
                 className="h-16 w-16 rounded-full object-cover"
                 onError={(e) => {
-                  console.log("Image failed to load, using default avatar");
+
                   setImageError(true);
                   e.target.src = '/default-avatar.png';
                 }}

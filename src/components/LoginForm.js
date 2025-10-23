@@ -46,7 +46,7 @@ const Login = () => {
     }
     
     try {
-      console.log('Attempting login with:', username);
+
       const { data: loginData, error } = await login(username, password);
       if (error) throw error;
 

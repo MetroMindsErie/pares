@@ -98,7 +98,7 @@ const cleanPropertyData = (property) => {
  */
 export const saveSwipeAction = async (userId, swipeAction) => {
   try {
-    console.log('Saving swipe action:', { userId, propertyId: swipeAction.propertyId, direction: swipeAction.direction });
+
     
     // Clean and minimize property data
     const cleanedPropertyData = cleanPropertyData(swipeAction.propertyData);
@@ -125,13 +125,13 @@ export const saveSwipeAction = async (userId, swipeAction) => {
         ...cleanedPropertyData,
         swipe_date: swipeAction.timestamp
       });
-      console.log('Added to liked properties cache');
+
     } else if (swipeAction.direction === 'up') {
       sessionCache.connectionProperties.unshift({
         ...cleanedPropertyData,
         swipe_date: swipeAction.timestamp
       });
-      console.log('Added to connection properties cache');
+
     }
     
     sessionCache.lastUpdated = Date.now();
@@ -150,7 +150,7 @@ export const saveSwipeAction = async (userId, swipeAction) => {
     }
 
     if (existingSwipe) {
-      console.log('Updating existing swipe:', existingSwipe.id);
+
       // Update existing swipe
       const { data, error } = await supabase
         .from('property_swipes')
@@ -166,10 +166,10 @@ export const saveSwipeAction = async (userId, swipeAction) => {
         console.error('Update error:', error);
         throw error;
       }
-      console.log('Swipe updated successfully');
+
       return data;
     } else {
-      console.log('Creating new swipe');
+
       // Create new swipe
       const { data, error } = await supabase
         .from('property_swipes')
@@ -186,7 +186,7 @@ export const saveSwipeAction = async (userId, swipeAction) => {
         console.error('Insert error:', error);
         throw error;
       }
-      console.log('Swipe created successfully');
+
       return data;
     }
   } catch (error) {
@@ -204,11 +204,11 @@ export const getSwipedProperties = async (userId) => {
     if (sessionCache.lastUpdated && 
         Date.now() - sessionCache.lastUpdated < CACHE_DURATION &&
         sessionCache.swipedProperties.size > 0) {
-      console.log('Using cached swiped properties');
+
       return Array.from(sessionCache.swipedProperties);
     }
 
-    console.log('Fetching swiped properties from database');
+
     const { data, error } = await supabase
       .from('property_swipes')
       .select('property_id')
@@ -311,7 +311,7 @@ export const removeSwipeAction = async (userId, propertyId) => {
  */
 export const getSwipeStats = async (userId) => {
   try {
-    console.log('Fetching swipe stats for user:', userId);
+
     
     const { data, error } = await supabase
       .from('property_swipes')
@@ -319,7 +319,7 @@ export const getSwipeStats = async (userId) => {
       .eq('user_id', userId);
 
     if (error) throw error;
-    console.log('Raw swipe stats data:', data);
+
 
     const stats = {
       total: data.length,
@@ -329,7 +329,7 @@ export const getSwipeStats = async (userId) => {
       connections: data.filter(s => s.swipe_direction === 'up').length
     };
 
-    console.log('Calculated stats:', stats);
+
     return stats;
   } catch (error) {
     console.error('Error fetching swipe stats:', error);
@@ -346,11 +346,11 @@ export const getLikedPropertiesWithData = async (userId) => {
     if (sessionCache.lastUpdated && 
         Date.now() - sessionCache.lastUpdated < CACHE_DURATION &&
         sessionCache.likedProperties.length > 0) {
-      console.log('Using cached liked properties');
+
       return sessionCache.likedProperties;
     }
 
-    console.log('Fetching liked properties for user:', userId);
+
     
     const { data, error } = await supabase
       .from('property_swipes')
@@ -365,10 +365,10 @@ export const getLikedPropertiesWithData = async (userId) => {
       throw error;
     }
 
-    console.log('Raw liked properties data:', data);
+
     
     if (!data || data.length === 0) {
-      console.log('No liked properties found');
+
       return [];
     }
 
@@ -384,7 +384,7 @@ export const getLikedPropertiesWithData = async (userId) => {
     sessionCache.likedProperties = formattedProperties;
     sessionCache.lastUpdated = Date.now();
 
-    console.log('Formatted liked properties:', formattedProperties);
+
     return formattedProperties;
   } catch (error) {
     console.error('Error fetching liked properties with data:', error);
@@ -401,11 +401,11 @@ export const getConnectionPropertiesWithData = async (userId) => {
     if (sessionCache.lastUpdated && 
         Date.now() - sessionCache.lastUpdated < CACHE_DURATION &&
         sessionCache.connectionProperties.length > 0) {
-      console.log('Using cached connection properties');
+
       return sessionCache.connectionProperties;
     }
 
-    console.log('Fetching connection properties for user:', userId);
+
     
     const { data, error } = await supabase
       .from('property_swipes')
@@ -420,10 +420,10 @@ export const getConnectionPropertiesWithData = async (userId) => {
       throw error;
     }
 
-    console.log('Raw connection properties data:', data);
+
     
     if (!data || data.length === 0) {
-      console.log('No connection properties found');
+
       return [];
     }
 
@@ -439,7 +439,7 @@ export const getConnectionPropertiesWithData = async (userId) => {
     sessionCache.connectionProperties = formattedProperties;
     sessionCache.lastUpdated = Date.now();
 
-    console.log('Formatted connection properties:', formattedProperties);
+
     return formattedProperties;
   } catch (error) {
     console.error('Error fetching connection properties with data:', error);
@@ -484,7 +484,7 @@ export const cleanupNullPropertyData = async (userId) => {
 
     if (error) throw error;
     
-    console.log('Cleaned up null property_data records:', data);
+
     return data;
   } catch (error) {
     console.error('Error cleaning up null property_data:', error);
@@ -512,7 +512,7 @@ export const cleanupOversizedPropertyData = async (userId) => {
       const dataSize = JSON.stringify(record.property_data).length;
       
       if (dataSize > 5120) { // 5KB
-        console.log(`Processing oversized record: ${record.property_id}, size: ${dataSize} bytes`);
+
         
         // Try to clean the data
         const cleanedData = cleanPropertyData(record.property_data);
@@ -545,7 +545,7 @@ export const cleanupOversizedPropertyData = async (userId) => {
       }
     }
     
-    console.log(`Cleanup complete: ${cleanedCount} records cleaned, ${deletedCount} records deleted`);
+
     return { cleanedCount, deletedCount };
   } catch (error) {
     console.error('Error cleaning up oversized property_data:', error);

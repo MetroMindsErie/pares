@@ -57,7 +57,7 @@ const FacebookDebugger = () => {
         provider_user_id: tokenDetails?.userData?.facebook_user_id || '123456789'
       });
       
-      console.log('Fix response:', response.data);
+
       
       // Refresh token status
       await checkToken();
@@ -81,7 +81,7 @@ const FacebookDebugger = () => {
         token: manualToken
       });
       
-      console.log('Manual token save response:', response.data);
+
       
       // Refresh token status
       await checkToken();

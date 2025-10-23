@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 // import { processReelsForUser } from '';
 
 export default async function handler(req, res) {
-  console.log('API: Reels fetch endpoint called');
+
   
   // Initialize Supabase client with the request context
   const supabase = createClient(
@@ -43,14 +43,14 @@ export default async function handler(req, res) {
         }
         
         userId = userData.user.id;
-        console.log("User ID from auth header:", userId);
+
       } else {
         return res.status(401).json({ error: 'Not authenticated' });
       }
     } else {
       // Standard path - use session user
       userId = session.user.id;
-      console.log("User ID from session:", userId);
+
     }
     
     // Get Facebook token and user ID
@@ -86,9 +86,9 @@ export default async function handler(req, res) {
     }
     
     // Now directly use the processReelsForUser function from our script
-    // console.log(`Calling processReelsForUser for user ${userId} with Facebook ID ${fbUserId}`);
-    console.log(`Facebook token available: ${!!fbToken}`);
-    console.log(`Facebook token length: ${fbToken?.length || 0}`);
+    // (`Calling processReelsForUser for user ${userId} with Facebook ID ${fbUserId}`);
+
+
     
     if (!fbToken) {
       return res.status(400).json({ 
@@ -116,7 +116,7 @@ export default async function handler(req, res) {
     //   });
     // }
     
-    // console.log(`Returning ${result.count} content items from Facebook`);
+    // (`Returning ${result.count} content items from Facebook`);
     
     // Return the content directly from the process function
     return res.status(200).json({

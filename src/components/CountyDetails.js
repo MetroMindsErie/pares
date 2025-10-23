@@ -51,13 +51,13 @@ const CountyDetails = ({ countyId }) => {
       
       try {
         const countyName = COUNTY_STYLES[countyId].name;
-        console.log(`Fetching ${status} properties for ${countyName} County`);
+
         const filter = `$filter=CountyOrParish eq '${countyName}' and StandardStatus eq '${status === 'active' ? 'Active' : 'Closed'}' and PropertyType eq 'Residential'`;
         
         try {
           const response = await getPropertiesByFilter(filter);
           if (response && response.properties) {
-            console.log(`Successfully loaded ${response.properties.length} properties`);
+
             
             // Store current properties as previous before updating
             prevPropertiesRef.current = properties;
@@ -116,7 +116,7 @@ const CountyDetails = ({ countyId }) => {
   }, [countyId, status]);
 
   // Add debug output to see if component is rendering
-  console.log(`CountyDetails rendering for county ${countyId}, loading: ${loading}, properties: ${properties.length}`);
+
   
   if (!countyId || !COUNTY_STYLES[countyId]) return null;
   

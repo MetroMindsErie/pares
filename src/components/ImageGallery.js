@@ -11,7 +11,7 @@ const ImageGallery = ({ images = [], address = 'Property' }) => {
   
   // For debugging
   if (images && images.length === 0) {
-    console.log('No images provided to gallery, using fallback');
+
   }
 
   const goToPrevious = () => {

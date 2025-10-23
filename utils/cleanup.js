@@ -117,7 +117,7 @@ const resolveImportPath = (importPath, currentFile) => {
 
 // Main functions
 const findUnusedFiles = () => {
-  console.log('\n--- Finding Unused Files ---');
+
   
   const allFiles = getAllFiles(PROJECT_ROOT);
   const importMap = {};
@@ -172,11 +172,11 @@ const findUnusedFiles = () => {
   });
   
   if (unusedFiles.length === 0) {
-    console.log('No unused files found!');
+
   } else {
-    console.log(`Found ${unusedFiles.length} potentially unused files:`);
+
     unusedFiles.forEach(file => {
-      console.log(`  - ${file}`);
+
     });
   }
   
@@ -184,11 +184,11 @@ const findUnusedFiles = () => {
 };
 
 const findDuplicateComponents = () => {
-  console.log('\n--- Finding Similar Components ---');
+
   
   const componentsDir = path.join(PROJECT_ROOT, 'components');
   if (!fs.existsSync(componentsDir)) {
-    console.log('Components directory not found!');
+
     return;
   }
   
@@ -209,27 +209,27 @@ const findDuplicateComponents = () => {
   Object.keys(components).forEach(name => {
     if (components[name].length > 1) {
       hasDuplicates = true;
-      console.log(`Found potentially similar components named "${name}":`);
+
       components[name].forEach(path => {
-        console.log(`  - ${path}`);
+
       });
     }
   });
   
   if (!hasDuplicates) {
-    console.log('No similar components found!');
+
   }
 };
 
 const findOrphanedRoutes = () => {
-  console.log('\n--- Finding Orphaned Routes ---');
+
   
   // Check which router system is in use
   const hasAppRouter = fs.existsSync(path.join(PROJECT_ROOT, 'app'));
   const hasPagesRouter = fs.existsSync(path.join(PROJECT_ROOT, 'pages'));
   
   if (!hasAppRouter && !hasPagesRouter) {
-    console.log('No routing directories found!');
+
     return;
   }
   
@@ -279,7 +279,7 @@ const findOrphanedRoutes = () => {
   let hasOrphanedRoutes = false;
   
   if (navComponents.length === 0) {
-    console.log('No navigation components found to check against!');
+
     return;
   }
   
@@ -301,24 +301,24 @@ const findOrphanedRoutes = () => {
     if (!navContent.match(routeRegex)) {
       if (!hasOrphanedRoutes) {
         hasOrphanedRoutes = true;
-        console.log('Found potentially orphaned routes not referenced in navigation:');
+
       }
-      console.log(`  - Route: ${cleanRoute} (${file})`);
+
     }
   });
   
   if (!hasOrphanedRoutes) {
-    console.log('No orphaned routes found!');
+
   }
 };
 
 // Run the cleanup functions
-console.log('===== PA REAL ESTATE CODEBASE CLEANUP =====');
+
 
 // Run the checks
 findUnusedFiles();
 findDuplicateComponents();
 findOrphanedRoutes();
 
-console.log('\nCleanup analysis complete! Review the findings above.');
-console.log('To improve codebase health, consider removing or refactoring the identified issues.');
+
+

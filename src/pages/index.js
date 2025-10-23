@@ -41,8 +41,8 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
 
   // Enhanced handler for search results with caching
   const handleSearchResults = (properties, nextLinkUrl) => {
-    console.log('Search results received:', properties); // Debug log
-    console.log('Properties count:', properties?.length); // Debug log
+    ('Search results received:', properties); // Debug log
+    ('Properties count:', properties?.length); // Debug log
     
     setIsSearching(false);
     setSearchResults(properties);
@@ -120,11 +120,6 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
           
           {searchResults && searchResults.length > 0 && (
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 bg-white shadow-sm">
-              <div className="mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">
-                  Search Results ({searchResults.length} properties found)
-                </h2>
-              </div>
               <SearchResults 
                 key={`search-results-${searchResults.length}-${Date.now()}`}
                 listings={searchResults} 

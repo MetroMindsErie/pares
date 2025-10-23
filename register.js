@@ -34,7 +34,7 @@ export async function handleAuthCallback() {
             const firstName = user.user_metadata?.full_name?.split(' ')[0] || '';
             const lastName = user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '';
             
-            console.log('Auth callback with user metadata:', user.user_metadata);
+
             
             // Create or update user record with Facebook profile data
             const { error: userError } = await supabase

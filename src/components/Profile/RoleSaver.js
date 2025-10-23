@@ -31,7 +31,7 @@ const RoleSaver = () => {
             
         // Only proceed if crypto_investor isn't already in roles
         if (!currentRoles.includes('crypto_investor')) {
-          console.log('RoleSaver: Adding crypto_investor role');
+
           const newRoles = [...currentRoles, 'crypto_investor'];
             
           // Update database directly

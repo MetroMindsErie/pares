@@ -62,7 +62,7 @@ const PropertySwiper = ({
   }, [user?.id]);
 
   const handleSwipe = useCallback(async (property, direction) => {
-    console.log('Handling swipe:', { 
+    ('Handling swipe:', { 
       property: property.ListingKey, 
       direction, 
       userId: user?.id,
@@ -89,11 +89,11 @@ const PropertySwiper = ({
     // Save swipe action
     try {
       if (user?.id) {
-        console.log(`Saving ${direction} swipe for authenticated user:`, user.id);
+
         await saveSwipeAction(user.id, swipeAction);
-        console.log(`${direction} swipe saved successfully`);
+
       } else {
-        console.log(`Saving ${direction} swipe to localStorage for non-authenticated user`);
+
         // For localStorage, also clean the data to keep it manageable
         const cleanedAction = {
           ...swipeAction,

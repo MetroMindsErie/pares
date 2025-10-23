@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }) => {
   const [authChecked, setAuthChecked] = useState(false);
   
   const loginWithProviderRef = React.useRef(async (provider) => {
-    console.log('Default loginWithProvider called before initialization');
+
     return { error: 'Authentication not initialized yet' };
   });
   
@@ -44,7 +44,7 @@ export const AuthProvider = ({ children }) => {
     if (isBrowser) {
       const initializeAuth = async () => {
         try {
-          console.log('Initializing auth context');
+
           setLoading(true);
           const { default: supabaseClient } = await import('../utils/supabaseClient');
           
@@ -61,7 +61,7 @@ export const AuthProvider = ({ children }) => {
             console.error('Error getting auth session:', error);
             setError(error.message);
           } else if (data && data.session) {
-            console.log('Found existing session, user authenticated');
+
             
             try {
               // Fetch full user data including roles from the users table
@@ -77,7 +77,7 @@ export const AuthProvider = ({ children }) => {
                   ...data.session.user,
                   ...userData
                 };
-                console.log('Merged user data with roles:', {
+                ('Merged user data with roles:', {
                   hasRoles: Array.isArray(userData.roles),
                   roles: userData.roles
                 });
@@ -94,14 +94,14 @@ export const AuthProvider = ({ children }) => {
             
             setIsAuthenticated(true);
           } else {
-            console.log('No active session found');
+
           }
           
           const { data: listener } = supabaseClient.auth.onAuthStateChange(async (event, session) => {
-            console.log('Auth state changed:', event);
+
             
             if (event === 'SIGNED_IN' && session) {
-              console.log('User signed in:', session.user.id);
+
               setIsAuthenticated(true);
               
               try {
@@ -118,7 +118,7 @@ export const AuthProvider = ({ children }) => {
                     ...session.user,
                     ...userData
                   };
-                  console.log('Auth change - merged user data with roles:', {
+                  ('Auth change - merged user data with roles:', {
                     hasRoles: Array.isArray(userData.roles),
                     roles: userData.roles
                   });
@@ -134,12 +134,12 @@ export const AuthProvider = ({ children }) => {
                 setHasProfile(false);
               }
             } else if (event === 'SIGNED_OUT') {
-              console.log('User signed out');
+
               setUser(null);
               setIsAuthenticated(false);
               setHasProfile(null);
             } else if (event === 'USER_UPDATED') {
-              console.log('User updated, refreshing user data');
+
               if (session) {
                 await refreshUserData(session.user.id);
               }
@@ -257,13 +257,13 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('fb_access_token');
         localStorage.removeItem('facebook_expiration');
         // Clear any other provider tokens that might be stored
-        console.log('Cleared social provider tokens from localStorage');
+
       } catch (tokenError) {
         console.warn('Error clearing tokens from localStorage:', tokenError);
       }
       
       const { default: supabaseClient } = await import('../utils/supabaseClient');
-      console.log('Logging out user...');
+
       
       // Force reset auth state regardless of the API call outcome
       setUser(null);
@@ -278,7 +278,7 @@ export const AuthProvider = ({ children }) => {
         return { error };
       }
       
-      console.log('Logout successful');
+
       return { success: true };
     } catch (err) {
       console.error('Unexpected error during logout:', err);
@@ -314,7 +314,7 @@ export const AuthProvider = ({ children }) => {
         const hasCryptoInvestor = hasRoles && data.roles.includes('crypto_investor');
         
         if (hasCryptoInvestor) {
-          console.log('User has crypto_investor role');
+
         }
         
         // Ensure we don't lose auth data when updating with database data

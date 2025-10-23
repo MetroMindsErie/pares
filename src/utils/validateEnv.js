@@ -16,30 +16,30 @@ export function validateEnvironmentVariables() {
     'SUPABASE_SERVICE_KEY'
   ];
 
-  console.log('=== Environment Variables Status ===');
+
   
   // Check Trestle variables
-  console.log('Trestle API Configuration:');
+
   let allTrestleVarsPresent = true;
   trestleVars.forEach(varName => {
     const isPresent = !!process.env[varName];
-    console.log(`- ${varName}: ${isPresent ? '✓' : '✗'}`);
+
     if (!isPresent) allTrestleVarsPresent = false;
   });
 
   // Check Supabase variables
-  console.log('Supabase Configuration:');
+
   let allSupabaseVarsPresent = true;
   supabaseVars.forEach(varName => {
     const isPresent = !!process.env[varName];
-    console.log(`- ${varName}: ${isPresent ? '✓' : '✗'}`);
+
     if (!isPresent) allSupabaseVarsPresent = false;
   });
 
-  console.log('================================');
-  console.log(`Trestle API configuration: ${allTrestleVarsPresent ? 'VALID' : 'INCOMPLETE'}`);
-  console.log(`Supabase configuration: ${allSupabaseVarsPresent ? 'VALID' : 'INCOMPLETE'}`);
-  console.log('================================');
+
+
+
+
 
   return {
     trestleConfigValid: allTrestleVarsPresent,

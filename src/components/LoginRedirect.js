@@ -14,15 +14,15 @@ export default function LoginRedirect() {
       
       // If authenticated according to context
       if (isAuthenticated) {
-        console.log('User authenticated, checking profile status');
+
         
         // If hasprofile is already determined by context, use it
         if (hasprofile !== null) {
           if (hasprofile === false) {
-            console.log('User needs to create profile (from context)');
+
             router.replace('/create-profile?setup=true');
           } else {
-            console.log('User has profile (from context), redirecting to dashboard');
+
             router.replace('/dashboard');
           }
           return;
@@ -39,10 +39,10 @@ export default function LoginRedirect() {
           if (error) throw error;
           
           if (data?.hasprofile) {
-            console.log('User has profile (from DB), redirecting to dashboard');
+
             router.replace('/dashboard');
           } else {
-            console.log('User needs to create profile (from DB)');
+
             router.replace('/create-profile?setup=true');
           }
         } catch (err) {

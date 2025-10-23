@@ -80,7 +80,7 @@ const InteractiveRealEstateMap = () => {
         setError(null);
         try {
           const countyName = COUNTY_STYLES[selectedCounty].name;
-          console.log(`Fetching properties for ${countyName} county...`);
+
 
           // Use the correct filter syntax
           const activeFilter = `CountyOrParish eq '${countyName}' and StandardStatus eq 'Active' and PropertyType eq 'Residential'`;
@@ -99,7 +99,7 @@ const InteractiveRealEstateMap = () => {
             }
           }));
           setNextLink(activeProperties.nextLink);
-          console.log(`Successfully fetched ${activeProperties.properties.length} active and ${closedProperties.properties.length} closed properties`);
+
         } catch (err) {
           console.error('Failed to load properties:', err);
           setError(`Failed to load properties: ${err.message}`);

@@ -44,7 +44,7 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     
     // Log the search parameters to help with debugging
-    console.log('Search parameters:', Object.fromEntries(searchParams.entries()));
+
     
     // Check if we're in development mode
     const isDevelopment = process.env.NODE_ENV === 'development';
@@ -202,12 +202,12 @@ export async function GET(request) {
     // Build the Trestle API URL with formatted parameters
     const trestleUrl = `${trestleBaseUrl}/trestle/odata/Property?${formattedParams.toString()}`;
     
-    console.log('Fetching from Trestle API:', trestleUrl);
+
     
     try {
       // Get OAuth token for Trestle API
       const token = await getTrestleToken();
-      console.log('Successfully obtained Trestle API token');
+
       
       // Make the request to the Trestle API with the token
       const response = await fetch(trestleUrl, {
@@ -225,7 +225,7 @@ export async function GET(request) {
         
         // In development, return mock data when the API fails
         if (isDevelopment) {
-          console.log('Falling back to mock data in development');
+
           return NextResponse.json({
             value: getMockListings(searchParams),
             '@odata.nextLink': null
@@ -240,7 +240,7 @@ export async function GET(request) {
       
       // Process the response
       const data = await response.json();
-      console.log('Trestle API response received, count:', data.value?.length || 0);
+
       
       // Map the response to include property images and format data
       const properties = (data.value || []).map(property => {
@@ -293,7 +293,7 @@ export async function GET(request) {
       
       // In development, return mock data when the API fails
       if (isDevelopment) {
-        console.log('Falling back to mock data in development due to API error');
+
         return NextResponse.json({
           value: getMockListings(searchParams),
           '@odata.nextLink': null
@@ -310,7 +310,7 @@ export async function GET(request) {
     if (process.env.NODE_ENV === 'development') {
       try {
         const { searchParams } = new URL(request.url);
-        console.log('Using mock data due to server error');
+
         return NextResponse.json({
           value: getMockListings(searchParams),
           '@odata.nextLink': null

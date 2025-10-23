@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuth } from '../context/auth-context';
+import { clearCachedSearchResults } from '../lib/searchCache';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -59,11 +60,29 @@ export default function Navbar() {
   
   const handleLogout = async () => {
     try {
+      // Set the logout flag
+      sessionStorage.setItem('isLoggingOut', 'true');
+      
+      // Clear any search cache immediately
+      clearCachedSearchResults();
+      
+      // Clear wallet connection data
+      setWalletConnected(false);
+      setWalletAddress('');
+      localStorage.removeItem('walletAddress');
+      
+      // Clear other relevant caches
+      for (const key in localStorage) {
+        if (key.includes('pares_') || key.includes('supabase')) {
+          localStorage.removeItem(key);
+        }
+      }
+      
       // Set a timeout to prevent infinite loading state
       const timeoutId = setTimeout(() => {
-        console.log('Logout timeout triggered - forcing navigation');
-        // Force navigation even if logout API call is stuck
-        router.push('/');
+
+        // Force full page reload and redirect to home
+        window.location.href = '/';
       }, 3000);
       
       const result = await logout();
@@ -71,22 +90,22 @@ export default function Navbar() {
       // Clear the timeout if logout completes normally
       clearTimeout(timeoutId);
       
-      // Clear wallet connection data on logout
-      setWalletConnected(false);
-      setWalletAddress('');
-      localStorage.removeItem('walletAddress');
+      sessionStorage.removeItem('isLoggingOut');
       
       // Check if there was an error during logout
       if (result && result.error) {
         console.error('Error during logout:', result.error);
       }
       
-      // Navigate to home page regardless of logout result
-      router.push('/');
+      // Always do a full page reload to clear any React state
+      // and redirect to home page
+      window.location.href = '/';
     } catch (err) {
       console.error('Unexpected error during logout:', err);
-      // Force navigation even if there's an error
-      router.push('/');
+      // Clean up logout flag
+      sessionStorage.removeItem('isLoggingOut');
+      // Force full page reload even if there's an error
+      window.location.href = '/';
     }
   };
 

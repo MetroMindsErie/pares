@@ -4,13 +4,13 @@ import supabase from './supabase-setup';
  * Ensure necessary database tables exist with correct structure
  */
 export const ensureDbSchema = async () => {
-  console.log('Checking database schema...');
+
   
   // Check if tables exist by trying to select from them
   try {
     await checkAuthProvidersTable();
     await checkReelsTable();
-    console.log('Database schema checks completed.');
+
     return true;
   } catch (error) {
     console.error('Error ensuring database schema:', error);
@@ -26,7 +26,7 @@ const checkAuthProvidersTable = async () => {
     const { error } = await supabase.from('auth_providers').select('id').limit(1);
     
     if (error && error.code === '42P01') {
-      console.log('Auth providers table not found, would create it here if we had RLS permissions');
+
       // In normal operation, tables should be created via migrations
       // But we could provide admin instructions here
     }
@@ -43,7 +43,7 @@ const checkReelsTable = async () => {
     const { error } = await supabase.from('reels').select('id').limit(1);
     
     if (error && error.code === '42P01') {
-      console.log('Reels table not found, would create it here if we had RLS permissions');
+
       // In normal operation, tables should be created via migrations
     }
   } catch (error) {

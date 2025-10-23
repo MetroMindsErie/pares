@@ -31,7 +31,7 @@ export default async function handler(req, res) {
     }
 
     const userId = user.id;
-    console.log(`Debugging Facebook connection for user: ${userId}`);
+
     
     // Get ALL relevant data
     const results = await Promise.all([

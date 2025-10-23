@@ -22,8 +22,8 @@ class ErrorBoundary extends React.Component {
     
     // You can add more sophisticated error logging here
     if (typeof window !== 'undefined' && window.location) {
-      console.log('Error occurred at:', window.location.href);
-      console.log('User agent:', navigator.userAgent);
+
+
     }
   }
 
@@ -31,11 +31,11 @@ class ErrorBoundary extends React.Component {
     // Clear application cache/storage that might be causing issues
     try {
       if (window.sessionStorage) {
-        console.log('Clearing session storage...');
+
         window.sessionStorage.clear();
       }
       if (window.localStorage) {
-        console.log('Clearing local storage auth tokens...');
+
         // Only clear auth-related items, not all localStorage
         const authKeys = ['supabase.auth.token', 'supabase.auth.refreshToken'];
         authKeys.forEach(key => window.localStorage.removeItem(key));

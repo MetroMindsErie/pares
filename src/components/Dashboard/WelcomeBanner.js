@@ -10,22 +10,22 @@ const WelcomeBanner = ({ profile }) => {
   useEffect(() => {
     if (!profile) return;
     
-    console.log('WelcomeBanner profile data:', profile);
+
     setLoadAttempted(false);
     setImageLoaded(false);
     
     // Try multiple sources for the profile picture
     if (profile.profile_picture_url) {
-      console.log('Setting profile picture to:', profile.profile_picture_url);
+
       setProfileImage(profile.profile_picture_url);
     } else if (profile.avatar_url) {
-      console.log('Using avatar URL instead:', profile.avatar_url);
+
       setProfileImage(profile.avatar_url);
     } else if (profile.metadata?.avatar_url) {
-      console.log('Using avatar URL from metadata:', profile.metadata.avatar_url);
+
       setProfileImage(profile.metadata.avatar_url);
     } else {
-      console.log('No profile picture available, using default');
+
       setProfileImage('/default-avatar.png');
       // For default image, we can consider it loaded
       setImageLoaded(true);
@@ -40,7 +40,7 @@ const WelcomeBanner = ({ profile }) => {
     if (!loadAttempted && profile?.facebook_user_id) {
       setLoadAttempted(true);
       const fbPictureUrl = `https://graph.facebook.com/${profile.facebook_user_id}/picture?type=large`;
-      console.log('Trying Facebook picture URL:', fbPictureUrl);
+
       setProfileImage(fbPictureUrl);
     } else {
       // If all attempts fail, use default
@@ -51,7 +51,7 @@ const WelcomeBanner = ({ profile }) => {
   
   // Handle successful image load
   const handleImageLoad = () => {
-    console.log('Profile image loaded successfully');
+
     setImageLoaded(true);
   };
 

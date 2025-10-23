@@ -17,7 +17,7 @@ export async function fetchAndStoreFacebookProfilePicture(user, providerToken = 
     const fbIdentity = identities.find(i => i.provider === 'facebook');
 
     if (!fbIdentity) {
-      console.log('No Facebook identity found');
+
       return null;
     }
 
@@ -38,7 +38,7 @@ export async function fetchAndStoreFacebookProfilePicture(user, providerToken = 
         
         if (graphResponse.ok) {
           imageBlob = await graphResponse.blob();
-          console.log('Successfully fetched image from Graph API');
+
         }
       } catch (error) {
         console.warn('Failed to fetch with Graph API:', error);
@@ -52,7 +52,7 @@ export async function fetchAndStoreFacebookProfilePicture(user, providerToken = 
         const response = await fetch('/api/proxy-image?url=' + encodeURIComponent(fbIdentity.picture));
         if (response.ok) {
           imageBlob = await response.blob();
-          console.log('Successfully fetched image via proxy');
+
         }
       } catch (error) {
         console.warn('Failed to fetch image via proxy:', error);
@@ -66,7 +66,7 @@ export async function fetchAndStoreFacebookProfilePicture(user, providerToken = 
         const response = await fetch('/api/proxy-image?url=' + encodeURIComponent(defaultUrl));
         if (response.ok) {
           imageBlob = await response.blob();
-          console.log('Successfully fetched image with default URL format');
+
         }
       } catch (error) {
         console.warn('Failed to fetch image with default URL:', error);
@@ -101,7 +101,7 @@ export async function fetchAndStoreFacebookProfilePicture(user, providerToken = 
       throw new Error('Failed to get public URL for uploaded image');
     }
 
-    console.log('Successfully stored Facebook profile picture in Supabase', publicUrlData.publicUrl);
+
     return publicUrlData.publicUrl;
 
   } catch (error) {

@@ -15,7 +15,6 @@ export const fetchEntries = async (contentType = '') => {
     const entries = await client.getEntries(query);
 
     if (entries.items) return entries.items;
-    console.log(`Error getting Entries for content type: ${contentType}`);
     return [];
   } catch (error) {
     console.error('Error fetching entries:', error);

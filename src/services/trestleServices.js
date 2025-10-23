@@ -147,7 +147,7 @@ export async function getMediaUrls(listingKey) {
       );
   
       // Log the raw URL for debugging
-      console.log("Raw Media URLs:", response.data.value);
+
   
       // If the API returns complete URLs, simply map over them:
       return response.data.value

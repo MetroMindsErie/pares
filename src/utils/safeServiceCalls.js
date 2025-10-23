@@ -19,7 +19,7 @@ export const safeGetFacebookToken = async (getFacebookTokenFunction) => {
 
   // Don't try to get Facebook token if user is not authenticated
   if (!isAuthenticated) {
-    console.log('Not attempting to get Facebook token - user not authenticated');
+
     return null;
   }
 
@@ -28,7 +28,7 @@ export const safeGetFacebookToken = async (getFacebookTokenFunction) => {
   } catch (error) {
     // Check if this is a logout situation
     if (error.message === 'Facebook token not found') {
-      console.log('Facebook token not available - user may have logged out');
+
       return null;
     }
     

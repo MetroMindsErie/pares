@@ -7,7 +7,7 @@ export const checkCryptoInvestorRole = async (userId) => {
   if (!userId) return false;
   
   try {
-    console.log('Direct DB check for crypto role:', userId);
+
     
     // Direct database check to bypass potential context issues
     const { data, error } = await supabase
@@ -23,7 +23,7 @@ export const checkCryptoInvestorRole = async (userId) => {
     
     if (data && Array.isArray(data.roles)) {
       const hasCryptoRole = data.roles.includes('crypto_investor');
-      console.log('DB check result for crypto role:', hasCryptoRole);
+
       
       if (hasCryptoRole) {
         // Set localStorage flag to prevent future checks

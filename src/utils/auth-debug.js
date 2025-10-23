@@ -9,18 +9,18 @@ export const debugAuthFlow = async () => {
   
   try {
     // 1. Check current session
-    console.log('Checking current session...');
+
     const { data: { session } } = await supabase.auth.getSession();
     
     if (!session) {
-      console.log('❌ No active session found');
+
       console.groupEnd();
       return { authenticated: false };
     }
     
-    console.log('✅ Active session found for user:', session.user.id);
-    console.log('Auth provider:', session.user.app_metadata?.provider);
-    console.log('Has provider token:', !!session.provider_token);
+
+
+
     
     // 2. Check for profile
     const { data: userData, error: userError } = await supabase
@@ -30,13 +30,13 @@ export const debugAuthFlow = async () => {
       .single();
       
     if (userError) {
-      console.log('❌ Error fetching user profile:', userError.message);
+
     } else if (userData) {
-      console.log('✅ User profile found:');
-      console.log('- Has profile:', userData.hasprofile);
-      console.log('- Has profile picture:', !!userData.profile_picture_url);
-      console.log('- Has Facebook token:', !!userData.facebook_access_token);
-      console.log('- Has Facebook ID:', !!userData.facebook_user_id);
+
+
+
+
+
     }
     
     // 3. Check for auth providers
@@ -45,7 +45,7 @@ export const debugAuthFlow = async () => {
       .select('*')
       .eq('user_id', session.user.id);
       
-    console.log('Auth providers:', providerData?.length || 0);
+
     
     // 4. Check reels
     const { data: reelsData } = await supabase
@@ -53,7 +53,7 @@ export const debugAuthFlow = async () => {
       .select('id')
       .eq('user_id', session.user.id);
       
-    console.log('Reels count:', reelsData?.length || 0);
+
     
     console.groupEnd();
     return { authenticated: true, userId: session.user.id, hasProfile: !!userData?.hasprofile };

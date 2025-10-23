@@ -88,7 +88,7 @@ export const storeProviderData = async (session) => {
     
     if (!provider) return { error: 'No provider information' };
     
-    console.log(`Storing ${provider} provider data for user ${userId}`);
+
     
     // Get provider identity
     const identityData = session.user.identities?.find(i => i.provider === provider);
@@ -97,8 +97,8 @@ export const storeProviderData = async (session) => {
       return { error: 'No identity data found' };
     }
     
-    console.log('Identity data:', identityData.id);
-    console.log('Provider token available:', !!session.provider_token);
+
+
     
     // First check if the user exists in our users table
     const { data: existingUser, error: userCheckError } = await supabase
@@ -227,12 +227,14 @@ export const signOut = async () => {
       localStorage.removeItem(`roleSaverRun_${user.id}`);
       sessionStorage.removeItem('selectedRoles');
       localStorage.removeItem('cryptoInvestorSelected');
+      
+      // Set a flag in session to indicate we're in logout process
+      sessionStorage.setItem('isLoggingOut', 'true');
     }
     
-    // Clear any other application-specific storage
-    localStorage.removeItem('dashboard_lastAccessed');
-    sessionStorage.removeItem('auth_redirected');
-
+    // Clear ALL application caches
+    clearAllCacheData();
+    
     // Perform the actual sign out
     const { error } = await supabase.auth.signOut();
     
@@ -245,20 +247,72 @@ export const signOut = async () => {
         .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
     });
     
+    // Remove the logout flag
+    sessionStorage.removeItem('isLoggingOut');
+    
     // After successful signout, ensure the page gets fully reloaded
-    // rather than just client-side navigation which can preserve state
-    window.location.href = '/login';
+    // and redirect to home page
+    window.location.href = '/';
     
     return { success: true, error: null };
   } catch (error) {
     console.error('Sign out error:', error);
     
-    // Even on error, try to force redirect to login
-    window.location.href = '/login';
+    // Clean up logout flag even on error
+    sessionStorage.removeItem('isLoggingOut');
+    
+    // Clear cache even on error
+    clearAllCacheData();
+    
+    // Even on error, force reload and redirect to home page
+    window.location.href = '/';
     
     return { success: false, error };
   }
 };
+
+/**
+ * Helper function to clear all cache data
+ */
+function clearAllCacheData() {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    // Clear application-specific localStorage items
+    localStorage.removeItem('dashboard_lastAccessed');
+    localStorage.removeItem('pares_user');
+    localStorage.removeItem('pares_user_profile');
+    localStorage.removeItem('pares_favorites');
+    localStorage.removeItem('pares_recent_searches');
+    localStorage.removeItem('walletAddress');
+    
+    // Clear search cache if the function exists
+    if (typeof clearCachedSearchResults === 'function') {
+      clearCachedSearchResults();
+    } else {
+      localStorage.removeItem('pares_search_cache');
+    }
+    
+    // Clear all sessionStorage
+    sessionStorage.removeItem('auth_redirected');
+    sessionStorage.removeItem('returnAfterPermission');
+    
+    // For good measure, try to clear everything with these patterns
+    for (const key in localStorage) {
+      if (key.includes('pares_') || key.includes('supabase')) {
+        localStorage.removeItem(key);
+      }
+    }
+    
+    for (const key in sessionStorage) {
+      if (key.includes('pares_') || key.includes('supabase')) {
+        sessionStorage.removeItem(key);
+      }
+    }
+  } catch (e) {
+    console.error('Error clearing cache data:', e);
+  }
+}
 
 /**
  * Get the current logged in user
@@ -283,7 +337,7 @@ export const getCurrentUser = async () => {
     if (userError) {
       // If user doesn't exist in our table yet, return the auth user
       if (userError.code === 'PGRST116') {
-        console.log('User not found in users table, creating initial record');
+
         
         // Create initial record for the user
         const initialUserData = {
@@ -316,7 +370,7 @@ export const getCurrentUser = async () => {
       if ((!userData.first_name || !userData.last_name) && 
           session.user.user_metadata?.full_name) {
         
-        console.log('Updating user record with missing name data from metadata');
+
         
         const firstName = session.user.user_metadata?.full_name?.split(' ')[0] || '';
         const lastName = session.user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '';
@@ -400,23 +454,5 @@ export const changeProfileType = async (profileTypeId) => {
   } catch (error) {
     console.error('Change profile type error:', error);
     return { data: null, error };
-  }
-};
-
-/**
- * Check if user has a specific role
- */
-export const hasRole = async (roleName) => {
-  try {
-    const { user, error } = await getCurrentUser();
-    
-    if (error) throw error;
-    
-    if (!user) return false;
-    
-    return user.roles.includes(roleName);
-  } catch (error) {
-    console.error('Check role error:', error);
-    return false;
   }
 };

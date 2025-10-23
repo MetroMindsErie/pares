@@ -8,7 +8,7 @@ const main = async () => {
       process.env.SUPABASE_SERVICE_KEY
     );
 
-    console.log('Creating or updating auth_providers table...');
+
 
     // Check if table exists
     const { error: checkError } = await supabase
@@ -18,7 +18,7 @@ const main = async () => {
 
     // Create table if it doesn't exist
     if (checkError && checkError.code === 'PGRST116') {
-      console.log('Table does not exist. Creating auth_providers table...');
+
       
       // Create the table using SQL
       const { error: createError } = await supabase.rpc('create_auth_providers_table', {});
@@ -53,15 +53,15 @@ const main = async () => {
         }
       }
       
-      console.log('auth_providers table created successfully!');
+
     } else {
-      console.log('auth_providers table already exists. Checking columns...');
+
       
       // Check if all needed columns exist, add them if needed
       // This would require more complex SQL that depends on your Supabase permissions
     }
 
-    console.log('Database setup completed successfully!');
+
   } catch (error) {
     console.error('Failed to set up database:', error);
   }

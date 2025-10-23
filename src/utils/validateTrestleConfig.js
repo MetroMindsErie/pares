@@ -87,7 +87,7 @@ export const testTokenEndpoint = async () => {
       // Even a 401/403 error means the endpoint exists
       if (headError.response && headError.response.status !== 404 && headError.response.status !== 502) {
         // Endpoint exists but requires authentication, which is expected
-        console.log('Token endpoint found, proceeding with authentication test');
+
       } else {
         // 404 or 502 means the endpoint doesn't exist or is not reachable
         return {

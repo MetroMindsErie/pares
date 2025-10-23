@@ -25,7 +25,7 @@ export default function useFacebookAuth() {
           window.location.hash.includes('provider_token')
         )) {
         setProcessing(true);
-        console.log('Found tokens in URL hash, extracting...');
+
         
         try {
           // Parse hash params
@@ -40,7 +40,7 @@ export default function useFacebookAuth() {
           const providerToken = hashParams.provider_token;
           
           if (accessToken || providerToken) {
-            console.log('Found tokens in hash parameters');
+
             
             // Store in localStorage for potential future use (will be cleared later)
             if (providerToken) localStorage.setItem('provider_token', providerToken);
@@ -51,7 +51,7 @@ export default function useFacebookAuth() {
               const { data: { session } } = await supabase.auth.getSession();
               
               if (session?.user?.id) {
-                console.log('User is authenticated, saving Facebook token...');
+
                 
                 // Call API to store the token
                 await axios.post('/api/auth/store-facebook-token', {
@@ -60,7 +60,7 @@ export default function useFacebookAuth() {
                   provider_user_id: session.user.identities?.find(i => i.provider === 'facebook')?.id
                 });
                 
-                console.log('Facebook token saved successfully');
+
                 
                 // Clear the hash to avoid processing it again
                 setTimeout(() => {
@@ -69,7 +69,7 @@ export default function useFacebookAuth() {
                   localStorage.removeItem('access_token');
                 }, 5000);
               } else {
-                console.log('No active session found when extracting token');
+
               }
             } catch (err) {
               console.error('Error saving extracted Facebook token:', err);

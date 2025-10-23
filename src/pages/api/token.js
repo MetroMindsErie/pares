@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   }
   
   try {
-    console.log('Trestle token request started');
+
     
     // Format data as x-www-form-urlencoded (required for OAuth2)
     const formData = new URLSearchParams({
@@ -16,7 +16,7 @@ export default async function handler(req, res) {
       scope: 'api'
     });
     
-    console.log('Using client ID:', process.env.NEXT_PUBLIC_TRESTLE_CLIENT_ID?.substring(0, 5) + '...');
+
     
     // Call your external token URL with required credentials using proper format
     const response = await axios.post(
@@ -29,7 +29,7 @@ export default async function handler(req, res) {
       }
     );
     
-    console.log('Token request successful');
+
     
     // Return the token from the external API
     return res.status(200).json({ 

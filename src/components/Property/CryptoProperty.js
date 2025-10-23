@@ -141,7 +141,7 @@ const CryptoProperty = ({ propertyData, mlsData }) => {
     if (!imagePath) {
       imagePath = '/properties.jpg';
     }
-    console.log(data,"&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
+    (data,"&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
 
     // Handle different property data formats
     return {
@@ -169,25 +169,25 @@ const CryptoProperty = ({ propertyData, mlsData }) => {
       
       // Check for MetaMask specifically to avoid conflicts with other extensions
       if (window.ethereum?.isMetaMask) {
-        console.log("Pure MetaMask detected, using it directly");
+
         provider = window.ethereum;
       } 
       // If we have ethereum object but it's not explicitly MetaMask
       else if (window.ethereum) {
-        console.log("Ethereum provider detected, checking for MetaMask");
+
         
         // Check if we can find MetaMask in the providers list
         if (window.ethereum.providers && Array.isArray(window.ethereum.providers)) {
           const metamaskProvider = window.ethereum.providers.find(p => p.isMetaMask);
           if (metamaskProvider) {
-            console.log("Found MetaMask in providers list");
+
             provider = metamaskProvider;
           } else {
-            console.log("No MetaMask found in providers list");
+
             provider = window.ethereum;
           }
         } else {
-          console.log("Using default ethereum provider");
+
           provider = window.ethereum;
         }
       }
@@ -195,15 +195,15 @@ const CryptoProperty = ({ propertyData, mlsData }) => {
       // If we found a provider, try to connect
       if (provider) {
         try {
-          console.log("Attempting wallet connection with detected provider");
+
           
           // Try the legacy method first (might work better with some configurations)
           let accounts;
           try {
-            console.log("Trying enable method first");
+
             accounts = await provider.enable();
           } catch (enableError) {
-            console.log("Enable method failed, trying eth_requestAccounts", enableError);
+
             // If enable fails, try the standard method
             accounts = await provider.request({
               method: 'eth_requestAccounts',
@@ -214,7 +214,7 @@ const CryptoProperty = ({ propertyData, mlsData }) => {
             const address = accounts[0];
             setWalletAddress(address);
             setWalletConnected(true);
-            console.log("Successfully connected to wallet:", address);
+
             
             // Save wallet address to localStorage so Navbar can detect it
             localStorage.setItem('walletAddress', address);

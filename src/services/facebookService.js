@@ -5,9 +5,13 @@ import { getAuthHeaders } from '../lib/api-helpers';
 /**
  * Get Facebook token for user from auth_providers table (preferred) or users table
  */
-export const getFacebookToken = async (userId) => {
+export const getFacebookToken = async (userId, options = {}) => {
   try {
     if (!userId) {
+      // During logout, just return null instead of throwing an error
+      if (options.isLogout) {
+        return { accessToken: null };
+      }
       throw new Error('User ID is required to get Facebook token');
     }
 
@@ -34,9 +38,18 @@ export const getFacebookToken = async (userId) => {
       return { accessToken: userData.facebook_access_token };
     }
 
+    // Return null during logout instead of throwing an error
+    if (options.isLogout) {
+      return { accessToken: null };
+    }
+    
     throw new Error('Facebook token not found');
   } catch (error) {
     console.error('Error getting Facebook token:', error);
+    // Return null during logout instead of re-throwing
+    if (options.isLogout) {
+      return { accessToken: null };
+    }
     throw error;
   }
 };
@@ -46,7 +59,7 @@ export const getFacebookToken = async (userId) => {
  */
 export const validateFacebookToken = async (accessToken) => {
   try {
-    console.log('Validating Facebook token...');
+
     
     // First try a simple me request as it's more reliable
     try {
@@ -58,7 +71,7 @@ export const validateFacebookToken = async (accessToken) => {
       });
       
       if (meResponse.data?.id) {
-        console.log('Token validated successfully via /me endpoint:', meResponse.data.id);
+
         return { 
           valid: true, 
           userId: meResponse.data.id,
@@ -108,7 +121,7 @@ export const validateFacebookToken = async (accessToken) => {
  */
 export const checkRequiredPermissions = async (accessToken) => {
   try {
-    console.log('Checking Facebook permissions for video access...');
+
     const permissionsResponse = await fetch(
       `https://graph.facebook.com/v18.0/me/permissions?access_token=${accessToken}`
     );
@@ -125,7 +138,7 @@ export const checkRequiredPermissions = async (accessToken) => {
     }
     
     const permissions = permissionsData.data || [];
-    console.log('Available permissions:', permissions);
+
     
     // Check for critical permissions
     const hasUserVideos = permissions.some(p => p.permission === 'user_videos' && p.status === 'granted');
@@ -194,7 +207,7 @@ export const requestAdditionalPermissions = async (userId) => {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : '');
     const redirectUri = `${baseUrl}/api/auth/facebook/callback`;
     
-    console.log('Using redirect URI:', redirectUri);
+
     
     const permissionUrl = getPermissionRequestUrl(appId, redirectUri);
     
@@ -213,7 +226,7 @@ export const requestAdditionalPermissions = async (userId) => {
  */
 export const fetchUserReels = async (accessToken, providerId = 'me') => {
   try {
-    console.log('Starting Facebook reels fetch process...');
+
     
     // First check if the token is valid and has proper permissions
     const permissionCheck = await checkRequiredPermissions(accessToken);
@@ -232,7 +245,7 @@ export const fetchUserReels = async (accessToken, providerId = 'me') => {
       };
     }
     
-    console.log(`Permission status: user_videos=${permissionCheck.hasUserVideos}, user_posts=${permissionCheck.hasUserPosts}`);
+
     
     // Try multiple approaches to find reels
     let allVideos = [];
@@ -240,7 +253,7 @@ export const fetchUserReels = async (accessToken, providerId = 'me') => {
     // APPROACH 1: Search for posts with #realestate hashtag (original approach)
     // Only try this if we have user_posts permission
     if (permissionCheck.hasUserPosts) {
-      console.log('APPROACH 1: Fetching posts with real estate content...');
+
       try {
         const hashtagResponse = await fetch(
           `https://graph.facebook.com/v18.0/${providerId}/posts?fields=id,message,attachments{media_type,url,description,media,target{id}},permalink_url,created_time&limit=100&access_token=${accessToken}`
@@ -251,7 +264,7 @@ export const fetchUserReels = async (accessToken, providerId = 'me') => {
         if (hashtagData.error) {
           console.error('Error fetching posts:', hashtagData.error);
         } else if (hashtagData?.data?.length > 0) {
-          console.log(`Found ${hashtagData.data.length} posts, searching for video content...`);
+
           
           const realEstateVideos = [];
           for (const post of hashtagData.data) {
@@ -262,7 +275,7 @@ export const fetchUserReels = async (accessToken, providerId = 'me') => {
               );
               
               if (videoAttachments.length > 0) {
-                console.log(`Found ${videoAttachments.length} video attachments in post ${post.id}`);
+
                 
                 for (const video of videoAttachments) {
                   // Get video details if we have a target ID
@@ -277,7 +290,7 @@ export const fetchUserReels = async (accessToken, providerId = 'me') => {
                       if (videoDetail.error) {
                         console.error(`Error fetching video details for ${video.target.id}:`, videoDetail.error);
                       } else {
-                        console.log(`Successfully fetched details for video: ${video.target.id}`);
+
                         
                         realEstateVideos.push({
                           id: videoDetail.id,
@@ -293,7 +306,7 @@ export const fetchUserReels = async (accessToken, providerId = 'me') => {
                       console.error(`Error processing video ${video.target.id}:`, videoError);
                     }
                   } else {
-                    console.log('Video attachment has no target ID:', video);
+
                   }
                 }
               }
@@ -301,23 +314,23 @@ export const fetchUserReels = async (accessToken, providerId = 'me') => {
           }
           
           if (realEstateVideos.length > 0) {
-            console.log(`Found ${realEstateVideos.length} videos from posts`);
+
             allVideos = [...allVideos, ...realEstateVideos];
           }
         } else {
-          console.log('No posts found in the feed');
+
         }
       } catch (approach1Error) {
         console.error('Error in APPROACH 1:', approach1Error);
       }
     } else {
-      console.log('APPROACH 1: Skipped due to missing user_posts permission');
+
     }
     
     // APPROACH 2: Try the direct videos endpoint
     // Only try this if we have user_videos permission
     if (permissionCheck.hasUserVideos) {
-      console.log('APPROACH 2: Trying direct videos endpoint...');
+
       try {
         const videosResponse = await fetch(
           `https://graph.facebook.com/v18.0/${providerId}/videos?fields=id,description,source,permalink_url,created_time,thumbnails,title,backdated_time,backdated_time_granularity&limit=50&access_token=${accessToken}`
@@ -328,7 +341,7 @@ export const fetchUserReels = async (accessToken, providerId = 'me') => {
         if (videosData.error) {
           console.error('Error fetching videos:', videosData.error);
         } else if (videosData?.data?.length > 0) {
-          console.log(`Found ${videosData.data.length} videos using direct videos endpoint`);
+
           
           const mappedVideos = videosData.data.map(video => ({
             id: video.id,
@@ -342,19 +355,19 @@ export const fetchUserReels = async (accessToken, providerId = 'me') => {
           
           allVideos = [...allVideos, ...mappedVideos];
         } else {
-          console.log('No videos found using direct videos endpoint');
+
         }
       } catch (approach2Error) {
         console.error('Error in APPROACH 2:', approach2Error);
       }
     } else {
-      console.log('APPROACH 2: Skipped due to missing user_videos permission');
+
     }
     
     // APPROACH 3: Try feed with video filters
     // Only try this if we have user_posts permission
     if (permissionCheck.hasUserPosts) {
-      console.log('APPROACH 3: Trying feed with video filter...');
+
       try {
         const feedResponse = await fetch(
           `https://graph.facebook.com/v18.0/${providerId}/feed?fields=id,message,attachments{media_type,url,description,media,target{id}},permalink_url,created_time&filter=video&limit=100&access_token=${accessToken}`
@@ -365,7 +378,7 @@ export const fetchUserReels = async (accessToken, providerId = 'me') => {
         if (feedData.error) {
           console.error('Error fetching feed with video filter:', feedData.error);
         } else if (feedData?.data?.length > 0) {
-          console.log(`Found ${feedData.data.length} feed entries with videos`);
+
           
           const feedVideos = [];
           for (const post of feedData.data) {
@@ -400,23 +413,23 @@ export const fetchUserReels = async (accessToken, providerId = 'me') => {
           }
           
           if (feedVideos.length > 0) {
-            console.log(`Extracted ${feedVideos.length} videos from feed`);
+
             allVideos = [...allVideos, ...feedVideos];
           }
         } else {
-          console.log('No feed entries with videos found');
+
         }
       } catch (approach3Error) {
         console.error('Error in APPROACH 3:', approach3Error);
       }
     } else {
-      console.log('APPROACH 3: Skipped due to missing user_posts permission');
+
     }
     
     // APPROACH 4: Try the /reel_medias endpoint (might work for some accounts)
     // Since this endpoint isn't working, we'll disable this approach
     /* 
-    console.log('APPROACH 4: Trying reel_medias endpoint...');
+
     try {
       // ...existing code...
     } catch (approach4Error) {
@@ -425,7 +438,7 @@ export const fetchUserReels = async (accessToken, providerId = 'me') => {
     */
     
     // APPROACH 5: Limited permissions approach - try to get public videos from the profile
-    console.log('APPROACH 5: Trying limited permissions approach...');
+
     try {
       // This approach only uses public_profile permission
       const profileResponse = await fetch(
@@ -437,7 +450,7 @@ export const fetchUserReels = async (accessToken, providerId = 'me') => {
       if (profileData.error) {
         console.error('Error fetching profile data:', profileData.error);
       } else if (profileData.videos && profileData.videos.data && profileData.videos.data.length > 0) {
-        console.log(`Found ${profileData.videos.data.length} videos through profile endpoint`);
+
         
         const profileVideos = profileData.videos.data.map(video => ({
           id: video.id,
@@ -451,7 +464,7 @@ export const fetchUserReels = async (accessToken, providerId = 'me') => {
         
         allVideos = [...allVideos, ...profileVideos];
       } else {
-        console.log('No videos found through profile endpoint');
+
       }
     } catch (approach5Error) {
       console.error('Error in APPROACH 5:', approach5Error);
@@ -463,14 +476,14 @@ export const fetchUserReels = async (accessToken, providerId = 'me') => {
     );
     
     if (uniqueVideos.length > 0) {
-      console.log(`Found a total of ${uniqueVideos.length} unique videos across all approaches`);
+
       return {
         videos: uniqueVideos,
         permissionIssue: false
       };
     }
     
-    console.log('No videos found using any approach');
+
     
     // If we have permissions but found no videos, return empty list
     if (permissionCheck.hasRequired) {
@@ -591,7 +604,7 @@ export const processAndStoreReels = async (userId, noFiltering = false) => {
       throw new Error('User ID is required to process reels');
     }
 
-    console.log(`Processing reels for user: ${userId}, noFiltering: ${noFiltering}`);
+
 
     // Use the API endpoint for consistent handling
     const authConfig = await getAuthHeaders();
@@ -599,7 +612,7 @@ export const processAndStoreReels = async (userId, noFiltering = false) => {
     
     try {
       // Always use fetch endpoint with force_fresh=true to ensure fresh data from Facebook Graph API
-      console.log("Calling /api/reels/fetch endpoint with force_fresh=true");
+
       response = await axios.get('/api/reels/fetch', {
         ...authConfig,
         params: { 
@@ -608,7 +621,7 @@ export const processAndStoreReels = async (userId, noFiltering = false) => {
         }
       });
       
-      console.log("API response status:", response.status);
+
       
       // Check for permission issues in the response
       if (response.data?.permissionIssue) {
@@ -622,7 +635,7 @@ export const processAndStoreReels = async (userId, noFiltering = false) => {
       
       if (response.data?.reels || response.data?.videos) {
         const reelsData = response.data.reels || response.data.videos || [];
-        console.log(`API returned ${reelsData.length} reels/videos, source: ${response.data.source}`);
+
         
         // Filter reels for real estate content if requested
         if (!noFiltering && reelsData.length > 0) {
@@ -632,7 +645,7 @@ export const processAndStoreReels = async (userId, noFiltering = false) => {
         
         return reelsData || [];
       } else {
-        console.log("API did not return any reels/videos");
+
         return [];
       }
     } catch (apiError) {
@@ -654,7 +667,7 @@ export const processAndStoreReels = async (userId, noFiltering = false) => {
       
       // Try fallback to fetch if refresh fails
       if (noFiltering) {
-        console.log("Refresh failed, falling back to fetch");
+
         try {
           const fetchResponse = await axios.get('/api/reels/fetch', authConfig);
           return fetchResponse.data.reels || [];
@@ -684,7 +697,7 @@ const storeReelsInDatabase = async (userId, reels) => {
   }
   
   try {
-    console.log(`Storing ${reels.length} reels in database for user ${userId}`);
+
     
     // Prepare reels data with all needed fields
     const reelsToStore = reels.map(reel => ({
@@ -711,11 +724,11 @@ const storeReelsInDatabase = async (userId, reels) => {
       batches.push(reelsToStore.slice(i, i + BATCH_SIZE));
     }
     
-    console.log(`Processing ${batches.length} batches of reels`);
+
     
     for (let i = 0; i < batches.length; i++) {
       const batch = batches[i];
-      console.log(`Processing batch ${i+1} of ${batches.length}, with ${batch.length} reels`);
+
       
       try {
         // For each reel in the batch
@@ -733,7 +746,7 @@ const storeReelsInDatabase = async (userId, reels) => {
             
             if (existingReel) {
               // Update existing reel
-              console.log(`Updating existing reel: ${reel.facebook_reel_id}`);
+
               const { data, error } = await supabase
                 .from('reels')
                 .update({
@@ -751,7 +764,7 @@ const storeReelsInDatabase = async (userId, reels) => {
               result = data;
             } else {
               // Insert new reel
-              console.log(`Inserting new reel: ${reel.facebook_reel_id}`);
+
               const { data, error } = await supabase
                 .from('reels')
                 .insert(reel)
@@ -786,7 +799,7 @@ const storeReelsInDatabase = async (userId, reels) => {
     }
     
     // Report on the results
-    console.log(`Completed storing reels. Successful: ${results.length}, Failed: ${errors.length}`);
+
     
     if (errors.length > 0) {
       console.error(`${errors.length} errors while storing reels:`, errors[0]);
@@ -815,7 +828,7 @@ const checkReelsTableStructure = async () => {
     }
     
     if (columnInfo) {
-      console.log('Reels table columns:', columnInfo.map(c => c.column_name).join(', '));
+
     }
   } catch (error) {
     console.warn('Error checking reels table structure:', error);
@@ -831,7 +844,7 @@ const checkReelsTableStructure = async () => {
  */
 export const getFacebookProfilePicture = async (accessToken, fbUserId = 'me', supabaseUserId = null) => {
   try {
-    console.log(`Fetching Facebook profile picture for user ID: ${fbUserId}`);
+
     
     // Use proper error handling for API request
     let response;
@@ -858,7 +871,7 @@ export const getFacebookProfilePicture = async (accessToken, fbUserId = 'me', su
         // Extract URL from alternate response format
         if (response?.data?.picture?.data?.url) {
           const pictureUrl = response.data.picture.data.url;
-          console.log('Got picture URL from alternate endpoint:', pictureUrl);
+
           
           // Save to database
           if (supabaseUserId) {
@@ -881,7 +894,7 @@ export const getFacebookProfilePicture = async (accessToken, fbUserId = 'me', su
       return null;
     }
 
-    console.log('Got profile picture URL:', pictureUrl);
+
     
     // Always save to database if we have a user ID and picture URL
     if (supabaseUserId && pictureUrl) {
@@ -900,7 +913,7 @@ export const getFacebookProfilePicture = async (accessToken, fbUserId = 'me', su
  */
 async function savePictureToDatabase(userId, pictureUrl) {
   try {
-    console.log(`Saving profile picture to database for user ${userId}`);
+
     
     // First try to update
     const { error } = await supabase
@@ -916,7 +929,7 @@ async function savePictureToDatabase(userId, pictureUrl) {
       return false;
     }
     
-    console.log('Successfully saved profile picture to database');
+
     return true;
   } catch (error) {
     console.error('Error in savePictureToDatabase:', error);
@@ -929,7 +942,7 @@ async function savePictureToDatabase(userId, pictureUrl) {
  */
 export const fixAuthProviderRecords = async (userId, provider = 'facebook') => {
   try {
-    console.log(`Fixing auth_provider records for user ${userId} and provider ${provider}`);
+
     
     // First check if we have valid auth provider data
     const { data, error } = await supabase
@@ -940,7 +953,7 @@ export const fixAuthProviderRecords = async (userId, provider = 'facebook') => {
     
     // Check if there are duplicate entries
     if (data && data.length > 1) {
-      console.log('Found duplicate auth_provider entries, removing extras');
+
       
       // Keep only the latest one
       const sortedData = [...data].sort((a, b) => 
@@ -962,7 +975,7 @@ export const fixAuthProviderRecords = async (userId, provider = 'facebook') => {
     
     // If no auth providers but user has Facebook token in users table, recreate it
     if ((!data || data.length === 0) && provider === 'facebook') {
-      console.log('No auth_provider record found, checking users table');
+
       
       const { data: userData } = await supabase
         .from('users')
@@ -971,7 +984,7 @@ export const fixAuthProviderRecords = async (userId, provider = 'facebook') => {
         .single();
       
       if (userData?.facebook_access_token && userData?.facebook_user_id) {
-        console.log('Found Facebook token in users table, creating auth_provider record');
+
         
         const { error: insertError } = await supabase
           .from('auth_providers')
@@ -1056,7 +1069,7 @@ export const ensureUserRecord = async (userId) => {
     
     // If user doesn't exist, create a minimal record
     if (checkError || !existingUser) {
-      console.log('Creating initial user record for:', userId);
+
       
       const { error: createError } = await supabase
         .from('users')

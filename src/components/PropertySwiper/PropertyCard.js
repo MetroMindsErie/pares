@@ -36,11 +36,11 @@ const PropertyCard = ({ property, onSwipe, isTop = false }) => {
   const SWIPE_THRESHOLD = 100;
 
   const handleActionClick = (action) => {
-    console.log('PropertyCard action clicked:', action, 'for property:', property.ListingKey);
+
     
     // For "Connect" action, still trigger the swipe to save the action
     if (action === 'up') {
-      console.log('Connection action - triggering swipe and navigation');
+
       // First save the swipe action
       onSwipe(property, action);
       // Then navigate to property details

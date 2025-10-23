@@ -14,11 +14,11 @@ const RegisterForm = () => {
   
   // Check if loading is incorrectly persisting
   useEffect(() => {
-    console.log('RegisterForm mounted, authLoading state:', authLoading);
+
     // Force authLoading to false after a delay if it's still true
     if (authLoading) {
       const timer = setTimeout(() => {
-        console.log('Forcing loading state reset');
+
         // Note: We can't directly modify authLoading, but this helps for debugging
       }, 2000);
       return () => clearTimeout(timer);
@@ -42,14 +42,14 @@ const RegisterForm = () => {
           
           if (error) throw error;
           
-          console.log('User profile status:', data);
+
           
           // Redirect based on profile status
           if (data && data.hasprofile) {
-            console.log('User has profile, redirecting to dashboard');
+
             router.push('/dashboard');
           } else {
-            console.log('User needs to create profile');
+
             router.push('/create-profile?setup=true');
           }
         } catch (err) {
@@ -106,7 +106,7 @@ const RegisterForm = () => {
   // Simplified Facebook login
   const directFacebookLogin = async () => {
     try {
-      console.log('Attempting direct Facebook login');
+
       
       // Import Supabase directly
       const { default: supabaseClient } = await import('../utils/supabaseClient');
@@ -128,7 +128,7 @@ const RegisterForm = () => {
       
       if (error) throw error;
       
-      console.log('Facebook auth initiated successfully');
+
       return { data };
     } catch (err) {
       console.error('Direct Facebook login error:', err);
@@ -145,7 +145,7 @@ const RegisterForm = () => {
     setLocalLoading(true);
     
     try {
-      console.log(`Starting ${provider} signup process`);
+
       
       if (provider === 'facebook') {
         // Use direct method for Facebook since we need to ensure provider is saved
@@ -154,7 +154,7 @@ const RegisterForm = () => {
       
       // For other providers, try context method first
       if (typeof loginWithProvider === 'function') {
-        console.log(`Using context loginWithProvider for ${provider}`);
+
         const result = await loginWithProvider(provider);
         
         if (result?.error) {
@@ -188,7 +188,7 @@ const RegisterForm = () => {
   
   // Add explicit onClick handler to ensure clicks are processed
   const handleButtonClick = (e) => {
-    console.log('Sign up button clicked');
+
     // The form's onSubmit will handle the actual submission
   };
 

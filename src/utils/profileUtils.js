@@ -23,7 +23,7 @@ export const checkUserHasProfile = async (userId) => {
       data.last_name && 
       data.email;
     
-    console.log('User profile check:', { 
+    ('User profile check:', { 
       hasprofile: data.hasprofile,
       firstName: !!data.first_name,
       lastName: !!data.last_name,
@@ -60,7 +60,7 @@ export const getUserRoles = async (userId) => {
       return ['user'];
     }
     
-    console.log('User roles from database:', data.roles);
+
     
     return Array.isArray(data.roles) ? data.roles : ['user'];
   } catch (err) {
@@ -77,16 +77,16 @@ export const getUserRoles = async (userId) => {
 export const handleProfileNavigation = async (user, router) => {
   if (!user || !router) return;
   
-  console.log('Handling profile navigation for user:', user.id);
+
   
   try {
     const hasprofile = await checkUserHasProfile(user.id);
     
     if (hasprofile) {
-      console.log('User has complete profile, redirecting to dashboard');
+
       router.push('/dashboard');
     } else {
-      console.log('User needs to complete profile, redirecting to create-profile');
+
       router.push('/create-profile');
     }
   } catch (err) {
@@ -127,7 +127,7 @@ export const saveUserProfile = async (userId, profileData) => {
   }
   
   try {
-    console.log('Saving profile for user:', userId);
+
     
     // Ensure hasprofile flag is set
     const dataToSave = {
@@ -180,7 +180,7 @@ export const saveUserProfile = async (userId, profileData) => {
         
         // If we get here, save was successful
         success = true;
-        console.log('Profile saved successfully on attempt', attempts);
+
       } catch (error) {
         lastError = error;
         console.error(`Unexpected error in profile save attempt ${attempts}:`, error);

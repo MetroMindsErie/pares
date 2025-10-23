@@ -36,7 +36,7 @@ const FacebookPermissionRequest = ({ missingPermissions = [], onComplete }) => {
         }
         
         // For debugging
-        console.log('Redirecting to:', result.permissionUrl);
+
         
         // Redirect to Facebook permission dialog
         window.location.href = result.permissionUrl;

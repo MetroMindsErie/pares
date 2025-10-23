@@ -13,7 +13,7 @@ export default function AuthCallback() {
   useEffect(() => {
     const handleAuthCallback = async () => {
       setLoading(true);
-      console.log('Processing auth callback (production)...');
+
       
       try {
         // IMPORTANT: First explicitly get the current session from supabase
@@ -34,7 +34,7 @@ export default function AuthCallback() {
         }
         
         const { user } = session;
-        console.log('Auth callback processing for user:', user.id);
+
         await processAuthenticatedUser(user);
         
       } catch (err) {
@@ -44,7 +44,7 @@ export default function AuthCallback() {
         setDebugInfo(prev => ({...prev, callbackError: err.message}));
         
         try {
-          console.log('Redirecting to profile setup despite error');
+
           router.replace('/create-profile?setup=true&recovery=true');
         } catch (routerErr) {
           console.error('Even router redirect failed:', routerErr);
@@ -66,7 +66,7 @@ export default function AuthCallback() {
         // Check if we have provider data
         const provider = user.app_metadata?.provider;
         if (provider) {
-          console.log('Processing provider:', provider);
+
           setDebugInfo(prev => ({...prev, provider}));
           
           // Store provider-specific information
@@ -74,7 +74,7 @@ export default function AuthCallback() {
           const identity = identities.find(i => i.provider === provider);
           
           if (identity) {
-            console.log('Found identity:', identity.id);
+
             setDebugInfo(prev => ({...prev, identityId: identity.id}));
             
             // Process Facebook data if needed
@@ -89,10 +89,10 @@ export default function AuthCallback() {
         
         // Use the getRedirectPath function from auth context to determine where to go
         const redirectPath = getRedirectPath();
-        console.log('Redirect path from auth context:', redirectPath);
+
         
         if (redirectPath && redirectPath !== '/login') {
-          console.log(`Redirecting to ${redirectPath} based on profile status`);
+
           router.replace(redirectPath);
         } else {
           // Fallback to profile check if context doesn't provide a path
@@ -113,7 +113,7 @@ export default function AuthCallback() {
           errorDetails: JSON.stringify(errorDetails)
         }));
         
-        console.log('Error occurred, defaulting to profile creation');
+
         router.replace('/create-profile?setup=true&error=processing');
       }
     };
@@ -121,7 +121,7 @@ export default function AuthCallback() {
     // New simplified function that checks profile status and redirects
     const checkProfileStatusAndRedirect = async (userId) => {
       try {
-        console.log('Manual check of profile status for user:', userId);
+
         
         const { data: userData, error: userError } = await supabase
           .from('users')
@@ -136,10 +136,10 @@ export default function AuthCallback() {
         }
         
         if (userData && userData.hasprofile === true) {
-          console.log('User has profile (hasprofile=true), redirecting to dashboard');
+
           router.replace('/dashboard');
         } else {
-          console.log('User needs profile (hasprofile=false), redirecting to create-profile');
+
           router.replace('/create-profile?setup=true');
         }
       } catch (error) {
@@ -151,7 +151,7 @@ export default function AuthCallback() {
     // Helper function to process Facebook data
     const processFacebookData = async (user, fbUserId) => {
       try {
-        console.log('Processing Facebook data for user:', user.id);
+
         setDebugInfo(prev => ({...prev, processingFacebook: true}));
         
         const { data: { session } } = await supabase.auth.getSession();
@@ -169,7 +169,7 @@ export default function AuthCallback() {
         const email = user.email || '';
         const avatarUrl = user.user_metadata?.avatar_url || null;
         
-        console.log('Extracted Facebook profile data:', { 
+        ('Extracted Facebook profile data:', { 
           firstName, 
           lastName, 
           email, 
@@ -187,7 +187,7 @@ export default function AuthCallback() {
               facebook_hometown: fbData.hometown?.name,
               facebook_birthday: fbData.birthday
             };
-            console.log('Retrieved additional Facebook data:', additionalData);
+
           }
         } catch (fbApiError) {
           console.warn('Could not fetch additional Facebook data:', fbApiError);
@@ -215,14 +215,14 @@ export default function AuthCallback() {
           if (fbError) {
             console.error('Error updating user with Facebook data:', fbError);
           } else {
-            console.log('Successfully saved Facebook user data');
+
           }
         } catch (updateError) {
           console.error('Exception updating Facebook user data:', updateError);
         }
         
         try {
-          console.log('Attempting to store Facebook token in auth_providers');
+
           
           try {
             await supabase
@@ -235,10 +235,10 @@ export default function AuthCallback() {
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
               });
-            console.log('Created auth_provider record for Facebook');
+
           } catch (insertError) {
             if (insertError.code === '406' || insertError.status === 406) {
-              console.log('Insert failed with 406, trying update instead');
+
               try {
                 await supabase
                   .from('auth_providers')
@@ -248,7 +248,7 @@ export default function AuthCallback() {
                   })
                   .eq('user_id', user.id)
                   .eq('provider', 'facebook');
-                console.log('Updated auth_provider record using direct update');
+
               } catch (updateError) {
                 console.warn('Both insert and update failed for auth_providers', updateError);
               }

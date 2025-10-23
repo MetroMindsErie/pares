@@ -33,7 +33,7 @@ function MyApp({ Component, pageProps }) {
         if (error) {
           console.error('Session restoration error:', error);
         } else if (data?.session?.user) {
-          console.log('Session restored for user:', data.session.user.id);
+
           
           // Ensure user record exists in database
           try {
@@ -44,7 +44,7 @@ function MyApp({ Component, pageProps }) {
               .maybeSingle();
               
             if (userError || !userData) {
-              console.log('Creating user record for authenticated user');
+
               await supabase
                 .from('users')
                 .insert({

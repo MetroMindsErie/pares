@@ -28,11 +28,11 @@ export default async function handler(req, res) {
     // Check if we have valid cached data
     const now = Date.now();
     if (cache.data && cache.timestamp && (now - cache.timestamp) < cache.ttl) {
-      console.log('Serving BiggerPockets data from cache');
+
       return res.status(200).json(cache.data);
     }
 
-    console.log('Fetching fresh BiggerPockets RSS data');
+
     
     // Fetch and parse the RSS feed
     const feed = await parser.parseURL('https://www.biggerpockets.com/blog/feed');
@@ -63,7 +63,7 @@ export default async function handler(req, res) {
     
     // Return cached data if available, even if stale
     if (cache.data) {
-      console.log('Serving stale cache due to fetch error');
+
       return res.status(200).json({
         ...cache.data,
         warning: 'Data may be outdated due to fetch error',

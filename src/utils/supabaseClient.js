@@ -14,7 +14,7 @@ const supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
 });
 
 // Log client initialization - useful for debugging
-console.log('Supabase client initialized with URL:', supabaseUrl);
+
 
 // Export as both default AND named export for compatibility with different import styles
 export default supabaseInstance;
@@ -24,7 +24,7 @@ export const supabaseClient = supabaseInstance;
 // Add event listeners for auth state changes
 if (typeof window !== 'undefined') {
     supabaseInstance.auth.onAuthStateChange((event, session) => {
-        console.log('Supabase auth state changed:', event);
+
     });
 }
 

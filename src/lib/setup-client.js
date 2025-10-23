@@ -13,7 +13,7 @@ export const initClient = async () => {
     // Set up global error handlers
     setupGlobalErrorHandlers();
     
-    console.log('Client initialization complete');
+
     return true;
   } catch (error) {
     console.error('Error initializing client:', error);

@@ -55,7 +55,7 @@ export default function DashboardPage() {
       
       // First try from auth context
       if (user?.id) {
-        console.log("Dashboard: Setting user ID from auth context:", user.id);
+
         setUserId(user.id);
         return;
       }
@@ -66,11 +66,11 @@ export default function DashboardPage() {
         const sessionUserId = data?.session?.user?.id;
         
         if (sessionUserId) {
-          console.log("Dashboard: Setting user ID from session:", sessionUserId);
+
           setUserId(sessionUserId);
           return;
         } else {
-          console.log("Dashboard: No user ID found in session");
+
         }
       } catch (err) {
         console.error('Error getting session:', err);
@@ -91,7 +91,7 @@ export default function DashboardPage() {
       
       try {
         // Fetch user profile
-        console.log("Dashboard: Fetching profile for user:", userId);
+
         const { data, error } = await supabase
           .from('users')
           .select('*')
@@ -113,10 +113,10 @@ export default function DashboardPage() {
         
         // Check Facebook connection in a non-blocking way if not already checked
         if (!fbConnectionChecked) {
-          console.log("Dashboard: Checking Facebook connection for user:", userId);
+
           checkFacebookConnection(userId)
             .then(fbConnected => {
-              console.log("Dashboard: Facebook connection check result:", fbConnected);
+
               setHasFacebookConnection(fbConnected);
               setFbConnectionChecked(true);
             })
@@ -153,7 +153,7 @@ export default function DashboardPage() {
       if (!userId) return;
 
       try {
-        console.log('Fetching property stats for user:', userId);
+
         const { getSwipeStats, cleanupNullPropertyData, cleanupOversizedPropertyData } = await import('../utils/swipeUtils');
         
         // Clean up any problematic records first (one-time cleanup)
@@ -161,11 +161,11 @@ export default function DashboardPage() {
           await cleanupNullPropertyData(userId);
           await cleanupOversizedPropertyData(userId);
         } catch (cleanupError) {
-          console.log('Cleanup not needed or already done:', cleanupError.message);
+
         }
         
         const stats = await getSwipeStats(userId);
-        console.log('Dashboard received stats:', stats);
+
         
         setPropertyStats({
           liked: stats.liked || 0,

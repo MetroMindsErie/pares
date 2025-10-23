@@ -427,7 +427,6 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
     if (selectedCounty && 
         propertiesByCounty[selectedCounty]?.[selectedStatus] && 
         !loading) {
-      console.log("Properties loaded, updating UI...");
       // Use setTimeout to ensure DOM is ready
       setTimeout(() => updateCountyDetailsInDom(), 50);
     }
@@ -447,7 +446,6 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
     const properties = propertiesByCounty[selectedCounty]?.[selectedStatus] || [];
     const totalPropertiesCount = allProperties[selectedCounty]?.[selectedStatus]?.length || 0;
     
-    console.log("Updating DOM with properties:", properties.length);
     
     // Create county details HTML
     const countyDetailsHTML = `
@@ -766,13 +764,11 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
     // When a county is selected, notify the parent component
     if (selectedCounty && onCountySelected) {
       onCountySelected(selectedCounty);
-      console.log("County selected:", selectedCounty);
     }
   }, [selectedCounty, onCountySelected]);
 
   // Update the county selection handler to use the imported ReactDOM
   const handleCountyClick = (countyFips) => {
-    console.log("County clicked:", countyFips);
     
     // If the county is already selected, don't reselect it
     if (selectedCounty === countyFips) return;
@@ -786,7 +782,6 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
     // Notify parent components of the selection
     if (onInteraction) onInteraction();
     if (onCountySelected) {
-      console.log("Notifying parent of county selection:", countyFips);
       onCountySelected(countyFips);
     }
     
@@ -877,7 +872,6 @@ const InteractiveRealEstateMap = ({ onInteraction, onCountySelected }) => {
   };
 
 const handlePropertyClick = (propertyId) => {
-  console.log(`Property clicked: ${propertyId}`);
   if (onInteraction) onInteraction();
   
   // Check multiple sources to determine if user is a crypto investor
@@ -885,21 +879,17 @@ const handlePropertyClick = (propertyId) => {
   
   // Check 1: getUserRole method
   if (getUserRole && getUserRole() === 'crypto_investor') {
-    console.log('Crypto investor detected via getUserRole');
     isCryptoInvestor = true;
   } 
   // Check 2: Direct user.roles check
   else if (user && Array.isArray(user.roles) && user.roles.includes('crypto_investor')) {
-    console.log('Crypto investor detected via user.roles');
     isCryptoInvestor = true;
   }
   // Check 3: localStorage flag
   else if (typeof window !== 'undefined' && localStorage.getItem('cryptoInvestorSelected') === 'true') {
-    console.log('Crypto investor detected via localStorage');
     isCryptoInvestor = true;
   }
   
-  console.log(`User role check complete - isCryptoInvestor: ${isCryptoInvestor}`);
   
   // Store the crypto investor status in localStorage for persistence
   if (isCryptoInvestor && typeof window !== 'undefined') {
@@ -913,7 +903,6 @@ const handlePropertyClick = (propertyId) => {
   
   // Check if crypto view is enabled via toggle
   const cryptoViewEnabled = isCryptoInvestor && getCryptoViewToggleState();
-  console.log(`Crypto view toggle state: ${cryptoViewEnabled}`);
   
   // Navigate to property with template based on both role AND toggle state
   router.push({

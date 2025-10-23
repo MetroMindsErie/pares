@@ -1,9 +1,11 @@
 import { useRouter } from 'next/router';
 import { useEffect, useCallback } from 'react';
 
+const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+
 // Initialize dataLayer if it doesn't exist
-if (typeof window !== 'undefined' && !window.dataLayer) {
-  window.dataLayer = [];
+if (typeof window !== 'undefined') {
+  window.dataLayer = window.dataLayer || [];
 }
 
 // GTM helper function
@@ -17,12 +19,29 @@ const gtag = (...args) => {
 const pushToDataLayer = (eventData) => {
   if (typeof window !== 'undefined' && window.dataLayer) {
     window.dataLayer.push(eventData);
-    console.log('Analytics Event:', eventData); // Remove in production
   }
 };
 
 export const useAnalytics = () => {
   const router = useRouter();
+
+  // Load GA script and initialize gtag
+  useEffect(() => {
+    if (!GA_MEASUREMENT_ID || typeof window === 'undefined') return;
+
+    if (!document.querySelector(`script[data-gtag="ga-${GA_MEASUREMENT_ID}"]`)) {
+      const script = document.createElement('script');
+      script.async = true;
+      script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
+      script.setAttribute('data-gtag', `ga-${GA_MEASUREMENT_ID}`);
+      document.head.appendChild(script);
+    }
+
+    gtag('js', new Date());
+    gtag('config', GA_MEASUREMENT_ID, {
+      page_path: window.location.pathname,
+    });
+  }, [GA_MEASUREMENT_ID]);
 
   // Track page views on route change
   useEffect(() => {
@@ -37,6 +56,13 @@ export const useAnalytics = () => {
           page_referrer: document.referrer,
           timestamp: new Date().toISOString(),
         });
+
+        // Update GA config with new page path
+        if (GA_MEASUREMENT_ID) {
+          gtag('config', GA_MEASUREMENT_ID, {
+            page_path: url,
+          });
+        }
       }, 100);
     };
 
@@ -50,7 +76,7 @@ export const useAnalytics = () => {
     return () => {
       router.events.off('routeChangeComplete', handleRouteChange);
     };
-  }, [router]);
+  }, [router, GA_MEASUREMENT_ID]);
 
   // Property-specific event tracking
   const trackPropertyView = useCallback((property) => {

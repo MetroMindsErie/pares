@@ -12,18 +12,18 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log("Refresh API called with body:", req.body);
+
     
     const { user_id, force_fresh = false } = req.body;
     
-    console.log(`Refresh params: user_id=${user_id}, force_fresh=${force_fresh}`);
+
     
     if (!user_id) {
       console.error("Missing user_id in request body");
       return res.status(400).json({ error: 'Missing user_id in request body' });
     }
 
-    console.log(`Getting Facebook token for user: ${user_id}`);
+
     
     // First try to get token from auth_providers
     let token, fbUserId;
@@ -38,7 +38,7 @@ export default async function handler(req, res) {
       
       if (providerError || !providerData?.access_token) {
         // Fallback to users table
-        console.log("No token in auth_providers, checking users table");
+
         const { data: userData, error: userError } = await supabase
           .from('users')
           .select('facebook_access_token, facebook_user_id')
@@ -56,11 +56,11 @@ export default async function handler(req, res) {
         
         token = userData.facebook_access_token;
         fbUserId = userData.facebook_user_id || 'me';
-        console.log(`Using token from users table, fbUserId: ${fbUserId || 'me'}`);
+
       } else {
         token = providerData.access_token;
         fbUserId = providerData.provider_user_id || 'me';
-        console.log(`Using token from auth_providers table, fbUserId: ${fbUserId || 'me'}`);
+
       }
     } catch (tokenErr) {
       console.error("Error retrieving Facebook token:", tokenErr);
@@ -72,7 +72,7 @@ export default async function handler(req, res) {
 
     // Validate token first to avoid unnecessary API calls
     try {
-      console.log("Validating Facebook token");
+
       const validateUrl = `https://graph.facebook.com/debug_token?input_token=${token}&access_token=${token}`;
       const validateResponse = await fetch(validateUrl);
       const validateData = await validateResponse.json();
@@ -85,14 +85,14 @@ export default async function handler(req, res) {
           action: "reconnect_facebook" 
         });
       }
-      console.log("Token validated successfully");
+
     } catch (validationErr) {
       console.error("Error validating token:", validationErr);
       // Continue anyway, API might still work
     }
 
     // Always fetch fresh videos from Facebook Graph API
-    console.log(`Fetching fresh videos from Facebook Graph API for user ${fbUserId || 'me'}`);
+
     try {
       const videosUrl = `https://graph.facebook.com/v19.0/${fbUserId || 'me'}/videos?fields=id,description,source,permalink_url,created_time,thumbnails,title,picture&video_type=reels&limit=50&access_token=${token}`;
       const videosResponse = await fetch(videosUrl);
@@ -104,7 +104,7 @@ export default async function handler(req, res) {
       }
       
       const data = await videosResponse.json();
-      console.log(`Retrieved ${data.data?.length || 0} videos from Facebook`);
+
       
       // Helper functions
       function extractHashtags(text) {
@@ -165,14 +165,14 @@ export default async function handler(req, res) {
       // Process and store the videos as reels
       let storedCount = 0;
       if (data.data && data.data.length > 0) {
-        console.log("Found videos, checking for real estate content...");
+
         
         // First check for real estate videos
         const realEstateVideos = data.data.filter(video => 
           isRealEstateContent(video.description || video.title || '')
         );
         
-        console.log(`Found ${realEstateVideos.length} real estate videos out of ${data.data.length} total`);
+
         
         // Store all videos but prioritize real estate ones
         const videosToStore = realEstateVideos.length > 0 ? 
@@ -186,7 +186,7 @@ export default async function handler(req, res) {
             const isRealEstate = isRealEstateContent(video.description || video.title || '');
             
             if (isRealEstate) {
-              console.log(`Video ${video.id} is real estate content: ${hashtags.join(', ')}`);
+
             }
             
             const { error: insertError } = await supabase
@@ -219,7 +219,7 @@ export default async function handler(req, res) {
       
       // If we couldn't find real estate videos, try posts
       if (storedCount === 0) {
-        console.log("No real estate videos found, checking posts for video content");
+
         
         const postsUrl = `https://graph.facebook.com/v19.0/${fbUserId || 'me'}/posts?fields=id,message,created_time,permalink_url,attachments{media_type,media,url,description,title,type,target}&limit=50&access_token=${token}`;
         const postsResponse = await fetch(postsUrl);
@@ -228,7 +228,7 @@ export default async function handler(req, res) {
           const postsData = await postsResponse.json();
           
           if (postsData.data && postsData.data.length > 0) {
-            console.log(`Found ${postsData.data.length} posts, checking for videos`);
+
             
             for (const post of postsData.data) {
               if (post.attachments && Array.isArray(post.attachments.data)) {

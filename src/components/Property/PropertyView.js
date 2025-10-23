@@ -24,21 +24,21 @@ const PropertyView = ({ propertyData, mlsData }) => {
       setIsLoading(true);
       
       try {
-        console.log('🔍 PropertyView: Checking crypto_investor role with multiple methods');
+
         
         // Method 1: Direct check via getUserRole() from auth context
         if (user) {
           const authContextRole = getUserRole();
-          console.log('Method 1 - Auth context role:', authContextRole);
+
           
           if (authContextRole === 'crypto_investor') {
-            console.log('✅ Found crypto_investor via auth context getUserRole()');
+
             setUserRole('crypto_investor');
             
             // Initialize crypto view toggle state (get from localStorage)
             const toggleState = getCryptoViewToggleState();
             setCryptoViewEnabled(toggleState);
-            console.log('Initial crypto view toggle state:', toggleState);
+
             
             roleCheckCompleted.current = true;
             setIsLoading(false);
@@ -47,13 +47,13 @@ const PropertyView = ({ propertyData, mlsData }) => {
           
           // Method 2: Check directly in user.roles array
           if (user.roles && Array.isArray(user.roles) && user.roles.includes('crypto_investor')) {
-            console.log('✅ Found crypto_investor directly in user.roles array');
+
             setUserRole('crypto_investor');
             
             // Initialize crypto view toggle state (get from localStorage)
             const toggleState = getCryptoViewToggleState();
             setCryptoViewEnabled(toggleState);
-            console.log('Initial crypto view toggle state:', toggleState);
+
             
             roleCheckCompleted.current = true;
             setIsLoading(false);
@@ -63,21 +63,21 @@ const PropertyView = ({ propertyData, mlsData }) => {
         
         // Method 3: Refresh user data and check again
         if (user?.id) {
-          console.log('Method 3 - Refreshing user data to check roles');
+
           await refreshUserData(user.id);
           
           // Check again after refresh
           const refreshedRole = getUserRole();
-          console.log('After refresh - Auth context role:', refreshedRole);
+
           
           if (refreshedRole === 'crypto_investor') {
-            console.log('✅ Found crypto_investor after refreshing user data');
+
             setUserRole('crypto_investor');
             
             // Initialize crypto view toggle state (get from localStorage)
             const toggleState = getCryptoViewToggleState();
             setCryptoViewEnabled(toggleState);
-            console.log('Initial crypto view toggle state:', toggleState);
+
             
             roleCheckCompleted.current = true;
             setIsLoading(false);
@@ -87,13 +87,13 @@ const PropertyView = ({ propertyData, mlsData }) => {
         
         // Method 4: Check localStorage flag which could have been set during profile creation
         if (localStorage.getItem('cryptoInvestorSelected') === 'true' && user?.id) {
-          console.log('✅ Found crypto_investor flag in localStorage');
+
           setUserRole('crypto_investor');
           
           // Initialize crypto view toggle state (get from localStorage)
           const toggleState = getCryptoViewToggleState();
           setCryptoViewEnabled(toggleState);
-          console.log('Initial crypto view toggle state:', toggleState);
+
           
           roleCheckCompleted.current = true;
           setIsLoading(false);
@@ -102,17 +102,17 @@ const PropertyView = ({ propertyData, mlsData }) => {
         
         // Method 5: Direct database check (most reliable)
         if (user?.id) {
-          console.log('Method 5 - Checking database directly');
+
           const isCryptoInvestor = await checkCryptoInvestorRole(user.id);
           
           if (isCryptoInvestor) {
-            console.log('✅ Found crypto_investor via direct database check');
+
             setUserRole('crypto_investor');
             
             // Initialize crypto view toggle state (get from localStorage)
             const toggleState = getCryptoViewToggleState();
             setCryptoViewEnabled(toggleState);
-            console.log('Initial crypto view toggle state:', toggleState);
+
             
             roleCheckCompleted.current = true;
             setIsLoading(false);
@@ -121,7 +121,7 @@ const PropertyView = ({ propertyData, mlsData }) => {
         }
         
         // If we reach here, user doesn't have crypto_investor role
-        console.log('❌ User does not have crypto_investor role after all checks');
+
         roleCheckCompleted.current = true;
         setUserRole('user');
         
@@ -141,7 +141,7 @@ const PropertyView = ({ propertyData, mlsData }) => {
   // Handle toggle click
   const handleToggleCryptoView = () => {
     const newState = !cryptoViewEnabled;
-    console.log('Toggling crypto view to:', newState);
+
     setCryptoViewEnabled(newState);
     setCryptoViewToggleState(newState);
   };
@@ -149,7 +149,7 @@ const PropertyView = ({ propertyData, mlsData }) => {
   // Debug info about the template being rendered
   useEffect(() => {
     if (!isLoading) {
-      console.log('🔹 FINAL DECISION - PropertyView will display:', 
+      ('🔹 FINAL DECISION - PropertyView will display:', 
         userRole === 'crypto_investor' && cryptoViewEnabled
           ? 'CryptoProperty template' 
           : 'ActiveProperty template'

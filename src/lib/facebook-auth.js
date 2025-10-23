@@ -6,7 +6,7 @@ import supabase from './supabase-setup';
  */
 export const loginWithFacebook = async () => {
   try {
-    console.log('Initiating Facebook login...');
+
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'facebook',
       options: {

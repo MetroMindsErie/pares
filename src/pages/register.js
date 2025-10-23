@@ -19,7 +19,7 @@ function Register() {
   const { loading } = useAuth();
   
   useEffect(() => {
-    console.log('Register page loaded, auth loading state:', loading);
+
   }, [loading]);
   
   return (

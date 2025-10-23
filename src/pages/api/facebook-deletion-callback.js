@@ -10,7 +10,7 @@ const supabase = createClient(
 const FACEBOOK_APP_SECRET = process.env.SUPABASE_AUTH_FACEBOOK_SECRET;
 
 export default async function handler(req, res) {
-  console.log('Facebook callback received:', {
+  ('Facebook callback received:', {
     method: req.method,
     url: req.url,
     query: req.query,
@@ -26,10 +26,10 @@ export default async function handler(req, res) {
     // Verify using your configured verification token
     const verifyToken = process.env.FACEBOOK_WEBHOOK_VERIFY_TOKEN;
 
-    console.log('Webhook verification request received:', { mode, token, challenge, verifyToken });
+
 
     if (mode === 'subscribe' && token === verifyToken) {
-      console.log('Facebook webhook verified successfully');
+
       return res.status(200).send(challenge);
     } else {
       console.error('Failed to verify Facebook webhook:', { mode, token, verifyToken });

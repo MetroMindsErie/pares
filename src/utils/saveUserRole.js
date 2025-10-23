@@ -15,7 +15,7 @@ export const saveUserRoles = async (userId, roles) => {
       roles.push('user');
     }
     
-    console.log('saveUserRoles: Saving roles for user', userId, roles);
+
     
     // Try three different approaches to maximize chances of success
     
@@ -31,7 +31,7 @@ export const saveUserRoles = async (userId, roles) => {
     if (updateError) {
       console.error('Standard update failed:', updateError);
     } else {
-      console.log('Standard update succeeded');
+
     }
     
     // Approach 2: RPC if available
@@ -44,11 +44,11 @@ export const saveUserRoles = async (userId, roles) => {
       if (rpcError) {
         console.error('RPC update failed:', rpcError);
       } else {
-        console.log('RPC update succeeded');
+
       }
     } catch (rpcErr) {
       // RPC might not exist, ignore this error
-      console.log('RPC not available, skipping');
+
     }
     
     // Approach 3: Raw SQL as last resort
@@ -60,11 +60,11 @@ export const saveUserRoles = async (userId, roles) => {
       if (rawError) {
         console.error('Raw SQL update failed:', rawError);
       } else {
-        console.log('Raw SQL update succeeded');
+
       }
     } catch (sqlErr) {
       // Raw SQL might not be available, ignore this error
-      console.log('Raw SQL not available, skipping');
+
     }
     
     // Verify if any of the approaches worked
@@ -83,7 +83,7 @@ export const saveUserRoles = async (userId, roles) => {
       role => Array.isArray(data.roles) && data.roles.includes(role)
     );
     
-    console.log('Role verification:', hasAllRoles ? 'Success' : 'Failed', 
+    ('Role verification:', hasAllRoles ? 'Success' : 'Failed', 
       'Expected:', roles, 'Got:', data.roles);
       
     return hasAllRoles;

@@ -4,7 +4,7 @@
 
 export const debugAuthState = (user, getUserRole) => {
   console.group('🔍 Auth State Debug');
-  console.log('User object:', user ? {
+  ('User object:', user ? {
     id: user.id,
     email: user.email,
     hasRoles: !!user.roles,
@@ -13,15 +13,15 @@ export const debugAuthState = (user, getUserRole) => {
   
   if (getUserRole) {
     const role = getUserRole();
-    console.log('getUserRole result:', role);
-    console.log('Is crypto investor:', role === 'crypto_investor');
+
+
   } else {
-    console.log('getUserRole function not available');
+
   }
   
   // Check localStorage for flags
   if (typeof window !== 'undefined') {
-    console.log('localStorage cryptoInvestorSelected:', 
+    ('localStorage cryptoInvestorSelected:', 
       localStorage.getItem('cryptoInvestorSelected'));
   }
   console.groupEnd();
@@ -45,10 +45,10 @@ export const setCryptoInvestorFlag = (value = true) => {
   if (typeof window !== 'undefined') {
     if (value) {
       localStorage.setItem('cryptoInvestorSelected', 'true');
-      console.log('Crypto investor flag set to TRUE');
+
     } else {
       localStorage.removeItem('cryptoInvestorSelected');
-      console.log('Crypto investor flag REMOVED');
+
     }
   }
 };

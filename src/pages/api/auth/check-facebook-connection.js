@@ -31,7 +31,7 @@ export default async function handler(req, res) {
     }
 
     const userId = user.id;
-    console.log(`Checking Facebook connection for user: ${userId}`);
+
 
     // Check auth_providers table
     const { data: providerData, error: providerError } = await supabase
@@ -42,7 +42,7 @@ export default async function handler(req, res) {
       .single();
 
     if (!providerError && providerData) {
-      console.log('Facebook connection found in auth_providers');
+
       return res.status(200).json({ 
         connected: true, 
         source: 'auth_providers',
@@ -58,14 +58,14 @@ export default async function handler(req, res) {
       .single();
 
     if (!userError && userData?.facebook_access_token) {
-      console.log('Facebook connection found in users table');
+
       return res.status(200).json({ 
         connected: true, 
         source: 'users'
       });
     }
 
-    console.log('No Facebook connection found');
+
     return res.status(200).json({ connected: false });
     
   } catch (error) {

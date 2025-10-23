@@ -28,7 +28,7 @@ const Layout = ({ children }) => {
     // Set up auth listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('Auth state change in Layout:', event);
+
         setUser(session?.user || null);
         setLoading(false);
       }
@@ -57,8 +57,8 @@ const Layout = ({ children }) => {
     router.push('/register');
   };
 
-  console.log('Layout loading state:', loading);
-  console.log('Layout auth state:', !!user);
+
+
 
   return (
     <div className="min-h-screen">

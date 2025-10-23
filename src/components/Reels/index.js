@@ -7,7 +7,7 @@ import LoadingIndicator from '../common/LoadingIndicator';
 // This component serves as a wrapper around the main Reels component
 // It centralizes the API calls and provides consistent error handling
 const ReelsWrapper = (props) => {
-  console.log('ReelsWrapper rendered with props:', props);
+
   
   // Simply forward all props to the Main component
   return <ReelsMain {...props} />;
@@ -25,7 +25,7 @@ function ReelsMain({ userId: propUserId, hasFacebookConnection: propHasFacebookC
   const effectiveUserId = propUserId || user?.id;
   
   useEffect(() => {
-    console.log('ReelsMain component mounted/updated:', { 
+    ('ReelsMain component mounted/updated:', { 
       effectiveUserId, 
       propHasFacebookConnection,
       autofetch
@@ -42,13 +42,13 @@ function ReelsMain({ userId: propUserId, hasFacebookConnection: propHasFacebookC
     setRefreshCount(prev => prev + 1);
     
     try {
-      console.log('Fetching reels for user:', effectiveUserId);
+
       
       // Get auth token
       const { data: sessionData } = await axios.get('/api/auth/session');
       const token = sessionData?.token;
       
-      console.log('Auth token obtained:', !!token);
+
       
       // Call the reels API with force_fresh=true to ensure we fetch from Facebook
       const response = await axios.get('/api/reels/fetch', {
@@ -60,7 +60,7 @@ function ReelsMain({ userId: propUserId, hasFacebookConnection: propHasFacebookC
         }
       });
       
-      console.log('Reels API response:', response.data);
+
       
       if (response.data.reels && response.data.reels.length > 0) {
         setReels(response.data.reels);
@@ -99,7 +99,7 @@ function ReelsMain({ userId: propUserId, hasFacebookConnection: propHasFacebookC
         throw new Error('Facebook login function not available');
       }
       
-      console.log('Connecting to Facebook...');
+
       await loginWithProvider('facebook', {
         redirectTo: `${window.location.origin}/dashboard`
       });

@@ -31,7 +31,7 @@ export default function RoleSelector({ selectedRoles = [], onChange, onNext, onB
   
   // Only log once when component mounts
   useEffect(() => {
-    console.log('RoleSelector initialized with roles:', selectedRoles);
+
   }, []);
   
   // Make sure we always have at least 'user' selected
