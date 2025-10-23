@@ -10,7 +10,10 @@ if (typeof window !== 'undefined') {
 
 // GTM helper function
 const gtag = (...args) => {
-  if (typeof window !== 'undefined' && window.dataLayer) {
+  if (typeof window === 'undefined') return;
+  if (typeof window.gtag === 'function') {
+    window.gtag(...args);
+  } else if (window.dataLayer) {
     window.dataLayer.push(args);
   }
 };
@@ -25,28 +28,11 @@ const pushToDataLayer = (eventData) => {
 export const useAnalytics = () => {
   const router = useRouter();
 
-  // Load GA script and initialize gtag
+  // Track page views on route change
   useEffect(() => {
     if (!GA_MEASUREMENT_ID || typeof window === 'undefined') return;
 
-    if (!document.querySelector(`script[data-gtag="ga-${GA_MEASUREMENT_ID}"]`)) {
-      const script = document.createElement('script');
-      script.async = true;
-      script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
-      script.setAttribute('data-gtag', `ga-${GA_MEASUREMENT_ID}`);
-      document.head.appendChild(script);
-    }
-
-    gtag('js', new Date());
-    gtag('config', GA_MEASUREMENT_ID, {
-      page_path: window.location.pathname,
-    });
-  }, [GA_MEASUREMENT_ID]);
-
-  // Track page views on route change
-  useEffect(() => {
     const handleRouteChange = (url) => {
-      // Wait a bit for the page to load before tracking
       setTimeout(() => {
         pushToDataLayer({
           event: 'page_view',
