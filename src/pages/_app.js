@@ -6,6 +6,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AuthProvider } from '../context/auth-context';
 import supabase from '../lib/supabase-setup';
 import RoleSaver from '../components/Profile/RoleSaver';
+import AnalyticsProvider from '../components/AnalyticsProvider';
 
 function SafeHydrate({ children }) {
   return (
@@ -86,25 +87,27 @@ function MyApp({ Component, pageProps }) {
 
   return (
     <AuthProvider>
-      {/* Only render RoleSaver on specific paths and only once per session */}
-      {typeof window !== 'undefined' && 
-       window.location.pathname === '/dashboard' && 
-       !sessionStorage.getItem('roleSaverRendered') && (
-        <>
-          <RoleSaver />
-          {/* Mark that RoleSaver has rendered to prevent duplicates */}
-          {sessionStorage.setItem('roleSaverRendered', 'true')}
-        </>
-      )}
-      <ErrorBoundary>
-        {isAuthPage ? (
-          <SafeHydrate>
-            {getLayout(<Component {...pageProps} />)}
-          </SafeHydrate>
-        ) : (
-          getLayout(<Component {...pageProps} />)
+      <AnalyticsProvider>
+        {/* Only render RoleSaver on specific paths and only once per session */}
+        {typeof window !== 'undefined' && 
+         window.location.pathname === '/dashboard' && 
+         !sessionStorage.getItem('roleSaverRendered') && (
+          <>
+            <RoleSaver />
+            {/* Mark that RoleSaver has rendered to prevent duplicates */}
+            {sessionStorage.setItem('roleSaverRendered', 'true')}
+          </>
         )}
-      </ErrorBoundary>
+        <ErrorBoundary>
+          {isAuthPage ? (
+            <SafeHydrate>
+              {getLayout(<Component {...pageProps} />)}
+            </SafeHydrate>
+          ) : (
+            getLayout(<Component {...pageProps} />)
+          )}
+        </ErrorBoundary>
+      </AnalyticsProvider>
     </AuthProvider>
   );
 }

@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { fetchPosts, fetchPost, fetchRelatedPosts, engageWithPost, fetchCategories } from '../api/blogApi';
 import BiggerPocketsSection from './BiggerPocketsSection';
+import { useAnalytics } from '../hooks/useAnalytics';
 
 const TABS = ['All', 'Videos', 'Stories'];
 
@@ -27,6 +28,7 @@ function extractYouTubeId(url) {
 }
 
 function EngagementButtons({ post, onEngage }) {
+	const { trackBlogEngagement } = useAnalytics();
 	const [engagement, setEngagement] = useState({
 		likes: post.likes || 0,
 		loves: post.loves || 0,
@@ -48,6 +50,9 @@ function EngagementButtons({ post, onEngage }) {
 			}
 
 			const response = await engageWithPost(post.id, type);
+			
+			// Track the engagement
+			trackBlogEngagement(post, type);
 
 			// Update counts
 			setEngagement({
@@ -102,12 +107,19 @@ function EngagementButtons({ post, onEngage }) {
 }
 
 function BlogCard({ post, onClick }) {
+	const { trackBlogPostView } = useAnalytics();
 	const isVideo = post.kind === 'video';
+	
+	const handleClick = () => {
+		trackBlogPostView(post);
+		if (onClick) onClick();
+	};
+
 	return (
 		<div className="group w-full overflow-hidden rounded-xl border border-gray-200 bg-white hover:shadow-lg transition">
 			<button
 				type="button"
-				onClick={onClick}
+				onClick={handleClick}
 				className="w-full text-left"
 				aria-label={`Open ${post.title}`}
 			>
@@ -300,6 +312,7 @@ const Blog = ({
 	onSeeAllClick, // Callback for "See all" button click
 	blogListingPath = '/blog', // Default path for blog listing page
 }) => {
+	const { trackPropertySearch } = useAnalytics();
 	const [tab, setTab] = useState('All');
 	const [q, setQ] = useState('');
 	const [category, setCategory] = useState('All');
@@ -407,6 +420,18 @@ const Blog = ({
 
 	// Reset page when filters change
 	React.useEffect(() => setPage(1), [tab, q, category]);
+
+	// Track search when query changes
+	useEffect(() => {
+		if (q) {
+			trackPropertySearch({
+				query: q,
+				category: category !== 'All' ? category : '',
+				tab: tab !== 'All' ? tab : '',
+				resultsCount: posts.length,
+			});
+		}
+	}, [q, category, tab, posts.length, trackPropertySearch]);
 
 	return (
 		<div className="space-y-8">
