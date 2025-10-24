@@ -9,7 +9,7 @@ const SearchBar = ({ onSearchResults }) => {
   const [error, setError] = useState(null);
   const [searchParams, setSearchParams] = useState({
     location: '',
-    status: '', // Remove default 'Active' - let users choose explicitly
+    status: '',
     minPrice: '',
     maxPrice: '',
     beds: '',
@@ -17,6 +17,7 @@ const SearchBar = ({ onSearchResults }) => {
     propertyType: '',
     minSqFt: '',
     maxSqFt: '',
+    soldWithin: '', // Add new state for sold timeline
   });
 
   const handleChange = (e) => {
@@ -105,10 +106,6 @@ const SearchBar = ({ onSearchResults }) => {
               <option value="Pending">Pending</option>
               <option value="Closed">Sold</option>
               <option value="ComingSoon">Coming Soon</option>
-              <option value="Hold">Hold</option>
-              <option value="Withdrawn">Withdrawn</option>
-              <option value="Canceled">Canceled</option>
-              <option value="Expired">Expired</option>
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-blue-500">
               <svg className="h-4 w-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
@@ -211,6 +208,45 @@ const SearchBar = ({ onSearchResults }) => {
             </div>
           </div>
         </div>
+        
+        {/* Conditional Sold Timeline Filter - Now more prominent */}
+        {searchParams.status === 'Closed' && (
+          <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
+            <div className="flex items-center gap-2 mb-2">
+              <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Select Sold Timeline
+              </span>
+            </div>
+            <div className="relative">
+              <select
+                id="soldWithin"
+                name="soldWithin"
+                value={searchParams.soldWithin}
+                onChange={handleChange}
+                className="w-full px-4 py-3 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-blue-500 text-gray-700 dark:text-gray-200 text-base font-medium appearance-none transition-all duration-300"
+              >
+                <option value="">Show sold properties from...</option>
+                <option value="7">Last 7 days</option>
+                <option value="30">Last 30 days</option>
+                <option value="90">Last 3 months</option>
+                <option value="180">Last 6 months</option>
+                <option value="365">Last 12 months</option>
+                <option value="730">Last 24 months</option>
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-blue-500">
+                <svg className="h-5 w-5" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                  <path d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </div>
+            </div>
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              Filter sold properties based on their closing date
+            </p>
+          </div>
+        )}
         
         {/* Action Buttons */}
         <div className="flex gap-3 mt-2">

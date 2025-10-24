@@ -201,6 +201,23 @@ export const searchProperties = async (searchParams) => {
   try {
     const filters = [];
     
+    // Handle status and sold timeline filter
+    if (searchParams.status) {
+      filters.push(`StandardStatus eq '${searchParams.status}'`);
+      
+      // Add date range filter for sold properties
+      if (searchParams.status === 'Closed' && searchParams.soldWithin) {
+        const today = new Date();
+        const pastDate = new Date();
+        pastDate.setDate(today.getDate() - parseInt(searchParams.soldWithin));
+        
+        const formattedToday = today.toISOString().split('T')[0];
+        const formattedPastDate = pastDate.toISOString().split('T')[0];
+        
+        filters.push(`CloseDate ge ${formattedPastDate} and CloseDate le ${formattedToday}`);
+      }
+    }
+    
     // Handle location search (county, zip, or address)
     if (searchParams.location) {
       const location = searchParams.location.trim();
@@ -216,14 +233,6 @@ export const searchProperties = async (searchParams) => {
           `contains(tolower(UnparsedAddress), tolower('${location}')))`
         );
       }
-    }
-    
-    // Handle status filter - ONLY add if explicitly provided
-    if (searchParams.status && searchParams.status !== '') {
-      filters.push(`StandardStatus eq '${searchParams.status}'`);
-      console.log('Filtering by status:', searchParams.status); // Debug log
-    } else {
-      console.log('No status filter applied - showing all statuses'); // Debug log
     }
     
     // Handle price range
@@ -258,10 +267,10 @@ export const searchProperties = async (searchParams) => {
       filters.push(`LivingArea le ${searchParams.maxSqFt}`);
     }
 
-    // Build the filter query string - just the filter part
+    // Build the filter query string
     const filterQuery = filters.length > 0 ? `$filter=${filters.join(' and ')}` : '';
     
-    console.log('Final filter query:', filterQuery); // Debug log
+    console.log('Final filter query:', filterQuery || '[none]');
 
     // Call getPropertiesByFilter with just the filter and let it handle top/skip/expand
     const response = await getPropertiesByFilter(filterQuery, 50, 0);
