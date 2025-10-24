@@ -25,7 +25,16 @@ const SearchResults = ({ listings, nextLink: initialNextLink }) => {
       setError(null);
       try {
         const { properties, nextLink: newNextLink } = await getNextProperties(nextLink);
-        setAllListings(prev => [...prev, ...properties]);
+        
+        // Ensure each property has the correct media structure
+        const processedProperties = properties.map(property => ({
+          ...property,
+          media: property.media || (property.Media?.[0]?.MediaURL || '/fallback-property.jpg'),
+          mediaArray: property.mediaArray || 
+            (property.Media?.map(m => m.MediaURL).filter(url => !!url) || [])
+        }));
+
+        setAllListings(prev => [...prev, ...processedProperties]);
         setNextLink(newNextLink);
       } catch (err) {
         setError('Failed to load more properties');

@@ -315,9 +315,19 @@ export const getNextProperties = async (nextLink) => {
     if (urlParts.length < 2) {
       throw new Error('Invalid next link format');
     }
+
+    // Make sure we're requesting Media expansion in the query
+    let queryParams = urlParts[1];
+    if (!queryParams.includes('$expand=Media')) {
+      queryParams += queryParams.includes('?') ? '&$expand=Media' : '?$expand=Media';
+    }
     
-    const apiUrl = `/api/properties?${urlParts[1]}`;
-    const response = await fetch(apiUrl);
+    const response = await fetch(`${API_BASE_URL}/trestle/odata/Property?${queryParams}`, {
+      headers: {
+        Authorization: `Bearer ${await fetchToken()}`,
+        Accept: 'application/json'
+      }
+    });
     
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`);
@@ -325,10 +335,11 @@ export const getNextProperties = async (nextLink) => {
     
     const data = await response.json();
     const properties = Array.isArray(data.value) ? data.value : [];
+
     return {
       properties: properties.map(property => {
         let mediaArray = [];
-        if (property.Media && Array.isArray(property.Media) && property.Media.length > 0) {
+        if (property.Media && Array.isArray(property.Media)) {
           mediaArray = property.Media
             .slice()
             .sort((a, b) => {
