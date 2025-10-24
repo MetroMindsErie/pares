@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { SoldProperty } from '../../components/SoldProperty';
 import PropertyView from '../../components/Property/PropertyView';
@@ -7,6 +6,7 @@ import BackToListingsButton from '../../components/BackToListingsButton';
 import Layout from '../../components/Layout';
 import axios from 'axios';
 import BuyerAgent from '../../components/Property/BuyerAgent';
+import { PendingProperty } from '../../components/PendingProperty';
 
 // Extract tax information from Trestle property data
 const extractTaxData = (property) => {
@@ -557,7 +557,7 @@ const PropertyDetailWithTabs = ({ property, isSold, taxData, historyData }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Back button at top of content */}
         <div className="mb-6">
-          <BackToListingsButton />
+          {/* <BackToListingsButton /> */}
         </div>
 
         {/* Tab Navigation - Fixed structure */}
@@ -607,7 +607,7 @@ const PropertyDetailWithTabs = ({ property, isSold, taxData, historyData }) => {
 
         {/* Back button at bottom for consistency */}
         <div className="text-center mt-8 pt-8 border-t border-gray-200">
-          <BackToListingsButton className="bg-gray-100 text-black py-2 px-6 rounded-lg border border-black hover:bg-gray-200 transition-colors" />
+          {/* <BackToListingsButton className="bg-gray-100 text-black py-2 px-6 rounded-lg border border-black hover:bg-gray-200 transition-colors" /> */}
         </div>
       </div>
     </div>
@@ -615,6 +615,8 @@ const PropertyDetailWithTabs = ({ property, isSold, taxData, historyData }) => {
 };
 
 export async function getServerSideProps({ params }) {
+  const { id } = params;
+  
   try {
     // Get Trestle access token
     const tokenResponse = await axios.post(
@@ -780,16 +782,59 @@ export async function getServerSideProps({ params }) {
 }
 
 export default function PropertyDetail({ property, isSold, taxData, historyData }) {
+  // Handle error case
+  if (!property || property.address === 'Property not found') {
+    return (
+      <Layout>
+        <Head>
+          <title>Property Not Found | Erie Pennsylvania Real Estate</title>
+        </Head>
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+              Error loading property
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400">
+              There was an error loading this property. Please try again later.
+            </p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
-
-  return (
-    <Layout>
-      <Head>
-        <title>{property.address || 'Property Details'} | Erie Pennsylvania Real Estate</title>
-        <meta name="description" content={`View detailed information for ${property.address || 'this property'} including photos, features, and pricing.`} />
-      </Head>
-
-      <PropertyDetailWithTabs property={property} isSold={isSold} taxData={taxData} historyData={historyData} />
-    </Layout>
-  );
+  // Route to appropriate component based on status
+  const status = property.StandardStatus;
+  
+  if (status === 'Closed') {
+    return (
+      <Layout>
+        <Head>
+          <title>{property.address || 'Property Details'} | Erie Pennsylvania Real Estate</title>
+          <meta name="description" content={`View detailed information for ${property.address || 'this property'} including photos, features, and pricing.`} />
+        </Head>
+        <SoldProperty property={property} />
+      </Layout>
+    );
+  } else if (status === 'Pending' || status === 'ActiveUnderContract') {
+    return (
+      <>
+        <Head>
+          <title>{property.address || 'Property Details'} | Erie Pennsylvania Real Estate</title>
+          <meta name="description" content={`View detailed information for ${property.address || 'this property'} including photos, features, and pricing.`} />
+        </Head>
+        <PendingProperty property={property} />
+      </>
+    );
+  } else {
+    return (
+      <Layout>
+        <Head>
+          <title>{property.address || 'Property Details'} | Erie Pennsylvania Real Estate</title>
+          <meta name="description" content={`View detailed information for ${property.address || 'this property'} including photos, features, and pricing.`} />
+        </Head>
+        <PropertyDetailWithTabs property={property} isSold={isSold} taxData={taxData} historyData={historyData} />
+      </Layout>
+    );
+  }
 }

@@ -9,7 +9,7 @@ const SearchBar = ({ onSearchResults }) => {
   const [error, setError] = useState(null);
   const [searchParams, setSearchParams] = useState({
     location: '',
-    status: 'Active', // Default to Active
+    status: '', // Remove default 'Active' - let users choose explicitly
     minPrice: '',
     maxPrice: '',
     beds: '',
@@ -99,6 +99,7 @@ const SearchBar = ({ onSearchResults }) => {
               onChange={handleChange}
               className="w-full px-3 py-2.5 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-blue-500 text-gray-700 dark:text-gray-200 text-sm appearance-none transition-all duration-300"
             >
+              <option value="">All Status</option>
               <option value="Active">Active</option>
               <option value="ActiveUnderContract">Under Contract</option>
               <option value="Pending">Pending</option>

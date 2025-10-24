@@ -199,56 +199,52 @@ export async function getMediaUrls(listingKey) {
 
 export const searchProperties = async (searchParams) => {
   try {
-    // Build filter query for Trestle API
     const filters = [];
-
-    // Location search - handle various location types with improved accuracy
+    
+    // Handle location search (county, zip, or address)
     if (searchParams.location) {
       const location = searchParams.location.trim();
       
-      // Check if it's a county (more flexible matching)
-      if (location.toLowerCase().includes('county') || 
-          ['erie', 'warren', 'crawford'].includes(location.toLowerCase())) {
-        const countyName = location.replace(/county/i, '').trim();
-        filters.push(`CountyOrParish eq '${countyName}'`);
-      }
-      // Check if it's a ZIP code
-      else if (/^\d{5}(-\d{4})?$/.test(location)) {
+      // Check if it's a zip code (5 digits)
+      if (/^\d{5}$/.test(location)) {
         filters.push(`PostalCode eq '${location}'`);
-      }
-      // General location search with exact and partial matches
-      else {
-        const locationFilters = [
-          `CountyOrParish eq '${location}'`,
-          `PostalCity eq '${location}'`,
-          `contains(tolower(CountyOrParish), '${location.toLowerCase()}')`,
-          `contains(tolower(PostalCity), '${location.toLowerCase()}')`,
-          `contains(tolower(UnparsedAddress), '${location.toLowerCase()}')`
-        ];
-        filters.push(`(${locationFilters.join(' or ')})`);
+      } else {
+        // Search in multiple fields for county or address
+        filters.push(
+          `(contains(tolower(City), tolower('${location}')) or ` +
+          `contains(tolower(CountyOrParish), tolower('${location}')) or ` +
+          `contains(tolower(UnparsedAddress), tolower('${location}')))`
+        );
       }
     }
-
-    // StandardStatus filter - defaults to Active if not specified
-    const status = searchParams.status || 'Active';
-    filters.push(`StandardStatus eq '${status}'`);
-
-    // Price filters
+    
+    // Handle status filter - ONLY add if explicitly provided
+    if (searchParams.status && searchParams.status !== '') {
+      filters.push(`StandardStatus eq '${searchParams.status}'`);
+      console.log('Filtering by status:', searchParams.status); // Debug log
+    } else {
+      console.log('No status filter applied - showing all statuses'); // Debug log
+    }
+    
+    // Handle price range
     if (searchParams.minPrice) {
       filters.push(`ListPrice ge ${searchParams.minPrice}`);
     }
+    
     if (searchParams.maxPrice) {
       filters.push(`ListPrice le ${searchParams.maxPrice}`);
     }
-
-    // Bedroom/bathroom filters
+    
+    // Handle bedrooms
     if (searchParams.beds) {
       filters.push(`BedroomsTotal ge ${searchParams.beds}`);
     }
+    
+    // Handle bathrooms
     if (searchParams.baths) {
       filters.push(`BathroomsTotalInteger ge ${searchParams.baths}`);
     }
-
+    
     // Property type filter
     if (searchParams.propertyType) {
       filters.push(`PropertyType eq '${searchParams.propertyType}'`);
@@ -264,9 +260,17 @@ export const searchProperties = async (searchParams) => {
 
     // Build the filter query string - just the filter part
     const filterQuery = filters.length > 0 ? `$filter=${filters.join(' and ')}` : '';
+    
+    console.log('Final filter query:', filterQuery); // Debug log
 
     // Call getPropertiesByFilter with just the filter and let it handle top/skip/expand
     const response = await getPropertiesByFilter(filterQuery, 50, 0);
+    
+    console.log('Number of properties returned:', response.properties.length); // Debug log
+    console.log('Sample property statuses:', response.properties.slice(0, 3).map(p => ({ 
+      address: p.UnparsedAddress, 
+      status: p.StandardStatus 
+    }))); // Debug log
     
     // Format properties for the swiper and sort by price (least to most expensive)
     const formattedProperties = response.properties

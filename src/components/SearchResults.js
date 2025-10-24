@@ -99,6 +99,11 @@ const SearchResults = ({ listings, nextLink: initialNextLink }) => {
                         Sold
                       </div>
                     )}
+                    {(listing.StandardStatus === 'Pending' || listing.StandardStatus === 'ActiveUnderContract') && (
+                      <div className="absolute top-3 right-3 bg-yellow-500 text-white px-3 py-1 rounded-full text-sm font-medium z-20 shadow-md">
+                        {listing.StandardStatus === 'ActiveUnderContract' ? 'Under Contract' : 'Pending'}
+                      </div>
+                    )}
                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent h-24 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                       <div className="absolute bottom-3 left-3 flex items-center gap-3">
                         <span className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm text-gray-800 dark:text-white text-xs font-medium px-2.5 py-1.5 rounded-full shadow-sm flex items-center">
