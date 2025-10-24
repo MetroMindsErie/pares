@@ -7,6 +7,7 @@ import {
   getCryptoViewToggleState, 
   setCryptoViewToggleState 
 } from '../../utils/PropertyUtils';
+import SavePropertyButton from '../SavePropertyButton';
 
 
 const PropertyView = ({ propertyData, mlsData }) => {
@@ -164,6 +165,17 @@ const PropertyView = ({ propertyData, mlsData }) => {
   
   return (
     <div>
+      {/* Add SavePropertyButton with image URL */}
+      <div className="mb-4">
+        <SavePropertyButton 
+          propertyId={propertyData.ListingKey}
+          listingKey={propertyData.ListingKey}
+          address={propertyData.UnparsedAddress}
+          price={propertyData.ListPrice}
+          imageUrl={propertyData.mediaUrls?.[0] || '/fallback-property.jpg'}
+        />
+      </div>
+
       {/* Toggle for crypto investors */}
       {userRole === 'crypto_investor' && (
         <div className="mb-4 p-4 bg-gradient-to-r from-purple-100 to-indigo-100 rounded-lg shadow-sm">

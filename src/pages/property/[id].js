@@ -7,6 +7,7 @@ import Layout from '../../components/Layout';
 import axios from 'axios';
 import BuyerAgent from '../../components/Property/BuyerAgent';
 import { PendingProperty } from '../../components/PendingProperty';
+import SavePropertyButton from '../../components/SavePropertyButton';
 
 // Extract tax information from Trestle property data
 const extractTaxData = (property) => {

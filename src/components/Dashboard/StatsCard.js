@@ -32,7 +32,6 @@ const getPropertyDisplayImage = (property) => {
 
 const StatsCard = ({ title, value, change, icon }) => {
   const iconComponent = getIcon(icon);
-  const isPositiveChange = change >= 0;
 
   return (
     <motion.div
@@ -52,20 +51,6 @@ const StatsCard = ({ title, value, change, icon }) => {
           </div>
         )}
       </div>
-      
-      {change !== undefined && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className={`mt-2 text-sm flex items-center ${
-            isPositiveChange ? 'text-success-500' : 'text-error-500'
-          }`}
-        >
-          {isPositiveChange ? '+' : ''}{change}%
-          <span className="text-sm text-gray-500 ml-2">from last month</span>
-        </motion.div>
-      )}
     </motion.div>
   );
 };
