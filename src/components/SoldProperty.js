@@ -29,16 +29,17 @@ export const SoldProperty = ({ property }) => {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
-        {/* Back button at top of content */}
-        <div className="mb-6">
-          <BackToListingsButton />
-        </div>
-
         {/* Buyer Agent Section */}
-        <div className="mb-8">
+        <div className="mb-8 pt-4">
           <h2 className="text-xl font-semibold mb-4 text-gray-900">Your Buyer Agent</h2>
           <BuyerAgent />
         </div>
+        {/* Back button at top of content */}
+        <div className="mb-6 pt-4">
+          <BackToListingsButton />
+        </div>
+
+
 
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2">{property.UnparsedAddress}</h1>
@@ -173,7 +174,7 @@ export const SoldProperty = ({ property }) => {
         </div>
 
         {/* Back button at bottom for consistency */}
-        <div className="text-center mt-8 pt-8 border-t border-gray-200">
+        <div className="text-center mt-8 pt-8 pb-4 border-t border-gray-200">
           <BackToListingsButton className="bg-gray-100 text-black py-2 px-6 rounded-lg border border-black hover:bg-gray-200 transition-colors" />
         </div>
       </div>
@@ -190,20 +191,20 @@ SoldProperty.propTypes = {
     City: PropTypes.string,
     StateOrProvince: PropTypes.string,
     PostalCode: PropTypes.string,
-    
+
     // Measurements
     BedroomsTotal: PropTypes.number,
     BathroomsTotalInteger: PropTypes.number,
     LivingArea: PropTypes.number,
-    
+
     // Prices
     ListPrice: PropTypes.number,
     ClosePrice: PropTypes.number,
     OriginalListPrice: PropTypes.number,
-    
+
     // Dates
     CloseDate: PropTypes.string,
-    
+
     // Features
     PropertyType: PropTypes.string,
     YearBuilt: PropTypes.number,
@@ -216,10 +217,10 @@ SoldProperty.propTypes = {
     HasGarage: PropTypes.bool,
     HasPool: PropTypes.bool,
     DaysOnMarket: PropTypes.number,
-    
+
     // Media
     mediaUrls: PropTypes.arrayOf(PropTypes.string),
-    
+
     // Description
     PublicRemarks: PropTypes.string,
   }).isRequired,

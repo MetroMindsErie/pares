@@ -4,6 +4,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBed, faBath, faRuler, faCar, faHouse, faCalendar } from '@fortawesome/free-solid-svg-icons';
 import ImageGallery from './ImageGallery';
 import BackToListingsButton from './BackToListingsButton';
+import Layout from './Layout';
+import BuyerAgent from './Property/BuyerAgent';
 
 export const ActiveProperty = ({ property }) => {
   const [activeTab, setActiveTab] = useState('details');
@@ -18,12 +20,17 @@ export const ActiveProperty = ({ property }) => {
   };
 
   return (
-    <>
+    <Layout>
       <div className="container mx-auto px-4 py-8">
-        {/* Back button at top of content */}
+        <div className="mb-8">
+          <h2 className="text-xl mt-6 font-semibold mb-4 text-gray-900">Your Buyer Agent</h2>
+          <BuyerAgent />
+        </div>
+        {/* Back button */}
         <div className="mb-6">
           <BackToListingsButton />
         </div>
+
 
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2">{property.UnparsedAddress}</h1>
@@ -68,21 +75,19 @@ export const ActiveProperty = ({ property }) => {
           <div className="border-b border-gray-200 mb-6">
             <nav className="-mb-px flex" aria-label="Tabs">
               <button
-                className={`mr-8 py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'details'
+                className={`mr-8 py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'details'
                     ? 'border-blue-700 text-blue-700'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                  }`}
                 onClick={() => setActiveTab('details')}
               >
                 Property Details
               </button>
               <button
-                className={`mr-8 py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'features'
+                className={`mr-8 py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'features'
                     ? 'border-blue-700 text-blue-700'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                  }`}
                 onClick={() => setActiveTab('features')}
               >
                 Features & Amenities
@@ -201,18 +206,18 @@ export const ActiveProperty = ({ property }) => {
             {property.ListAgentEmail && <p>{property.ListAgentEmail}</p>}
             {property.ListAgentPhone && <p>{property.ListAgentPhone}</p>}
           </div>
-          
+
           <button className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors">
             Contact About This Property
           </button>
         </div>
 
         {/* Back button at bottom for consistency */}
-        <div className="text-center mt-8 pt-8 border-t border-gray-200">
+        <div className="text-center mt-8 pt-8 pb-4 border-t border-gray-200">
           <BackToListingsButton className="bg-gray-100 text-black py-2 px-6 rounded-lg border border-black hover:bg-gray-200 transition-colors" />
         </div>
       </div>
-    </>
+    </Layout>
   );
 };
 

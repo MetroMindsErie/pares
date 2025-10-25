@@ -217,10 +217,15 @@ const SearchBar = ({ onSearchResults }) => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Select Sold Timeline
+                Filter Sold Properties
               </span>
             </div>
-            <div className="relative">
+            
+            {/* Timeline Filter */}
+            <div className="relative mb-4">
+              <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1.5 ml-1">
+                Sold Timeline
+              </label>
               <select
                 id="soldWithin"
                 name="soldWithin"
@@ -236,14 +241,73 @@ const SearchBar = ({ onSearchResults }) => {
                 <option value="365">Last 12 months</option>
                 <option value="730">Last 24 months</option>
               </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-blue-500">
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-blue-500" style={{ top: '24px' }}>
                 <svg className="h-5 w-5" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
                   <path d="M19 9l-7 7-7-7"></path>
                 </svg>
               </div>
             </div>
-            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-              Filter sold properties based on their closing date
+
+            {/* Square Footage Filters */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="relative">
+                <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1.5 ml-1">
+                  Min Sq Ft
+                </label>
+                <select
+                  id="minSqFt"
+                  name="minSqFt"
+                  value={searchParams.minSqFt}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2.5 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-blue-500 text-gray-700 dark:text-gray-200 text-sm appearance-none transition-all duration-300"
+                >
+                  <option value="">No Min</option>
+                  <option value="500">500 sqft</option>
+                  <option value="750">750 sqft</option>
+                  <option value="1000">1,000 sqft</option>
+                  <option value="1250">1,250 sqft</option>
+                  <option value="1500">1,500 sqft</option>
+                  <option value="2000">2,000 sqft</option>
+                  <option value="2500">2,500 sqft</option>
+                  <option value="3000">3,000 sqft</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-blue-500" style={{ top: '24px' }}>
+                  <svg className="h-4 w-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                    <path d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </div>
+              </div>
+
+              <div className="relative">
+                <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1.5 ml-1">
+                  Max Sq Ft
+                </label>
+                <select
+                  id="maxSqFt"
+                  name="maxSqFt"
+                  value={searchParams.maxSqFt}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2.5 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-blue-500 text-gray-700 dark:text-gray-200 text-sm appearance-none transition-all duration-300"
+                >
+                  <option value="">No Max</option>
+                  <option value="1000">1,000 sqft</option>
+                  <option value="1500">1,500 sqft</option>
+                  <option value="2000">2,000 sqft</option>
+                  <option value="2500">2,500 sqft</option>
+                  <option value="3000">3,000 sqft</option>
+                  <option value="4000">4,000 sqft</option>
+                  <option value="5000">5,000 sqft</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-blue-500" style={{ top: '24px' }}>
+                  <svg className="h-4 w-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                    <path d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+              Filter sold properties by closing date and square footage
             </p>
           </div>
         )}

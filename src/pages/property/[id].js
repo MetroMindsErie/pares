@@ -2,12 +2,10 @@ import React, { useState } from 'react';
 import Head from 'next/head';
 import { SoldProperty } from '../../components/SoldProperty';
 import PropertyView from '../../components/Property/PropertyView';
-import BackToListingsButton from '../../components/BackToListingsButton';
-import Layout from '../../components/Layout';
 import axios from 'axios';
 import BuyerAgent from '../../components/Property/BuyerAgent';
 import { PendingProperty } from '../../components/PendingProperty';
-import SavePropertyButton from '../../components/SavePropertyButton';
+import { ActiveProperty } from '../../components/ActiveProperty';
 
 // Extract tax information from Trestle property data
 const extractTaxData = (property) => {
@@ -786,7 +784,7 @@ export default function PropertyDetail({ property, isSold, taxData, historyData 
   // Handle error case
   if (!property || property.address === 'Property not found') {
     return (
-      <Layout>
+      <>
         <Head>
           <title>Property Not Found | Erie Pennsylvania Real Estate</title>
         </Head>
@@ -800,7 +798,7 @@ export default function PropertyDetail({ property, isSold, taxData, historyData 
             </p>
           </div>
         </div>
-      </Layout>
+      </>
     );
   }
 
@@ -809,13 +807,13 @@ export default function PropertyDetail({ property, isSold, taxData, historyData 
   
   if (status === 'Closed') {
     return (
-      <Layout>
+      <>
         <Head>
           <title>{property.address || 'Property Details'} | Erie Pennsylvania Real Estate</title>
           <meta name="description" content={`View detailed information for ${property.address || 'this property'} including photos, features, and pricing.`} />
         </Head>
         <SoldProperty property={property} />
-      </Layout>
+      </>
     );
   } else if (status === 'Pending' || status === 'ActiveUnderContract') {
     return (
@@ -827,15 +825,26 @@ export default function PropertyDetail({ property, isSold, taxData, historyData 
         <PendingProperty property={property} />
       </>
     );
-  } else {
+  } else if (status === 'Active') {
     return (
-      <Layout>
+      <>
+        <Head>
+          <title>{property.address || 'Property Details'} | Erie Pennsylvania Real Estate</title>
+          <meta name="description" content={`View detailed information for ${property.address || 'this property'} including photos, features, and pricing.`} />
+        </Head>
+        <ActiveProperty property={property} propertyData={property} mlsData={property} />
+      </>
+    );
+  }
+   else {
+    return (
+      <>
         <Head>
           <title>{property.address || 'Property Details'} | Erie Pennsylvania Real Estate</title>
           <meta name="description" content={`View detailed information for ${property.address || 'this property'} including photos, features, and pricing.`} />
         </Head>
         <PropertyDetailWithTabs property={property} isSold={isSold} taxData={taxData} historyData={historyData} />
-      </Layout>
+      </>
     );
   }
 }
