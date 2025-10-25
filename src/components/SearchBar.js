@@ -90,7 +90,7 @@ const SearchBar = ({ onSearchResults }) => {
           </div>
         </div>
         
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {/* Status Filter */}
           <div className="relative">
             <select
@@ -98,14 +98,37 @@ const SearchBar = ({ onSearchResults }) => {
               name="status"
               value={searchParams.status}
               onChange={handleChange}
-              className="w-full px-3 py-2.5 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-blue-500 text-gray-700 dark:text-gray-200 text-sm appearance-none transition-all duration-300"
+              className="w-full px-4 py-2.5 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-blue-500 text-gray-700 dark:text-gray-200 text-sm appearance-none transition-all duration-300"
             >
-              <option value="">All Status</option>
+              <option value="">Status</option>
               <option value="Active">Active</option>
               <option value="ActiveUnderContract">Under Contract</option>
               <option value="Pending">Pending</option>
               <option value="Closed">Sold</option>
               <option value="ComingSoon">Coming Soon</option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-blue-500">
+              <svg className="h-4 w-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                <path d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
+          </div>
+
+          {/* Property Type Filter */}
+          <div className="relative">
+            <select
+              id="propertyType"
+              name="propertyType"
+              value={searchParams.propertyType}
+              onChange={handleChange}
+              className="w-full px-4 py-2.5 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-blue-500 text-gray-700 dark:text-gray-200 text-sm appearance-none transition-all duration-300"
+            >
+              <option value="">Type</option>
+              <option value="Residential">Residential</option>
+              <option value="Commercial">Commercial</option>
+              <option value="Land">Land</option>
+              <option value="Multi-Family">Multi-Family</option>
+              <option value="Farm">Farm</option>
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-blue-500">
               <svg className="h-4 w-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
@@ -121,9 +144,9 @@ const SearchBar = ({ onSearchResults }) => {
               name="minPrice"
               value={searchParams.minPrice}
               onChange={handleChange}
-              className="w-full px-3 py-2.5 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-blue-500 text-gray-700 dark:text-gray-200 text-sm appearance-none transition-all duration-300"
+              className="w-full px-4 py-2.5 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-blue-500 text-gray-700 dark:text-gray-200 text-sm appearance-none transition-all duration-300"
             >
-              <option value="">Min</option>
+              <option value="">Min Price</option>
               <option value="100000">$100k</option>
               <option value="200000">$200k</option>
               <option value="300000">$300k</option>
@@ -146,9 +169,9 @@ const SearchBar = ({ onSearchResults }) => {
               name="maxPrice"
               value={searchParams.maxPrice}
               onChange={handleChange}
-              className="w-full px-3 py-2.5 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-blue-500 text-gray-700 dark:text-gray-200 text-sm appearance-none transition-all duration-300"
+              className="w-full px-4 py-2.5 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-blue-500 text-gray-700 dark:text-gray-200 text-sm appearance-none transition-all duration-300"
             >
-              <option value="">Max</option>
+              <option value="">Max Price</option>
               <option value="300000">$300k</option>
               <option value="500000">$500k</option>
               <option value="750000">$750k</option>
@@ -170,9 +193,9 @@ const SearchBar = ({ onSearchResults }) => {
               name="beds"
               value={searchParams.beds}
               onChange={handleChange}
-              className="w-full px-3 py-2.5 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-blue-500 text-gray-700 dark:text-gray-200 text-sm appearance-none transition-all duration-300"
+              className="w-full px-4 py-2.5 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-blue-500 text-gray-700 dark:text-gray-200 text-sm appearance-none transition-all duration-300"
             >
-              <option value="">Beds</option>
+              <option value="">Bedrooms</option>
               <option value="1">1+ beds</option>
               <option value="2">2+ beds</option>
               <option value="3">3+ beds</option>
@@ -193,9 +216,9 @@ const SearchBar = ({ onSearchResults }) => {
               name="baths"
               value={searchParams.baths}
               onChange={handleChange}
-              className="w-full px-3 py-2.5 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-blue-500 text-gray-700 dark:text-gray-200 text-sm appearance-none transition-all duration-300"
+              className="w-full px-4 py-2.5 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-blue-500 text-gray-700 dark:text-gray-200 text-sm appearance-none transition-all duration-300"
             >
-              <option value="">Baths</option>
+              <option value="">Bathrooms</option>
               <option value="1">1+ baths</option>
               <option value="2">2+ baths</option>
               <option value="3">3+ baths</option>

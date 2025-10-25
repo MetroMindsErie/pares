@@ -162,7 +162,7 @@ const ErieBrandedHero = ({ onSearchResults }) => {
                 <SearchBar onSearchResults={onSearchResults} />
                 
                 {/* Quick Search Options */}
-                <div className="mt-6 pt-6 border-t border-gray-200">
+                {/* <div className="mt-6 pt-6 border-t border-gray-200">
                   <p className="text-sm font-medium text-gray-700 mb-3">Popular Searches:</p>
                   <div className="flex flex-wrap gap-2">
                     {['Downtown Erie', 'Waterfront', 'Millcreek', 'West Erie', 'Luxury Homes'].map((term) => (
@@ -182,7 +182,7 @@ const ErieBrandedHero = ({ onSearchResults }) => {
                       </button>
                     ))}
                   </div>
-                </div>
+                </div> */}
               </div>
             </motion.div>
           </div>
