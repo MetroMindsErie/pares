@@ -323,7 +323,19 @@ export default function DashboardPage() {
             <h3 className="text-lg font-semibold mb-4 text-blue-900">Quick Actions</h3>
             <div className="space-y-3">
               <button
-                onClick={() => router.push('/swipe')}
+                onClick={() => {
+                  // Clear any cached search results
+                  if (typeof window !== 'undefined') {
+                    sessionStorage.removeItem('searchResults');
+                    sessionStorage.removeItem('searchParams');
+                    localStorage.removeItem('lastSearchResults');
+                    localStorage.removeItem('lastSearchParams');
+                    sessionStorage.setItem('scrollToTop', 'true');
+                  }
+                  
+                  // Navigate to home
+                  window.location.href = '/';
+                }}
                 className="w-full text-left px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-3"
               >
                 <span className="p-2 bg-blue-500 rounded-full">🏠</span>

@@ -26,6 +26,23 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
 
   // Check for cached results on component mount
   useEffect(() => {
+    // Check if we should scroll to top (coming from dashboard)
+    const shouldScrollToTop = sessionStorage.getItem('scrollToTop');
+    
+    if (shouldScrollToTop === 'true') {
+      sessionStorage.removeItem('scrollToTop');
+      
+      // Clear search results immediately
+      setSearchResults(null);
+      setNextLink(null);
+      
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'auto' });
+      
+      return; // Exit early, don't load cached results
+    }
+    
+    // Only load cached results if NOT coming from dashboard
     const cachedResults = getCachedSearchResults();
     if (cachedResults && cachedResults.length > 0) {
       setSearchResults(cachedResults);
