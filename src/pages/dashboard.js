@@ -336,6 +336,13 @@ export default function DashboardPage() {
                 <span className="p-2 bg-green-500 rounded-full">❤️</span>
                 View Saved Properties ({savedProperties.length})
               </button>
+              <button
+                onClick={() => router.push('/create-profile')}
+                className="w-full text-left px-4 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors flex items-center gap-3"
+              >
+                <span className="p-2 bg-gray-300 rounded-full">⚙️</span>
+                Profile Settings
+              </button>
             </div>
           </div>
           

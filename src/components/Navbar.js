@@ -157,6 +157,15 @@ export default function Navbar() {
     return <nav className="bg-white shadow-md z-50"></nav>;
   }
   
+  const primaryLinks = [
+    { href: '/', label: 'Home' },
+  ];
+
+  const authedLinks = [
+    { href: '/dashboard', label: 'Dashboard' },
+    { href: '/saved-properties', label: 'Saved Properties' },
+  ];
+  
   return (
     <nav className="bg-white shadow-md z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -169,36 +178,19 @@ export default function Navbar() {
               </Link>
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-              <Link 
-                href="/" 
-                className={`inline-flex items-center px-1 pt-1 border-b-2 ${
-                  router.pathname === '/' 
-                    ? 'border-blue-500 text-gray-900' 
-                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                } text-sm font-medium`}
-              >
-                Home
-              </Link>
-              {/* <Link 
-                href="/properties" 
-                className={`inline-flex items-center px-1 pt-1 border-b-2 ${
-                  router.pathname === '/properties' 
-                    ? 'border-blue-500 text-gray-900' 
-                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                } text-sm font-medium`}
-              >
-                Properties
-              </Link> */}
-              {/* <Link 
-                href="/agents" 
-                className={`inline-flex items-center px-1 pt-1 border-b-2 ${
-                  router.pathname === '/agents' 
-                    ? 'border-blue-500 text-gray-900' 
-                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                } text-sm font-medium`}
-              >
-                Agents
-              </Link> */}
+              {primaryLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`inline-flex items-center px-1 pt-1 border-b-2 ${
+                    router.pathname === link.href
+                      ? 'border-blue-500 text-gray-900'
+                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                  } text-sm font-medium`}
+                >
+                  {link.label}
+                </Link>
+              ))}
             </div>
           </div>
           
@@ -234,18 +226,15 @@ export default function Navbar() {
                   </div>
                 )}
                 
-                <Link 
-                  href="/dashboard" 
-                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-800"
-                >
-                  Dashboard
-                </Link>
-                <Link 
-                  href="/create-profile" 
-                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-800"
-                >
-                  Profile
-                </Link>
+                {authedLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-800"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
                 <button
                   onClick={handleLogout}
                   className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
@@ -296,36 +285,19 @@ export default function Navbar() {
       {/* Mobile menu */}
       <div className={`${isOpen ? 'block' : 'hidden'} sm:hidden`}>
         <div className="pt-2 pb-3 space-y-1">
-          <Link 
-            href="/" 
-            className={`block pl-3 pr-4 py-2 border-l-4 ${
-              router.pathname === '/' 
-                ? 'border-blue-500 text-blue-700 bg-blue-50' 
-                : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
-            } text-base font-medium`}
-          >
-            Home
-          </Link>
-          <Link 
-            href="/properties" 
-            className={`block pl-3 pr-4 py-2 border-l-4 ${
-              router.pathname === '/properties' 
-                ? 'border-blue-500 text-blue-700 bg-blue-50' 
-                : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
-            } text-base font-medium`}
-          >
-            Properties
-          </Link>
-          <Link 
-            href="/agents" 
-            className={`block pl-3 pr-4 py-2 border-l-4 ${
-              router.pathname === '/agents' 
-                ? 'border-blue-500 text-blue-700 bg-blue-50' 
-                : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
-            } text-base font-medium`}
-          >
-            Agents
-          </Link>
+          {primaryLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`block pl-3 pr-4 py-2 border-l-4 ${
+                router.pathname === link.href
+                  ? 'border-blue-500 text-blue-700 bg-blue-50'
+                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+              } text-base font-medium`}
+            >
+              {link.label}
+            </Link>
+          ))}
         </div>
         <div className="pt-4 pb-3 border-t border-gray-200">
           {isAuthenticated ? (
@@ -360,18 +332,15 @@ export default function Navbar() {
                 </div>
               )}
             
-              <Link 
-                href="/dashboard" 
-                className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 text-base font-medium"
-              >
-                Dashboard
-              </Link>
-              <Link 
-                href="/create-profile" 
-                className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 text-base font-medium"
-              >
-                Profile
-              </Link>
+              {authedLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 text-base font-medium"
+                >
+                  {link.label}
+                </Link>
+              ))}
               <button
                 onClick={handleLogout}
                 className="block w-full text-left pl-3 pr-4 py-2 border-l-4 border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 text-base font-medium"

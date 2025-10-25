@@ -4,8 +4,9 @@ import supabase from '../lib/supabase-setup';
 import Layout from '../components/Layout';
 import Link from 'next/link';
 import Image from 'next/image';
+import SavedProperties from '../components/Dashboard/SavedProperties';
 
-export default function SavedProperties() {
+const SavedPropertiesPage = () => {
   const { user } = useAuth();
   const [savedProperties, setSavedProperties] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -67,42 +68,15 @@ export default function SavedProperties() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {savedProperties.map((property) => (
-              <Link 
-                href={`/property/${property.listing_key}`}
-                key={property.id}
-                className="block"
-              >
-                <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border overflow-hidden">
-                  <div className="relative h-48 w-full">
-                    <Image
-                      src={property.image_url || '/fallback-property.jpg'}
-                      alt={property.address}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                      priority={false}
-                      onError={(e) => {
-                        e.target.src = '/fallback-property.jpg';
-                      }}
-                    />
-                  </div>
-                  <div className="p-4">
-                    <h3 className="font-medium text-lg mb-2">{property.address}</h3>
-                    <p className="text-2xl font-bold text-blue-600">
-                      ${property.price?.toLocaleString()}
-                    </p>
-                    <p className="text-sm text-gray-500 mt-2">
-                      Saved on {new Date(property.saved_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+          <SavedProperties 
+            properties={savedProperties}
+            isLoading={isLoading}
+            error={error}
+          />
         )}
       </div>
     </Layout>
   );
-}
+};
+
+export default SavedPropertiesPage;
