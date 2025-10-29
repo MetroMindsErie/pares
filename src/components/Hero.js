@@ -108,7 +108,7 @@ export function Hero() {
                 </button>
 
                 <button
-                  onClick={() => router.push('/contact')}
+                  onClick={() => router.push('/agents/john-easter')}
                   className="inline-flex items-center gap-2 px-4 py-2.5 border border-white/20 text-white bg-transparent rounded-md hover:bg-white/5 transition"
                 >
                   Contact an Agent
