@@ -221,7 +221,7 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
                 <div className="rounded-full p-[2px] bg-gradient-to-tr from-cyan-400 to-blue-600">
                   <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-sm font-semibold text-gray-800 shadow">
                     {/* Neutral user glyph — no initials */}
-                    <svg className="w-5 h-5 text-gray-700" viewBox="0 0 24 24" fill="none" aria-hidden>
+                    <svg className="w-5 h-5 text-gray-700" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                       <path d="M4 20a8 8 0 0116 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
@@ -238,7 +238,7 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
                 </div>
               </div>
 
-              <svg className="ml-3 w-4 h-4 text-blue-600/70" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+              <svg className="ml-3 w-4 h-4 text-blue-600/70" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
               </svg>
             </button>

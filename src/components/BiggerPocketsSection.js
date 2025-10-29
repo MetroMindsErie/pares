@@ -4,13 +4,14 @@ import { formatPostDate, truncateSnippet, getRelativeTime } from '../utils/dateU
 /* Featured hero card for the top post */
 function FeaturedCard({ post }) {
   return (
-    <article className="group relative rounded-2xl overflow-hidden shadow-2xl hover:scale-[1.01] transition-transform duration-300 bg-white/60">
-      <div className="relative h-64 sm:h-72 lg:h-96">
+    <article className="group relative rounded-2xl overflow-hidden shadow-2xl hover:scale-[1.01] transition-transform duration-300 bg-white/60 min-w-0 w-full lg:max-w-5xl mx-auto">
+      {/* increase xs height so title has room; keep smaller heights at larger breakpoints */}
+      <div className="relative h-56 sm:h-64 md:h-72 lg:h-96">
         {post.image ? (
           <img
             src={post.image}
             alt={post.title}
-            className="absolute inset-0 h-full w-full object-cover"
+            className="absolute inset-0 h-full w-full object-cover object-center"
             loading="lazy"
           />
         ) : (
@@ -19,12 +20,9 @@ function FeaturedCard({ post }) {
 
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent" />
 
-        <div className="absolute left-4 sm:left-6 bottom-4 sm:bottom-6 right-4 sm:right-6">
-          <span className="inline-flex items-center pt-2 rounded-full bg-amber-100/90 text-amber-800 text-xs sm:text-sm px-3 sm:px-4 py-1 sm:py-1 font-semibold mb-3 shadow-sm whitespace-nowrap">
-            BiggerPockets
-          </span>
-
-          <h3 className="text-white text-xl sm:text-2xl lg:text-3xl font-extrabold leading-tight line-clamp-2">
+        {/* more top padding on xs (reduced) and slightly larger on sm; progressive reduction for md/lg */}
+        <div className="absolute left-3 sm:left-5 lg:left-6 bottom-3 sm:bottom-6 right-3 sm:right-5 lg:right-6 pt-2 sm:pt-3 md:pt-2 lg:pt-1">
+          <h3 className="text-white text-xl sm:text-2xl lg:text-3xl font-extrabold leading-normal line-clamp-2">
             <a href={post.link} target="_blank" rel="noopener noreferrer" className="hover:underline">
               {post.title}
             </a>
@@ -48,11 +46,14 @@ function FeaturedCard({ post }) {
               href={post.link}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-500 to-rose-500 px-4 py-2 text-sm font-semibold text-white shadow hover:opacity-95"
+              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-500 to-rose-500 px-3 py-1.5 sm:px-4 sm:py-2 sm:text-sm font-semibold text-white shadow hover:opacity-95 max-w-[48%] sm:max-w-none truncate"
+              aria-label="Read on BiggerPockets"
             >
-              Read on BiggerPockets
-              <svg width="14" height="14" viewBox="0 0 24 24" className="fill-white">
-                <path d="M14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3m-2 16H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7h-2v7Z"/>
+              {/* short label for very small screens, full label on sm+ */}
+              <span className="inline sm:hidden">Read</span>
+              <span className="hidden sm:inline truncate">Read on BiggerPockets</span>
+              <svg viewBox="0 0 24 24" className="fill-white w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0 ml-1" aria-hidden="true">
+                <path d="M14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3m-2 16H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7h-2v7Z" />
               </svg>
             </a>
           </div>
@@ -65,13 +66,14 @@ function FeaturedCard({ post }) {
 /* Standard card for subsequent posts */
 function ImageCard({ post }) {
   return (
-    <article className="group relative rounded-2xl overflow-hidden shadow hover:shadow-lg transition-shadow duration-200 bg-white/60">
-      <div className="relative h-44">
+    <article className="group relative rounded-2xl overflow-hidden shadow hover:shadow-lg transition-shadow duration-200 bg-white/60 min-w-0 max-w-full">
+      {/* slightly smaller on very small screens to avoid vertical overflow */}
+      <div className="relative h-40 sm:h-44">
         {post.image ? (
           <img
             src={post.image}
             alt={post.title}
-            className="absolute inset-0 h-full w-full object-cover"
+            className="absolute inset-0 h-full w-full object-cover object-center"
             loading="lazy"
           />
         ) : (
@@ -80,7 +82,8 @@ function ImageCard({ post }) {
 
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
 
-        <div className="absolute left-4 bottom-4 right-4">
+        {/* use slightly smaller insets on xs so text and badges don't clip */}
+        <div className="absolute left-3 bottom-3 right-3">
           <h4 className="text-white font-semibold text-base line-clamp-2">
             <a href={post.link} target="_blank" rel="noopener noreferrer" className="hover:underline">
               {post.title}
@@ -135,14 +138,14 @@ export default function BiggerPocketsSection() {
       try {
         setLoading(true);
         setError(null);
-        
+
         const response = await fetch('/api/biggerpockets');
         const data = await response.json();
-        
+
         if (!response.ok) {
           throw new Error(data.error || 'Failed to fetch BiggerPockets posts');
         }
-        
+
         setPosts(data.posts || []);
       } catch (err) {
         console.error('Error fetching BiggerPockets posts:', err);
@@ -157,7 +160,7 @@ export default function BiggerPocketsSection() {
 
   return (
     <section
-      className="relative rounded-3xl p-6 lg:p-8 overflow-hidden"
+      className="relative rounded-3xl p-4 sm:p-6 lg:p-8 overflow-hidden"
       style={{ background: 'linear-gradient(180deg, rgba(250,252,255,0.95), rgba(243,246,255,0.9))' }}
       aria-labelledby="biggerpockets-heading"
     >
@@ -174,7 +177,8 @@ export default function BiggerPocketsSection() {
         </svg>
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto">
+      {/* keep page padding within the content wrapper to avoid edge overflow on mobile */}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6">
         <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h2 id="biggerpockets-heading" className="text-2xl sm:text-3xl font-extrabold text-slate-900">
@@ -204,7 +208,7 @@ export default function BiggerPocketsSection() {
 
         {/* Content */}
         {loading ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="pt-4 md:pt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <LoadingCard featured />
             {[...Array(5)].map((_, i) => <LoadingCard key={i} />)}
           </div>
@@ -223,16 +227,18 @@ export default function BiggerPocketsSection() {
             <p>No BiggerPockets posts available at the moment.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {/* Featured post spans the entire top row on large screens */}
+          // center grid items vertically on large screens so featured card sits centered
+          <div className="pt-4 md:pt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 items-start lg:items-center">
             {posts.slice(0, 1).map((post) => (
-              <div key={post.id} className="lg:col-span-3">
+              <div key={post.id} className="lg:col-span-3 max-w-full min-w-0 flex items-center justify-center">
                 <FeaturedCard post={post} />
               </div>
             ))}
 
             {posts.slice(1, 7).map((post) => (
-              <ImageCard key={post.id} post={post} />
+              <div key={post.id} className="max-w-full min-w-0">
+                <ImageCard post={post} />
+              </div>
             ))}
           </div>
         )}

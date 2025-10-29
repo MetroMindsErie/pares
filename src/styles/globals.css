@@ -654,16 +654,22 @@ header, footer {
   pointer-events: none; /* decorative only - prevent intercepting clicks */
 }
 
-/* Switch to absolute full-bleed ticker on larger screens so it can overlay hero visuals */
+/* Switch to positioned banner on larger screens but keep width 100% to avoid overflow */
 @media (min-width: 640px) {
   .partners-ticker {
     position: absolute;
     top: var(--navbar-height);
-    width: 100vw;
     left: 0;
+    right: 0;
+    width: 100%;
     height: var(--partners-height-desktop);
     z-index: 70; /* above hero overlays on desktop as intended */
   }
+}
+
+/* Ensure top-level wrappers don't allow horizontal scroll */
+html, body, #__next {
+  overflow-x: hidden;
 }
 
 /* Vertically center the tracks inside the ticker */

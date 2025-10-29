@@ -9,7 +9,7 @@ const CityFeatures = () => {
       desc: 'Stunning Lake Erie views and recreational access — waterfront homes, parks and trails.',
       color: 'from-cyan-400 to-blue-600',
       icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M3 12c2-4 6-7 9-7s7 3 9 7-2 7-9 7S3 16 3 12z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       )
@@ -20,7 +20,7 @@ const CityFeatures = () => {
       desc: 'Mix of restored historic architecture and modern coworking, dining and retail.',
       color: 'from-emerald-300 to-green-500',
       icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M3 21h18M7 8v13M17 4v17M12 2v19" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       )
@@ -31,7 +31,7 @@ const CityFeatures = () => {
       desc: 'High value and strong investment potential compared to larger metros.',
       color: 'from-purple-300 to-indigo-500',
       icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M12 8v8M8 12h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       )
@@ -42,7 +42,7 @@ const CityFeatures = () => {
       desc: 'Local events, festivals, and neighborhoods that welcome families and investors.',
       color: 'from-yellow-300 to-orange-400',
       icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M12 11c2 0 4-2 4-4s-2-4-4-4-4 2-4 4 2 4 4 4zM6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       )
@@ -53,7 +53,7 @@ const CityFeatures = () => {
       desc: 'Quick regional connections, easy commutes and growing infrastructure projects.',
       color: 'from-sky-300 to-cyan-500',
       icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M3 12h18M7 6v12M17 6v12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       )
@@ -64,7 +64,7 @@ const CityFeatures = () => {
       desc: 'New developments, incentives and redevelopment projects boosting local ROI.',
       color: 'from-pink-300 to-rose-400',
       icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M3 17l6-6 5 5 7-7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       )
@@ -82,7 +82,7 @@ const CityFeatures = () => {
     >
       {/* decorative gradient shapes */}
       <div className="absolute inset-0 pointer-events-none">
-        <svg className="absolute -right-20 -top-12 opacity-20 w-80 h-80" viewBox="0 0 200 200" aria-hidden>
+        <svg className="absolute -right-20 -top-12 opacity-20 w-80 h-80" viewBox="0 0 200 200" aria-hidden="true">
           <defs>
             <linearGradient id="gA" x1="0" x2="1">
               <stop offset="0" stopColor="#60A5FA" stopOpacity="0.18" />
@@ -91,7 +91,7 @@ const CityFeatures = () => {
           </defs>
           <rect width="200" height="200" rx="32" fill="url(#gA)"></rect>
         </svg>
-        <svg className="absolute -left-20 -bottom-12 opacity-16 w-72 h-72" viewBox="0 0 200 200" aria-hidden>
+        <svg className="absolute -left-20 -bottom-12 opacity-16 w-72 h-72" viewBox="0 0 200 200" aria-hidden="true">
           <defs>
             <linearGradient id="gB" x1="0" x2="1">
               <stop offset="0" stopColor="#C084FC" stopOpacity="0.12" />
@@ -160,7 +160,7 @@ const CityFeatures = () => {
                   </div>
 
                   <div className="absolute right-4 bottom-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <svg className="w-6 h-6 text-slate-300" viewBox="0 0 24 24" fill="none" aria-hidden>
+                    <svg className="w-6 h-6 text-slate-300" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </div>
