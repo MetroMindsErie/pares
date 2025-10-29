@@ -23,10 +23,16 @@ const SearchResults = ({
   const [error, setError] = useState(null);
   const [allListings, setAllListings] = useState(listings);
 
+  // Show 25 items at a time
+  const PAGE_SIZE = 25;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
   useEffect(() => {
     // sync listings and potential pagination pointers (support multiple alias names)
     setAllListings(listings);
     setNextLink(initialNextLink || nextLinkUrl || loadMoreUrl || null);
+    // adjust visibleCount defensively when parent provides new list
+    setVisibleCount(prev => Math.min(Math.max(PAGE_SIZE, prev), (listings || []).length || PAGE_SIZE));
   }, [listings, initialNextLink]);
 
   const loadMoreProperties = async () => {
@@ -46,6 +52,8 @@ const SearchResults = ({
 
         setAllListings(prev => [...prev, ...processedProperties]);
         setNextLink(newNextLink);
+        // Reveal next page worth of items
+        setVisibleCount(prev => prev + PAGE_SIZE);
       } catch (err) {
         setError('Failed to load more properties');
         console.error(err);
@@ -55,21 +63,38 @@ const SearchResults = ({
     }
   };
 
-  // Determine whether there are more properties to load (support multiple prop names)
+  // Determine whether there are more properties to load (support multiple prop names and parent handlers)
   const effectiveNextLink = nextLink || nextLinkUrl || loadMoreUrl || null;
-  const effectiveHasMore = Boolean(hasMoreProp ?? effectiveNextLink);
+  // Show the Load More button if:
+  // - parent provided an onLoadMore / loadMore / onLoadMoreClick callback OR
+  // - hasMoreProp is truthy OR
+  // - we have an effectiveNextLink OR
+  // - there are more items in allListings beyond visibleCount
+  const effectiveHasMore = Boolean(
+    (typeof onLoadMore === 'function') ||
+    (typeof loadMoreProp === 'function') ||
+    (typeof onLoadMoreClick === 'function') ||
+    hasMoreProp ||
+    effectiveNextLink
+  ) || (allListings && allListings.length > (visibleCount || 0));
   const isLoadingButton = Boolean(externalLoading ?? loading);
 
   // Unified handler that prefers parent-provided callbacks, else falls back to internal loader
   const handleLoadMoreClick = async () => {
     // prefer parent's handler if they provided one
-    if (typeof onLoadMore === 'function') return onLoadMore();
-    if (typeof loadMoreProp === 'function') return loadMoreProp();
-    if (typeof onLoadMoreClick === 'function') return onLoadMoreClick();
-
-    // fallback to internal loader (only if we have a link)
-    if (effectiveNextLink) {
-      await loadMoreProperties();
+    try {
+      if (typeof onLoadMore === 'function') {
+        await onLoadMore();
+      } else if (typeof loadMoreProp === 'function') {
+        await loadMoreProp();
+      } else if (typeof onLoadMoreClick === 'function') {
+        await onLoadMoreClick();
+      } else if (effectiveNextLink) {
+        await loadMoreProperties();
+      }
+    } finally {
+      // reveal the next page of already-loaded items (if any)
+      setVisibleCount(prev => prev + PAGE_SIZE);
     }
   };
 
@@ -90,6 +115,9 @@ const SearchResults = ({
       </section>
     );
   }
+
+  // Only render current visible slice
+  const visibleListings = (allListings || []).slice(0, visibleCount || PAGE_SIZE);
 
   return (
     <section className="mb-16">
@@ -113,10 +141,10 @@ const SearchResults = ({
             {viewMode === 'grid' ? (
             <div className="transition-all duration-500 ease-in-out">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {allListings.map((listing) => {
-              const imageSrc = listing?.media || '/fallback-property.jpg';
++              {visibleListings.map((listing) => {
+               const imageSrc = listing?.media || '/fallback-property.jpg';
 
-              return (
+               return (
                 <Link
                   key={listing.ListingKey}
                   href={`/property/${listing.ListingKey}`}
@@ -192,32 +220,32 @@ const SearchResults = ({
               );
             })}
           </div>
-          {effectiveHasMore && (
-            <div className="flex justify-center mt-10">
-              <button
-                onClick={handleLoadMoreClick}
-                disabled={isLoadingButton}
-                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl hover:shadow-lg disabled:opacity-70 transition-all duration-300 flex items-center gap-2 group"
-              >
-                {isLoadingButton ? (
-                  <>
-                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Loading More Properties...
-                  </>
-                ) : (
-                  <>
-                    Load More Properties
-                    <svg className="w-5 h-5 transform group-hover:translate-y-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
-                    </svg>
-                  </>
-                )}
-              </button>
-            </div>
-          )}
+          {effectiveHasMore && ( (allListings && allListings.length > visibleListings.length) || effectiveNextLink || typeof onLoadMore === 'function' || typeof loadMoreProp === 'function' || typeof onLoadMoreClick === 'function') && (
+             <div className="flex justify-center mt-10">
+               <button
+                 onClick={handleLoadMoreClick}
+                 disabled={isLoadingButton}
+                 className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl hover:shadow-lg disabled:opacity-70 transition-all duration-300 flex items-center gap-2 group"
+               >
+                 {isLoadingButton ? (
+                   <>
+                     <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                     </svg>
+                     Loading More Properties...
+                   </>
+                 ) : (
+                   <>
+                     Load More Properties
+                     <svg className="w-5 h-5 transform group-hover:translate-y-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                     </svg>
+                   </>
+                 )}
+               </button>
+             </div>
+           )}
           {error && (
             <div className="mt-6 text-red-600 dark:text-red-400 text-center bg-red-50 dark:bg-red-900/20 p-3 rounded-lg flex items-center justify-center">
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
