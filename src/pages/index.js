@@ -13,6 +13,7 @@ import ErieBrandedHero from '../components/ErieBrandedHero';
 import CityFeatures from '../components/CityFeatures';
 import { getCachedSearchResults, hasCachedSearchResults, cacheSearchResults } from '../lib/searchCache';
 import PartnersTicker from '@/components/PartnersTicker';
+import BiggerPocketsSection from '@/components/BiggerPocketsSection';
 
 const HomePage = ({ featuredListings = [], heroContent }) => {
   const router = useRouter();
@@ -176,6 +177,16 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           {/* Any content below the map goes here */}
   
+          {/* Blog section — visible on home page */}
+          <div className="my-12">
+            <BiggerPocketsSection
+              pageSize={6}
+              heading="Latest from the PARES Blog"
+              showBiggerPockets={false}
+              showSeeAllButton={true}
+            />
+          </div>
+          
 
           {/* Hero Content */}
           <motion.div 
@@ -187,7 +198,7 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
           >
             <Hero content={heroContent} />
           </motion.div>
-          
+
           {/* User Profile Link */}
           <motion.div 
             initial={{ opacity: 0 }}

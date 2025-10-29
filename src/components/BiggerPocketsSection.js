@@ -1,82 +1,126 @@
 import React, { useState, useEffect } from 'react';
 import { formatPostDate, truncateSnippet, getRelativeTime } from '../utils/dateUtils';
 
-function BiggerPocketsCard({ post }) {
+/* Featured hero card for the top post */
+function FeaturedCard({ post }) {
   return (
-    <div className="group w-full overflow-hidden rounded-xl border border-gray-200 bg-white hover:shadow-lg transition-shadow duration-300">
-      <div className="p-4">
-        <div className="flex items-start justify-between gap-3 mb-3">
-          <h3 className="text-base font-semibold text-gray-900 line-clamp-2 group-hover:text-blue-700 transition-colors">
-            <a 
-              href={post.link} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="hover:underline"
-            >
+    <article className="group relative rounded-2xl overflow-hidden shadow-2xl hover:scale-[1.01] transition-transform duration-300 bg-white/60">
+      <div className="relative h-64 sm:h-72 lg:h-96">
+        {post.image ? (
+          <img
+            src={post.image}
+            alt={post.title}
+            className="absolute inset-0 h-full w-full object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-cyan-400 to-indigo-600" />
+        )}
+
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent" />
+
+        <div className="absolute left-6 bottom-6 right-6">
+          <span className="inline-flex items-center rounded-full bg-amber-100/90 text-amber-800 text-xs px-3 py-1 font-semibold mb-3 shadow-sm">
+            BiggerPockets
+          </span>
+
+          <h3 className="text-white text-xl sm:text-2xl lg:text-3xl font-extrabold leading-tight line-clamp-2">
+            <a href={post.link} target="_blank" rel="noopener noreferrer" className="hover:underline">
               {post.title}
             </a>
           </h3>
-          <div className="flex-shrink-0">
-            <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700">
-              BiggerPockets
-            </span>
+
+          {post.contentSnippet && (
+            <p className="mt-3 text-sm text-white/90 max-w-2xl line-clamp-3">
+              {truncateSnippet(post.contentSnippet, 220)}
+            </p>
+          )}
+
+          <div className="mt-4 flex items-center justify-between gap-4">
+            <div className="text-xs text-white/80 flex items-center gap-3">
+              {post.author && <span className="font-medium">✍️ {post.author}</span>}
+              <span>📅 {formatPostDate(post.pubDate)}</span>
+              <span className="text-white/40">•</span>
+              <span>{getRelativeTime(post.pubDate)}</span>
+            </div>
+
+            <a
+              href={post.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-500 to-rose-500 px-4 py-2 text-sm font-semibold text-white shadow hover:opacity-95"
+            >
+              Read on BiggerPockets
+              <svg width="14" height="14" viewBox="0 0 24 24" className="fill-white">
+                <path d="M14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3m-2 16H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7h-2v7Z"/>
+              </svg>
+            </a>
           </div>
         </div>
-
-        {post.contentSnippet && (
-          <p className="text-sm text-gray-600 line-clamp-3 mb-3">
-            {truncateSnippet(post.contentSnippet, 140)}
-          </p>
-        )}
-
-        <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 mb-3">
-          {post.author && <span>✍️ {post.author}</span>}
-          <span>📅 {formatPostDate(post.pubDate)}</span>
-          <span className="text-gray-400">•</span>
-          <span>{getRelativeTime(post.pubDate)}</span>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <a
-            href={post.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-100 transition-colors"
-          >
-            Read on BiggerPockets
-            <svg width="12" height="12" viewBox="0 0 24 24" className="fill-current">
-              <path d="M14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3m-2 16H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7h-2v7Z"/>
-            </svg>
-          </a>
-        </div>
       </div>
-    </div>
+    </article>
   );
 }
 
-function LoadingCard() {
+/* Standard card for subsequent posts */
+function ImageCard({ post }) {
   return (
-    <div className="w-full overflow-hidden rounded-xl border border-gray-200 bg-white">
-      <div className="p-4 animate-pulse">
-        <div className="flex items-start justify-between gap-3 mb-3">
-          <div className="flex-1">
-            <div className="h-4 bg-gray-200 rounded mb-2"></div>
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+    <article className="group relative rounded-2xl overflow-hidden shadow hover:shadow-lg transition-shadow duration-200 bg-white/60">
+      <div className="relative h-44">
+        {post.image ? (
+          <img
+            src={post.image}
+            alt={post.title}
+            className="absolute inset-0 h-full w-full object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-sky-300 to-indigo-400" />
+        )}
+
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+
+        <div className="absolute left-4 bottom-4 right-4">
+          <h4 className="text-white font-semibold text-base line-clamp-2">
+            <a href={post.link} target="_blank" rel="noopener noreferrer" className="hover:underline">
+              {post.title}
+            </a>
+          </h4>
+          <p className="mt-2 text-xs text-white/90 line-clamp-2">{truncateSnippet(post.contentSnippet || '', 120)}</p>
+
+          <div className="mt-3 flex items-center justify-between">
+            <div className="text-xs text-white/80 flex items-center gap-2">
+              {post.author && <span>✍️ {post.author}</span>}
+              <span>📅 {formatPostDate(post.pubDate)}</span>
+            </div>
+            <a
+              href={post.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-md bg-white/10 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur hover:bg-white/20"
+            >
+              Read
+            </a>
           </div>
-          <div className="w-20 h-6 bg-gray-200 rounded-full"></div>
         </div>
-        <div className="space-y-2 mb-3">
-          <div className="h-3 bg-gray-200 rounded"></div>
-          <div className="h-3 bg-gray-200 rounded"></div>
-          <div className="h-3 bg-gray-200 rounded w-2/3"></div>
-        </div>
-        <div className="flex gap-3 mb-3">
-          <div className="h-3 bg-gray-200 rounded w-16"></div>
-          <div className="h-3 bg-gray-200 rounded w-20"></div>
-          <div className="h-3 bg-gray-200 rounded w-12"></div>
-        </div>
-        <div className="h-8 bg-gray-200 rounded w-32"></div>
       </div>
+
+      <div className="p-4 bg-white/60">
+        <div className="text-sm text-slate-700">{getRelativeTime(post.pubDate)}</div>
+      </div>
+    </article>
+  );
+}
+
+function LoadingCard({ featured = false }) {
+  return (
+    <div className={`animate-pulse rounded-2xl ${featured ? 'h-72' : 'h-48'} bg-gradient-to-br from-white/70 to-white/60 p-4`} aria-hidden>
+      <div className="h-6 bg-gray-200 rounded w-3/4 mb-3"></div>
+      <div className="space-y-2">
+        <div className="h-3 bg-gray-200 rounded"></div>
+        <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+      </div>
+      <div className="mt-4 h-8 bg-gray-200 rounded w-28"></div>
     </div>
   );
 }
@@ -112,55 +156,86 @@ export default function BiggerPocketsSection() {
   }, []);
 
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">
-            Real Estate Insights from BiggerPockets
-          </h2>
-          <p className="text-sm text-gray-600">
-            Latest articles and strategies from the BiggerPockets community
-          </p>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-gray-500">
-          <div className="h-2 w-2 rounded-full bg-green-500"></div>
-          Live Feed
-        </div>
+    <section
+      className="relative rounded-3xl p-6 lg:p-8 overflow-hidden"
+      style={{ background: 'linear-gradient(180deg, rgba(250,252,255,0.95), rgba(243,246,255,0.9))' }}
+      aria-labelledby="biggerpockets-heading"
+    >
+      {/* Decorative SVG pattern */}
+      <div aria-hidden className="absolute inset-0 pointer-events-none">
+        <svg className="absolute right-0 top-0 opacity-8 w-64 h-64 transform translate-x-16 -translate-y-16" viewBox="0 0 100 100" fill="none">
+          <defs>
+            <linearGradient id="bpGrad" x1="0" x2="1">
+              <stop offset="0" stopColor="#06b6d4" stopOpacity="0.18" />
+              <stop offset="1" stopColor="#6366f1" stopOpacity="0.18" />
+            </linearGradient>
+          </defs>
+          <circle cx="20" cy="20" r="45" fill="url(#bpGrad)" />
+        </svg>
       </div>
 
-      {loading ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {[...Array(6)].map((_, i) => (
-            <LoadingCard key={i} />
-          ))}
-        </div>
-      ) : error ? (
-        <div className="rounded-lg bg-red-50 p-6 text-center">
-          <div className="text-red-600 mb-2">
-            <svg className="h-8 w-8 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+      <div className="relative z-10 max-w-7xl mx-auto">
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <h2 id="biggerpockets-heading" className="text-2xl sm:text-3xl font-extrabold text-slate-900">
+              Real Estate Insights — BiggerPockets
+            </h2>
+            <p className="mt-1 text-sm text-slate-600 max-w-xl">
+              Curated articles and investor strategies from the BiggerPockets community — handpicked for local investors and agents.
+            </p>
           </div>
-          <p className="text-red-700 font-medium mb-1">Unable to load BiggerPockets posts</p>
-          <p className="text-red-600 text-sm">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-3 inline-flex items-center gap-2 rounded-md bg-red-100 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-200 transition-colors"
-          >
-            Try Again
-          </button>
+
+          <div className="flex items-center gap-3">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-emerald-700 shadow-sm">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              Live Feed
+            </div>
+            <a
+              href="https://www.biggerpockets.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white shadow hover:bg-slate-800"
+            >
+              Visit BiggerPockets
+            </a>
+          </div>
         </div>
-      ) : posts.length === 0 ? (
-        <div className="rounded-lg bg-gray-50 p-6 text-center text-gray-600">
-          <p>No BiggerPockets posts available at the moment.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {posts.map((post) => (
-            <BiggerPocketsCard key={post.id} post={post} />
-          ))}
-        </div>
-      )}
+
+        {/* Content */}
+        {loading ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <LoadingCard featured />
+            {[...Array(5)].map((_, i) => <LoadingCard key={i} />)}
+          </div>
+        ) : error ? (
+          <div className="rounded-xl bg-red-50 p-6 text-center">
+            <p className="text-red-700 font-semibold">Unable to load BiggerPockets posts</p>
+            <p className="mt-2 text-sm text-red-600">{error}</p>
+            <div className="mt-4">
+              <button onClick={() => window.location.reload()} className="inline-flex items-center gap-2 rounded-md bg-red-100 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-200">
+                Try Again
+              </button>
+            </div>
+          </div>
+        ) : posts.length === 0 ? (
+          <div className="rounded-xl bg-slate-50 p-6 text-center text-slate-600">
+            <p>No BiggerPockets posts available at the moment.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {/* Featured post spans the entire top row on large screens */}
+            {posts.slice(0, 1).map((post) => (
+              <div key={post.id} className="lg:col-span-3">
+                <FeaturedCard post={post} />
+              </div>
+            ))}
+
+            {posts.slice(1, 7).map((post) => (
+              <ImageCard key={post.id} post={post} />
+            ))}
+          </div>
+        )}
+      </div>
     </section>
   );
 }

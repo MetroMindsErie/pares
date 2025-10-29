@@ -435,12 +435,127 @@ const Blog = ({
 
 	return (
 		<div className="space-y-8">
-			{/* Original PARES Blog Section */}
+			{/* Header */}
+			<div className="flex items-center justify-between">
+				<h2 className="text-2xl font-bold text-gray-900">{heading}</h2>
+				<div className="flex items-center gap-3">
+					{showSeeAllButton && (
+						<button
+							type="button"
+							onClick={handleSeeAllClick}
+							className="text-sm text-blue-600 hover:underline"
+						>
+							See all
+						</button>
+					)}
+				</div>
+			</div>
 
+			{/* Optional filters / search / tabs */}
+			{showFilters && !postsProp && (
+				<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+					<div className="flex items-center gap-2">
+						{TABS.map(t => (
+							<button
+								key={t}
+								onClick={() => { setTab(t); }}
+								className={`px-3 py-1 rounded-md text-sm ${
+									tab === t ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'
+								}`}
+							>
+								{t}
+							</button>
+						))}
+					</div>
+					<div className="flex items-center gap-2">
+						<input
+							value={q}
+							onChange={(e) => setQ(e.target.value)}
+							placeholder="Search blog..."
+							className="text-sm rounded-md border border-gray-200 px-3 py-2"
+						/>
+						<select
+							value={category}
+							onChange={(e) => setCategory(e.target.value)}
+							className="text-sm rounded-md border border-gray-200 px-2 py-2"
+						>
+							{allCategories.map(c => <option key={c} value={c}>{c}</option>)}
+						</select>
+					</div>
+				</div>
+			)}
 
-			{/* BiggerPockets Section - Only show when not viewing post details */}
-			{showBiggerPockets && !currentPost && (
-				<BiggerPocketsSection />
+			{/* Loading / Error */}
+			{loading && (
+				<div className="py-8 text-center">
+					<div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-lg">
+						<svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+							<circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+							<path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+						</svg>
+						<span className="text-sm text-blue-700">Loading posts...</span>
+					</div>
+				</div>
+			)}
+
+			{error && (
+				<div className="text-center text-red-600">{error}</div>
+			)}
+
+			{/* Post detail view */}
+			{currentPost ? (
+				<PostDetail
+					post={currentPost}
+					onBack={() => { setActive(null); }}
+					related={relatedPosts}
+				/>
+			) : (
+				<>
+					{/* Posts grid */}
+					{(!posts || posts.length === 0) ? (
+						<div className="py-8 text-center text-gray-600">
+							No posts found.
+						</div>
+					) : (
+						<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+							{posts.map(p => (
+								<BlogCard
+									key={p.id}
+									post={p}
+									onClick={() => {
+										setActive(p.id);
+									}}
+								/>
+							))}
+						</div>
+					)}
+
+					{/* Pagination */}
+					{!disablePagination && totalPages > 1 && (
+						<div className="flex items-center justify-center gap-3 mt-6">
+							<button
+								onClick={() => setPage((s) => Math.max(1, s - 1))}
+								disabled={page <= 1}
+								className="px-3 py-1 rounded-md border bg-white text-sm"
+							>
+								Previous
+							</button>
+							<span className="text-sm text-gray-600">Page {page} of {totalPages}</span>
+							<button
+								onClick={() => setPage((s) => Math.min(totalPages, s + 1))}
+								disabled={page >= totalPages}
+								className="px-3 py-1 rounded-md border bg-white text-sm"
+							>
+								Next
+							</button>
+						</div>
+					)}
+
+					{/* BiggerPockets Section - Only show when not viewing post details */}
+					{showBiggerPockets && !currentPost && (
+						<BiggerPocketsSection />
+					)}
+				</>
 			)}
 		</div>
 	);
