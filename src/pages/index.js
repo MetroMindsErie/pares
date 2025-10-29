@@ -25,6 +25,46 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
   const [isSearching, setIsSearching] = useState(false);
   const searchResultsRef = useRef(null);
 
+  // Defensive "load more" handler used by SearchResults
+  const loadMore = async () => {
+    if (!nextLink) return;
+    setIsSearching(true);
+    try {
+      const res = await fetch(nextLink);
+      const data = await res.json();
+
+      // Support several possible response shapes
+      let newProps = [];
+      if (Array.isArray(data)) {
+        newProps = data;
+      } else if (Array.isArray(data.properties)) {
+        newProps = data.properties;
+      } else if (Array.isArray(data.results)) {
+        newProps = data.results;
+      } else if (Array.isArray(data.items)) {
+        newProps = data.items;
+      }
+
+      if (newProps.length === 0) {
+        // nothing to append
+        setNextLink(data.next || data.nextLink || null);
+        return;
+      }
+
+      const combined = [...(searchResults || []), ...newProps];
+      setSearchResults(combined);
+      // Update cache if you rely on cached search results
+      try { cacheSearchResults(combined); } catch (e) { /* ignore cache errors */ }
+
+      // Update pagination pointer (defensive)
+      setNextLink(data.next || data.nextLink || null);
+    } catch (err) {
+      console.error('Error loading more properties:', err);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
   // Check for cached results on component mount
   useEffect(() => {
     // Check if we should scroll to top (coming from dashboard)
@@ -141,8 +181,15 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 bg-white shadow-sm">
               <SearchResults 
                 key={`search-results-${searchResults.length}-${Date.now()}`}
-                listings={searchResults} 
-                nextLink={nextLink} 
+                listings={searchResults}
+                nextLink={nextLink}
+                nextLinkUrl={nextLink}     // common alternative name
+                loadMoreUrl={nextLink}     // another alias
+                onLoadMore={loadMore}      // some components expect this
+                onLoadMoreClick={loadMore} // another alias
+                loadMore={loadMore}        // another alias
+                hasMore={!!nextLink}       // boolean flag often used to show load button
+                isLoadingMore={isSearching}
               />
             </div>
           )}

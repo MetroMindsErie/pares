@@ -1,3 +1,4 @@
+"use client";
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -6,6 +7,7 @@ import ImageGallery from './ImageGallery';
 import Layout from './Layout';
 import BackToListingsButton from './BackToListingsButton';
 import BuyerAgent from './Property/BuyerAgent';
+import SavePropertyButton from './SavePropertyButton';
 
 export const PendingProperty = ({ property }) => {
   const [activeTab, setActiveTab] = useState('details');
@@ -38,8 +40,6 @@ export const PendingProperty = ({ property }) => {
           <BackToListingsButton />
         </div>
 
-       
-
         {/* Property Header */}
         <div className="mb-6">
           <h1 className="text-2xl md:text-3xl font-bold mb-2">{property.UnparsedAddress}</h1>
@@ -62,8 +62,20 @@ export const PendingProperty = ({ property }) => {
             </h2>
             <p className="text-sm opacity-80 mt-1">This property is currently under contract and pending sale</p>
           </div>
+
           <div className="text-xl sm:text-2xl font-bold mt-2 md:mt-0 self-start sm:self-center">
             {formatPrice(property.ListPrice)}
+          </div>
+
+          {/* Save button */}
+          <div className="mt-3 sm:mt-0 sm:ml-4">
+            <SavePropertyButton
+              propertyId={property.ListingKey || property.ListingId || property.id}
+              listingKey={property.ListingKey || property.ListingId || property.id}
+              address={property.UnparsedAddress}
+              price={property.ListPrice}
+              imageUrl={property.mediaUrls?.[0] || '/fallback-property.jpg'}
+            />
           </div>
         </div>
 

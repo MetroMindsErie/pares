@@ -1,3 +1,4 @@
+"use client";
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -6,6 +7,7 @@ import ImageGallery from './ImageGallery';
 import Layout from './Layout';
 import BackToListingsButton from './BackToListingsButton';
 import BuyerAgent from './Property/BuyerAgent';
+import SavePropertyButton from './SavePropertyButton';
 
 export const SoldProperty = ({ property }) => {
   const [showRawDetails, setShowRawDetails] = useState(false);
@@ -34,12 +36,10 @@ export const SoldProperty = ({ property }) => {
           <h2 className="text-xl font-semibold mb-4 text-gray-900">Your Buyer Agent</h2>
           <BuyerAgent />
         </div>
-        {/* Back button at top of content */}
+
         <div className="mb-6 pt-4">
           <BackToListingsButton />
         </div>
-
-
 
         <div className="mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold mb-2">{property.UnparsedAddress}</h1>
@@ -59,8 +59,22 @@ export const SoldProperty = ({ property }) => {
             <h2 className="text-lg sm:text-xl font-bold">This Property Has Been Sold</h2>
             <p className="text-sm opacity-80">Closed on {formatDate(property.CloseDate)}</p>
           </div>
-          <div className="text-xl sm:text-2xl font-bold">
-            {formatPrice(property.ClosePrice || property.ListPrice)}
+
+          <div className="flex items-center gap-4">
+            <div className="text-xl sm:text-2xl font-bold">
+              {formatPrice(property.ClosePrice || property.ListPrice)}
+            </div>
+
+            {/* Save button (still useful to bookmark closed props) */}
+            <div>
+              <SavePropertyButton
+                propertyId={property.ListingKey || property.ListingId || property.id}
+                listingKey={property.ListingKey || property.ListingId || property.id}
+                address={property.UnparsedAddress}
+                price={property.ClosePrice || property.ListPrice}
+                imageUrl={property.mediaUrls?.[0] || '/fallback-property.jpg'}
+              />
+            </div>
           </div>
         </div>
 

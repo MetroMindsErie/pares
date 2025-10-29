@@ -1,4 +1,5 @@
-import { useState } from 'react';
+"use client";
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/auth-context';
 import supabase from '../lib/supabase-setup';
 
@@ -8,22 +9,33 @@ const SavePropertyButton = ({ propertyId, listingKey, address, price, imageUrl }
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Check if property is already saved when component mounts
-  useState(async () => {
-    if (!user?.id) return;
+  // Check if property is already saved when component mounts or when user/propertyId changes
+  useEffect(() => {
+    let mounted = true;
+    const checkSaved = async () => {
+      if (!user?.id || !propertyId) return;
+      try {
+        // maybeSingle avoids throwing if no row is found
+        const { data, error: fetchError } = await supabase
+          .from('saved_properties')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('property_id', propertyId)
+          .maybeSingle();
 
-    try {
-      const { data } = await supabase
-        .from('saved_properties')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('property_id', propertyId)
-        .single();
+        if (fetchError) {
+          console.error('Error checking saved status:', fetchError);
+          return;
+        }
+        if (!mounted) return;
+        setIsSaved(!!data);
+      } catch (err) {
+        console.error('Error checking saved status:', err);
+      }
+    };
 
-      setIsSaved(!!data);
-    } catch (error) {
-      console.error('Error checking saved status:', error);
-    }
+    checkSaved();
+    return () => { mounted = false; };
   }, [user?.id, propertyId]);
 
   const handleSave = async () => {

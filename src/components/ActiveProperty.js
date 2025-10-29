@@ -1,3 +1,4 @@
+"use client";
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -6,6 +7,7 @@ import ImageGallery from './ImageGallery';
 import BackToListingsButton from './BackToListingsButton';
 import Layout from './Layout';
 import BuyerAgent from './Property/BuyerAgent';
+import SavePropertyButton from './SavePropertyButton';
 
 export const ActiveProperty = ({ property }) => {
   const [activeTab, setActiveTab] = useState('details');
@@ -31,7 +33,6 @@ export const ActiveProperty = ({ property }) => {
           <BackToListingsButton />
         </div>
 
-
         <div className="mb-6">
           <h1 className="text-2xl md:text-3xl font-bold mb-2">{property.UnparsedAddress}</h1>
           <p className="text-lg md:text-xl text-gray-700">
@@ -50,18 +51,32 @@ export const ActiveProperty = ({ property }) => {
             <h2 className="text-2xl md:text-3xl font-bold text-blue-700 mb-2 sm:mb-0">
               {formatPrice(property.ListPrice)}
             </h2>
-            <div className="flex flex-wrap gap-x-4 gap-y-2 mt-2 md:mt-0">
-              <div className="flex items-center">
-                <FontAwesomeIcon icon={faBed} className="text-gray-500 mr-2" />
-                <span className="font-semibold">{property.BedroomsTotal || 'N/A'} Beds</span>
+
+            <div className="flex items-center gap-4 mt-2 md:mt-0">
+              <div className="flex flex-wrap gap-x-4 gap-y-2">
+                <div className="flex items-center">
+                  <FontAwesomeIcon icon={faBed} className="text-gray-500 mr-2" />
+                  <span className="font-semibold">{property.BedroomsTotal || 'N/A'} Beds</span>
+                </div>
+                <div className="flex items-center">
+                  <FontAwesomeIcon icon={faBath} className="text-gray-500 mr-2" />
+                  <span className="font-semibold">{property.BathroomsTotalInteger || 'N/A'} Baths</span>
+                </div>
+                <div className="flex items-center">
+                  <FontAwesomeIcon icon={faRuler} className="text-gray-500 mr-2" />
+                  <span className="font-semibold">{property.LivingArea ? property.LivingArea.toLocaleString() : 'N/A'} sq ft</span>
+                </div>
               </div>
-              <div className="flex items-center">
-                <FontAwesomeIcon icon={faBath} className="text-gray-500 mr-2" />
-                <span className="font-semibold">{property.BathroomsTotalInteger || 'N/A'} Baths</span>
-              </div>
-              <div className="flex items-center">
-                <FontAwesomeIcon icon={faRuler} className="text-gray-500 mr-2" />
-                <span className="font-semibold">{property.LivingArea ? property.LivingArea.toLocaleString() : 'N/A'} sq ft</span>
+
+              {/* Save button */}
+              <div className="flex-shrink-0">
+                <SavePropertyButton
+                  propertyId={property.ListingKey || property.ListingId || property.id}
+                  listingKey={property.ListingKey || property.ListingId || property.id}
+                  address={property.UnparsedAddress}
+                  price={property.ListPrice}
+                  imageUrl={property.mediaUrls?.[0] || '/fallback-property.jpg'}
+                />
               </div>
             </div>
           </div>

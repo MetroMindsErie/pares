@@ -6,17 +6,27 @@ import Link from 'next/link';
 import Image from 'next/legacy/image';
 import { getNextProperties } from '../services/trestleServices';
 
-const SearchResults = ({ listings, nextLink: initialNextLink }) => {
+const SearchResults = ({
+  listings,
+  nextLink: initialNextLink,
+  nextLinkUrl,
+  loadMoreUrl,
+  onLoadMore,
+  loadMore: loadMoreProp,
+  onLoadMoreClick,
+  hasMore: hasMoreProp,
+  isLoadingMore: externalLoading
+}) => {
   const [viewMode, setViewMode] = useState('grid');
-  const [nextLink, setNextLink] = useState(initialNextLink);
+  const [nextLink, setNextLink] = useState(initialNextLink || nextLinkUrl || loadMoreUrl || null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [allListings, setAllListings] = useState(listings);
 
   useEffect(() => {
-
+    // sync listings and potential pagination pointers (support multiple alias names)
     setAllListings(listings);
-    setNextLink(initialNextLink);
+    setNextLink(initialNextLink || nextLinkUrl || loadMoreUrl || null);
   }, [listings, initialNextLink]);
 
   const loadMoreProperties = async () => {
@@ -42,6 +52,24 @@ const SearchResults = ({ listings, nextLink: initialNextLink }) => {
       } finally {
         setLoading(false);
       }
+    }
+  };
+
+  // Determine whether there are more properties to load (support multiple prop names)
+  const effectiveNextLink = nextLink || nextLinkUrl || loadMoreUrl || null;
+  const effectiveHasMore = Boolean(hasMoreProp ?? effectiveNextLink);
+  const isLoadingButton = Boolean(externalLoading ?? loading);
+
+  // Unified handler that prefers parent-provided callbacks, else falls back to internal loader
+  const handleLoadMoreClick = async () => {
+    // prefer parent's handler if they provided one
+    if (typeof onLoadMore === 'function') return onLoadMore();
+    if (typeof loadMoreProp === 'function') return loadMoreProp();
+    if (typeof onLoadMoreClick === 'function') return onLoadMoreClick();
+
+    // fallback to internal loader (only if we have a link)
+    if (effectiveNextLink) {
+      await loadMoreProperties();
     }
   };
 
@@ -164,14 +192,14 @@ const SearchResults = ({ listings, nextLink: initialNextLink }) => {
               );
             })}
           </div>
-          {nextLink && (
+          {effectiveHasMore && (
             <div className="flex justify-center mt-10">
               <button
-                onClick={loadMoreProperties}
-                disabled={loading}
+                onClick={handleLoadMoreClick}
+                disabled={isLoadingButton}
                 className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl hover:shadow-lg disabled:opacity-70 transition-all duration-300 flex items-center gap-2 group"
               >
-                {loading ? (
+                {isLoadingButton ? (
                   <>
                     <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -221,7 +249,14 @@ SearchResults.propTypes = {
       ListPrice: PropTypes.number
     })
   ).isRequired,
-  nextLink: PropTypes.string
+  nextLink: PropTypes.string,
+  nextLinkUrl: PropTypes.string,
+  loadMoreUrl: PropTypes.string,
+  onLoadMore: PropTypes.func,
+  loadMore: PropTypes.func,
+  onLoadMoreClick: PropTypes.func,
+  hasMore: PropTypes.bool,
+  isLoadingMore: PropTypes.bool
 };
 
 export default SearchResults;
