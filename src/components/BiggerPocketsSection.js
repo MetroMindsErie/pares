@@ -23,8 +23,8 @@ function FeaturedCard({ post }) {
       onKeyDown={handleKeyDown}
       role="link"
       tabIndex={0}
-      // make the card fully show the image/gradient (no semi-opaque white)
-      className="group relative rounded-2xl overflow-hidden shadow-2xl hover:scale-[1.01] transition-transform duration-300 bg-transparent min-w-0 w-full lg:max-w-5xl mx-auto cursor-pointer"
+      // allow the card to span the full column width (no max width, no centering)
+      className="group relative rounded-2xl overflow-hidden shadow-2xl hover:scale-[1.01] transition-transform duration-300 bg-transparent min-w-0 w-full cursor-pointer"
     >
       {/* increase xs height so title has room; keep smaller heights at larger breakpoints */}
       <div className="relative h-56 sm:h-64 md:h-72 lg:h-96">
@@ -271,7 +271,8 @@ export default function BiggerPocketsSection() {
           // center grid items vertically on large screens so featured card sits centered
           <div className="pt-4 md:pt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 items-start lg:items-center">
             {posts.slice(0, 1).map((post) => (
-              <div key={post.id} className="lg:col-span-3 max-w-full min-w-0 flex items-center justify-center">
+              // span all 3 columns and let the card fill the space
+              <div key={post.id} className="lg:col-span-3 max-w-full min-w-0 w-full">
                 <FeaturedCard post={post} />
               </div>
             ))}
