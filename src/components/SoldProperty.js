@@ -42,8 +42,8 @@ export const SoldProperty = ({ property }) => {
 
 
         <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">{property.UnparsedAddress}</h1>
-          <p className="text-xl text-gray-700">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2">{property.UnparsedAddress}</h1>
+          <p className="text-base sm:text-xl text-gray-700">
             {property.City}, {property.StateOrProvince} {property.PostalCode}
           </p>
         </div>
@@ -54,40 +54,40 @@ export const SoldProperty = ({ property }) => {
         </div>
 
         {/* Sold Banner */}
-        <div className="bg-gray-800 text-white p-4 rounded-lg mb-8 flex flex-wrap justify-between items-center">
+        <div className="bg-gray-800 text-white p-4 rounded-lg mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
           <div>
-            <h2 className="text-xl font-bold">This Property Has Been Sold</h2>
+            <h2 className="text-lg sm:text-xl font-bold">This Property Has Been Sold</h2>
             <p className="text-sm opacity-80">Closed on {formatDate(property.CloseDate)}</p>
           </div>
-          <div className="text-2xl font-bold mt-2 md:mt-0">
+          <div className="text-xl sm:text-2xl font-bold">
             {formatPrice(property.ClosePrice || property.ListPrice)}
           </div>
         </div>
 
         {/* Property Overview */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <h2 className="text-2xl font-bold mb-6">Property Details</h2>
+        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-8">
+          <h2 className="text-xl sm:text-2xl font-bold mb-6">Property Details</h2>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-gray-50 p-4 rounded-lg text-center">
-              <FontAwesomeIcon icon={faBed} className="text-blue-500 text-xl mb-2" />
-              <p className="text-sm text-gray-500">Bedrooms</p>
-              <p className="font-bold">{property.BedroomsTotal || 'N/A'}</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-8">
+            <div className="bg-gray-50 p-3 sm:p-4 rounded-lg text-center">
+              <FontAwesomeIcon icon={faBed} className="text-blue-500 text-lg sm:text-xl mb-2" />
+              <p className="text-xs sm:text-sm text-gray-500">Bedrooms</p>
+              <p className="font-bold text-sm sm:text-base">{property.BedroomsTotal || 'N/A'}</p>
             </div>
-            <div className="bg-gray-50 p-4 rounded-lg text-center">
-              <FontAwesomeIcon icon={faBath} className="text-blue-500 text-xl mb-2" />
-              <p className="text-sm text-gray-500">Bathrooms</p>
-              <p className="font-bold">{property.BathroomsTotalInteger || 'N/A'}</p>
+            <div className="bg-gray-50 p-3 sm:p-4 rounded-lg text-center">
+              <FontAwesomeIcon icon={faBath} className="text-blue-500 text-lg sm:text-xl mb-2" />
+              <p className="text-xs sm:text-sm text-gray-500">Bathrooms</p>
+              <p className="font-bold text-sm sm:text-base">{property.BathroomsTotalInteger || 'N/A'}</p>
             </div>
-            <div className="bg-gray-50 p-4 rounded-lg text-center">
-              <FontAwesomeIcon icon={faRuler} className="text-blue-500 text-xl mb-2" />
-              <p className="text-sm text-gray-500">Living Area</p>
-              <p className="font-bold">{property.LivingArea ? `${property.LivingArea.toLocaleString()} sq ft` : 'N/A'}</p>
+            <div className="bg-gray-50 p-3 sm:p-4 rounded-lg text-center">
+              <FontAwesomeIcon icon={faRuler} className="text-blue-500 text-lg sm:text-xl mb-2" />
+              <p className="text-xs sm:text-sm text-gray-500">Living Area</p>
+              <p className="font-bold text-sm sm:text-base">{property.LivingArea ? `${property.LivingArea.toLocaleString()} sq ft` : 'N/A'}</p>
             </div>
-            <div className="bg-gray-50 p-4 rounded-lg text-center">
-              <FontAwesomeIcon icon={faCalendar} className="text-blue-500 text-xl mb-2" />
-              <p className="text-sm text-gray-500">Year Built</p>
-              <p className="font-bold">{property.YearBuilt || 'N/A'}</p>
+            <div className="bg-gray-50 p-3 sm:p-4 rounded-lg text-center">
+              <FontAwesomeIcon icon={faCalendar} className="text-blue-500 text-lg sm:text-xl mb-2" />
+              <p className="text-xs sm:text-sm text-gray-500">Year Built</p>
+              <p className="font-bold text-sm sm:text-base">{property.YearBuilt || 'N/A'}</p>
             </div>
           </div>
 

@@ -12,7 +12,7 @@ import SearchResults from '../components/SearchResults';
 import ErieBrandedHero from '../components/ErieBrandedHero';
 import CityFeatures from '../components/CityFeatures';
 import { getCachedSearchResults, hasCachedSearchResults, cacheSearchResults } from '../lib/searchCache';
-
+import PartnersTicker from '@/components/PartnersTicker';
 
 const HomePage = ({ featuredListings = [], heroContent }) => {
   const router = useRouter();
@@ -109,7 +109,8 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
         <meta name="keywords" content="Erie Pennsylvania real estate, MLS search, downtown Erie properties, Pennsylvania homes" />
       </Head>
       
-      <main className="pt-16 min-h-screen bg-gradient-to-br from-white to-gray-50" style={backgroundPattern}>
+      <main className="pt-4 sm:pt-8 md:pt-16 min-h-screen bg-gradient-to-br from-white to-gray-50" style={backgroundPattern}>
+        <PartnersTicker />
         {/* Enhanced Branded Hero Section */}
         <ErieBrandedHero 
           onSearchResults={handleSearchResults}
@@ -233,15 +234,15 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
-              className="text-center py-16 px-4 my-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl shadow-sm"
+              className="text-center py-8 sm:py-12 px-4 my-6 sm:my-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl shadow-sm"
             >
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Welcome to our Guest Experience</h2>
-              <p className="text-lg text-gray-700 max-w-2xl mx-auto mb-8">
+              <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900 mb-3 sm:mb-4">Welcome to our Guest Experience</h2>
+              <p className="text-sm sm:text-base md:text-lg text-gray-700 max-w-2xl mx-auto mb-6 sm:mb-8">
                 Enjoy our free guest tier with limited features. For a premium experience with full access to all properties and tools, please sign in.
               </p>
               <button 
                 onClick={() => router.push('/login')}
-                className="relative px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium rounded-lg transition-all duration-300 hover:shadow-xl hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 border-2 border-blue-400 hover:border-blue-300 shadow-lg"
+                className="relative px-6 sm:px-8 py-2.5 sm:py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium rounded-lg transition-all duration-300 hover:shadow-xl hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 border-2 border-blue-400 hover:border-blue-300 shadow-lg text-sm sm:text-base"
                 aria-label="Sign in to access premium features"
               >
                 <span className="relative z-10">Get Started</span>

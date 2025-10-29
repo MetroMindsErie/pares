@@ -33,8 +33,8 @@ export const ActiveProperty = ({ property }) => {
 
 
         <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">{property.UnparsedAddress}</h1>
-          <p className="text-xl text-gray-700">
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">{property.UnparsedAddress}</h1>
+          <p className="text-lg md:text-xl text-gray-700">
             {property.City}, {property.StateOrProvince} {property.PostalCode}
           </p>
         </div>
@@ -45,12 +45,12 @@ export const ActiveProperty = ({ property }) => {
         </div>
 
         {/* Property Overview */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <div className="flex flex-wrap justify-between items-center mb-6">
-            <h2 className="text-2xl md:text-3xl font-bold text-blue-700">
+        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-8">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6">
+            <h2 className="text-2xl md:text-3xl font-bold text-blue-700 mb-2 sm:mb-0">
               {formatPrice(property.ListPrice)}
             </h2>
-            <div className="flex flex-wrap gap-4 mt-2 md:mt-0">
+            <div className="flex flex-wrap gap-x-4 gap-y-2 mt-2 md:mt-0">
               <div className="flex items-center">
                 <FontAwesomeIcon icon={faBed} className="text-gray-500 mr-2" />
                 <span className="font-semibold">{property.BedroomsTotal || 'N/A'} Beds</span>
@@ -73,9 +73,9 @@ export const ActiveProperty = ({ property }) => {
 
           {/* Tabs */}
           <div className="border-b border-gray-200 mb-6">
-            <nav className="-mb-px flex" aria-label="Tabs">
+            <nav className="-mb-px flex overflow-x-auto" aria-label="Tabs">
               <button
-                className={`mr-8 py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'details'
+                className={`mr-4 sm:mr-8 py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${activeTab === 'details'
                     ? 'border-blue-700 text-blue-700'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
@@ -84,7 +84,7 @@ export const ActiveProperty = ({ property }) => {
                 Property Details
               </button>
               <button
-                className={`mr-8 py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'features'
+                className={`mr-4 sm:mr-8 py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${activeTab === 'features'
                     ? 'border-blue-700 text-blue-700'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}

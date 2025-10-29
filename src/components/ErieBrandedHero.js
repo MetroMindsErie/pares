@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import SearchBar from './SearchBar';
+import PartnersTicker from './PartnersTicker';
 
 const ErieBrandedHero = ({ onSearchResults }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -31,6 +32,9 @@ const ErieBrandedHero = ({ onSearchResults }) => {
       className="relative overflow-hidden"
       style={{ minHeight: '90vh' }}
     >
+      {/* Partners ticker (separate component) */}
+      {/* <PartnersTicker /> */}
+
       {/* Image Carousel Background */}
       <div className="absolute inset-0">
         {heroImages.map((image, index) => (
@@ -95,17 +99,6 @@ const ErieBrandedHero = ({ onSearchResults }) => {
               transition={{ delay: 0.5, duration: 1 }}
               className="text-white"
             >
-              <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.7, duration: 0.8 }}
-                className="inline-block mb-4"
-              >
-                <span className="bg-blue-600/90 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium tracking-wide">
-                  PREMIUM MLS SEARCH
-                </span>
-              </motion.div>
-              
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
                 <span className="block">Discover Your</span>
                 <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
@@ -189,28 +182,29 @@ const ErieBrandedHero = ({ onSearchResults }) => {
         </div>
       </div>
 
-      {/* Scroll Indicator */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.5, duration: 0.8 }}
-        className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20"
-      >
-        <div className="flex flex-col items-center text-white/80">
+      {/* Scroll Indicator (non-overlapping) - placed below hero content so it won't overlap search card */}
+      <div className="relative z-30 flex justify-center mt-6 sm:mt-8 hero-scroll-gap">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.2, duration: 0.8 }}
+          className="flex flex-col items-center text-white/90 pointer-events-none"
+        >
           <span className="text-xs uppercase tracking-wider mb-2">Scroll to Explore</span>
           <motion.div
-            animate={{ y: [0, 10, 0] }}
+            aria-hidden
+            animate={{ y: [0, 8, 0] }}
             transition={{ duration: 2, repeat: Infinity }}
-            className="w-6 h-10 border-2 border-white/40 rounded-full flex justify-center"
+            className="w-6 h-10 border-2 border-white/30 rounded-full flex justify-center"
           >
             <motion.div
-              animate={{ y: [0, 12, 0] }}
+              animate={{ y: [0, 10, 0] }}
               transition={{ duration: 2, repeat: Infinity }}
-              className="w-1 h-3 bg-white/60 rounded-full mt-2"
+              className="w-1.5 h-3 bg-white/70 rounded-full mt-2"
             />
           </motion.div>
-        </div>
-      </motion.div>
+        </motion.div>
+      </div>
     </motion.div>
   );
 };

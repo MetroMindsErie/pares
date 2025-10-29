@@ -66,7 +66,7 @@ const SearchResults = ({ listings, nextLink: initialNextLink }) => {
   return (
     <section className="mb-16">
       <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-8 gap-4">
-        <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
+        <h2 className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
           Search Results
           <span className="ml-3 text-lg font-normal text-gray-700 dark:text-gray-500">
             {allListings.length} {allListings.length === 1 ? 'property' : 'properties'}
@@ -84,7 +84,7 @@ const SearchResults = ({ listings, nextLink: initialNextLink }) => {
 
             {viewMode === 'grid' ? (
             <div className="transition-all duration-500 ease-in-out">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {allListings.map((listing) => {
               const imageSrc = listing?.media || '/fallback-property.jpg';
 
@@ -94,7 +94,7 @@ const SearchResults = ({ listings, nextLink: initialNextLink }) => {
                   href={`/property/${listing.ListingKey}`}
                   className="group block rounded-xl overflow-hidden bg-white dark:bg-gray-800 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
                 >
-                  <div className="relative h-60">
+                  <div className="relative h-48 sm:h-60">
                     <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/20 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     <Image
                       src={imageSrc}
@@ -104,12 +104,12 @@ const SearchResults = ({ listings, nextLink: initialNextLink }) => {
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     />
                     {listing.StandardStatus === 'Closed' && (
-                      <div className="absolute top-3 right-3 bg-red-600 text-white px-3 py-1 rounded-full text-sm font-medium z-20 shadow-md">
+                      <div className="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 rounded-full text-xs font-medium z-20 shadow-md">
                         Sold
                       </div>
                     )}
                     {(listing.StandardStatus === 'Pending' || listing.StandardStatus === 'ActiveUnderContract') && (
-                      <div className="absolute top-3 right-3 bg-yellow-500 text-white px-3 py-1 rounded-full text-sm font-medium z-20 shadow-md">
+                      <div className="absolute top-2 right-2 bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-medium z-20 shadow-md">
                         {listing.StandardStatus === 'ActiveUnderContract' ? 'Under Contract' : 'Pending'}
                       </div>
                     )}
@@ -125,36 +125,36 @@ const SearchResults = ({ listings, nextLink: initialNextLink }) => {
                       </div>
                     </div>
                   </div>
-                  <div className="p-5">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  <div className="p-4 sm:p-5">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                       {listing.UnparsedAddress}
                     </h3>
-                    <div className="flex items-center flex-wrap gap-3 mt-2">
-                      <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
-                        <svg className="w-4 h-4 mr-1.5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <div className="flex items-center flex-wrap gap-2 sm:gap-3 mt-2">
+                      <div className="flex items-center text-gray-500 dark:text-gray-400 text-xs sm:text-sm">
+                        <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-1.5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
                         </svg>
                         {listing.BedroomsTotal} beds
                       </div>
-                      <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
-                        <svg className="w-4 h-4 mr-1.5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <div className="flex items-center text-gray-500 dark:text-gray-400 text-xs sm:text-sm">
+                        <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-1.5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"></path>
                         </svg>
                         {listing.BathroomsTotalInteger} baths
                       </div>
                       {listing.LivingAreaSqFt && (
-                        <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
-                          <svg className="w-4 h-4 mr-1.5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <div className="flex items-center text-gray-500 dark:text-gray-400 text-xs sm:text-sm">
+                          <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-1.5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5"></path>
                           </svg>
                           {listing.LivingAreaSqFt.toLocaleString()} sqft
                         </div>
                       )}
                     </div>
-                    <p className="text-xl font-bold text-gray-900 dark:text-white mt-3 flex items-center">
+                    <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mt-3 flex items-center">
                       {listing.ListPrice ? (
                         <>
-                          <span className="bg-blue-600/10 text-blue-600 dark:bg-blue-400/20 dark:text-blue-400 py-0.5 px-2 rounded-md mr-2 text-sm font-medium">Price</span>
+                          <span className="bg-blue-600/10 text-blue-600 dark:bg-blue-400/20 dark:text-blue-400 py-0.5 px-2 rounded-md mr-2 text-xs sm:text-sm font-medium">Price</span>
                           ${listing.ListPrice.toLocaleString()}
                         </>
                       ) : 'Price not available'}

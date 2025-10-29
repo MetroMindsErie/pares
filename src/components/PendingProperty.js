@@ -42,8 +42,8 @@ export const PendingProperty = ({ property }) => {
 
         {/* Property Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">{property.UnparsedAddress}</h1>
-          <p className="text-xl text-gray-700">
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">{property.UnparsedAddress}</h1>
+          <p className="text-lg md:text-xl text-gray-700">
             {property.City}, {property.StateOrProvince} {property.PostalCode}
           </p>
         </div>
@@ -54,22 +54,22 @@ export const PendingProperty = ({ property }) => {
         </div>
 
         {/* Status Banner - This is the only section that should differ between property types */}
-        <div className="bg-yellow-50 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded-lg mb-8 flex flex-wrap justify-between items-center">
+        <div className="bg-yellow-50 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded-lg mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
           <div>
-            <h2 className="text-xl font-bold flex items-center">
+            <h2 className="text-lg sm:text-xl font-bold flex items-center">
               <FontAwesomeIcon icon={faClock} className="mr-2" />
               {statusDisplay}
             </h2>
             <p className="text-sm opacity-80 mt-1">This property is currently under contract and pending sale</p>
           </div>
-          <div className="text-2xl font-bold mt-2 md:mt-0">
+          <div className="text-xl sm:text-2xl font-bold mt-2 md:mt-0 self-start sm:self-center">
             {formatPrice(property.ListPrice)}
           </div>
         </div>
 
         {/* Property Overview Section */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <h2 className="text-2xl font-bold mb-6">Property Details</h2>
+        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-8">
+          <h2 className="text-xl sm:text-2xl font-bold mb-6">Property Details</h2>
 
           {/* Property Stats Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">

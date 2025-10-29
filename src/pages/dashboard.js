@@ -269,7 +269,7 @@ export default function DashboardPage() {
   return (
     <Layout>
       {/* Hero section with background image */}
-      <div className="relative bg-cover bg-center h-48 md:h-64" 
+      <div className="relative bg-cover bg-center h-40 sm:h-48 md:h-64" 
            style={{ 
              backgroundImage: 'url("/dashboard-hero.jpg")',
              backgroundBlendMode: 'overlay',
@@ -278,11 +278,11 @@ export default function DashboardPage() {
         <div className="absolute inset-0 bg-gradient-to-r from-blue-900/70 to-transparent"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
           {profile && (
-            <div className="flex items-center gap-6">
+            <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 md:gap-6 text-center sm:text-left">
               <img
                 src={getProfilePicture()}
                 alt={`${profile.first_name}'s profile`}
-                className="h-20 w-20 rounded-full border-4 border-white/20 shadow-xl object-cover"
+                className="h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 rounded-full border-4 border-white/20 shadow-xl object-cover"
                 referrerPolicy="no-referrer"
                 crossOrigin="anonymous"
                 onError={(e) => {
@@ -290,10 +290,10 @@ export default function DashboardPage() {
                 }}
               />
               <div className="text-white">
-                <h1 className="text-3xl font-bold">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">
                   Welcome back, {profile.first_name}!
                 </h1>
-                <p className="mt-2 text-blue-100">
+                <p className="mt-1 sm:mt-2 text-blue-100 text-xs sm:text-sm md:text-base">
                   Here's what's happening with your saved properties
                 </p>
               </div>
@@ -303,10 +303,10 @@ export default function DashboardPage() {
       </div>
 
       {/* Main content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 sm:-mt-10">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3 mb-8">
-          <div className="bg-white rounded-lg shadow-lg p-6 transform hover:scale-105 transition-transform duration-200">
+        <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-3 mb-6 sm:mb-8">
+          <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 transform hover:scale-105 transition-transform duration-200">
             <StatsCard
               title="Saved Properties"
               value={savedProperties.length.toString()}
@@ -317,11 +317,11 @@ export default function DashboardPage() {
         </div>
 
         {/* Quick Actions and Recent Activity */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3 mb-8">
+        <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-3 mb-6 sm:mb-8">
           {/* Quick Actions */}
-          <div className="bg-gradient-to-br from-white to-blue-50 rounded-lg shadow-lg p-6 border border-blue-100">
-            <h3 className="text-lg font-semibold mb-4 text-blue-900">Quick Actions</h3>
-            <div className="space-y-3">
+          <div className="bg-gradient-to-br from-white to-blue-50 rounded-lg shadow-lg p-4 sm:p-6 border border-blue-100">
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-blue-900">Quick Actions</h3>
+            <div className="space-y-2 sm:space-y-3">
               <button
                 onClick={() => {
                   // Clear any cached search results
@@ -336,23 +336,23 @@ export default function DashboardPage() {
                   // Navigate to home
                   window.location.href = '/';
                 }}
-                className="w-full text-left px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-3"
+                className="w-full text-left px-3 sm:px-4 py-2.5 sm:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 sm:gap-3 text-sm sm:text-base"
               >
-                <span className="p-2 bg-blue-500 rounded-full">🏠</span>
+                <span className="p-1.5 sm:p-2 bg-blue-500 rounded-full text-sm">🏠</span>
                 Browse Properties
               </button>
               <button
                 onClick={() => router.push('/saved-properties')}
-                className="w-full text-left px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-3"
+                className="w-full text-left px-3 sm:px-4 py-2.5 sm:py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 sm:gap-3 text-sm sm:text-base"
               >
-                <span className="p-2 bg-green-500 rounded-full">❤️</span>
+                <span className="p-1.5 sm:p-2 bg-green-500 rounded-full text-sm">❤️</span>
                 View Saved Properties ({savedProperties.length})
               </button>
               <button
                 onClick={() => router.push('/create-profile')}
-                className="w-full text-left px-4 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors flex items-center gap-3"
+                className="w-full text-left px-3 sm:px-4 py-2.5 sm:py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors flex items-center gap-2 sm:gap-3 text-sm sm:text-base"
               >
-                <span className="p-2 bg-gray-300 rounded-full">⚙️</span>
+                <span className="p-1.5 sm:p-2 bg-gray-300 rounded-full text-sm">⚙️</span>
                 Profile Settings
               </button>
             </div>

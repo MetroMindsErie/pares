@@ -17,6 +17,16 @@ a {
   text-decoration: none;
 }
 
+/* Make internal router Link text bold for better visibility */
+a[href^="/"] {
+  font-weight: 600; /* semibold */
+}
+
+/* Opt-out utility if you need a specific link to remain normal weight */
+a.no-bold {
+  font-weight: 400 !important;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -127,72 +137,322 @@ header, footer {
   border-radius: 4px;
 }
 
-/* Property grid fixes */
-@media (max-width: 768px) {
-  .county-details-section .grid {
-    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+/* Hide scrollbar for mobile tab navigation */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Mobile-first responsive improvements */
+@media (max-width: 639px) {
+  /* Reduce padding on mobile containers */
+  .container {
+    padding: 0 0.75rem;
+  }
+  
+  /* Tighter spacing for mobile cards */
+  .property-card {
+    margin-bottom: 1rem;
+  }
+  
+  /* Better mobile form spacing */
+  form {
+    gap: 0.75rem !important;
+  }
+  
+  /* Mobile button improvements */
+  button {
+    min-height: 44px; /* Touch target minimum */
+  }
+  
+  /* Mobile text improvements */
+  h1 {
+    line-height: 1.2;
+  }
+  
+  h2 {
+    line-height: 1.3;
+  }
+  
+  /* Mobile grid improvements */
+  .grid {
+    gap: 0.75rem;
+  }
+  
+  /* Mobile image gallery */
+  .image-gallery {
+    border-radius: 0.5rem;
+  }
+  
+  /* Ensure search bar has proper spacing on mobile */
+  .search-bar-container {
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  
+  /* Fix select dropdown text overflow on mobile */
+  select option {
+    padding: 0.25rem 0.5rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  /* Ensure form elements have proper touch targets */
+  input[type="text"], 
+  select, 
+  button {
+    min-height: 44px;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+  
+  /* Better mobile grid spacing */
+  .mobile-search-grid {
+    gap: 0.5rem;
+  }
+  
+  /* Mobile button improvements */
+  .mobile-search-button {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    min-height: 44px;
+  }
+  
+  /* Prevent horizontal scroll in search forms */
+  .search-form-container {
+    overflow-x: hidden;
+    width: 100%;
+  }
+  
+  /* Mobile dropdown improvements */
+  .mobile-select {
+    background-position: right 0.5rem center;
+    background-size: 1rem 1rem;
+  }
+
+  /* Ensure scroll indicator has extra padding on small screens so it isn't visually overlapped */
+  .hero-scroll-gap {
+    /* give the indicator extra breathing room on mobile */
+    padding-bottom: 1.25rem; /* 20px */
+  }
+
+  /* subtle pill behind the scroll indicator on mobile so it reads as a distinct element */
+  .hero-scroll-gap .flex.flex-col.items-center {
+    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0));
+    padding: 6px 10px;
+    border-radius: 9999px;
+  }
+
+  /* Make sure CityFeatures negative pull only applies on md+ (enforced in component),
+     but add a tiny top margin to CityFeatures on mobile as safety */
+  .max-w-7xl.mx-auto.px-4.py-12 {
+    margin-top: 0.5rem;
   }
 }
 
-/* Enhanced styling for property cards and county details */
-.property-card {
-  transition: all 0.3s ease, opacity 0.5s ease, transform 0.3s ease;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.property-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-}
-
-/* Glass card effect for statistics */
-.glass-card {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
-}
-
-/* Map transition effects */
-.map-transition {
-  transition: height 0.5s ease, opacity 0.5s ease;
-}
-
-/* Enhanced button styles */
-.btn-primary {
-  @apply px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
-}
-
-.btn-secondary {
-  @apply px-4 py-2 border border-blue-600 text-blue-600 bg-white rounded-lg hover:bg-blue-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
-}
-
-/* Custom animations */
-@keyframes fadeSlideUp {
-  0% {
-    opacity: 0;
-    transform: translateY(10px);
+/* Extra small mobile devices */
+@media (max-width: 374px) {
+  .search-bar-container {
+    padding: 0.5rem;
   }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
+  
+  .mobile-search-grid {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  
+  /* Stack all filters vertically on very small screens */
+  .mobile-filters {
+    grid-template-columns: 1fr !important;
   }
 }
 
-.animate-fade-slide-up {
-  animation: fadeSlideUp 0.6s ease forwards;
+/* Fix for search bar positioning issues */
+.search-section {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  padding-bottom: 2rem;
 }
 
-.delay-100 { animation-delay: 0.1s; }
-.delay-200 { animation-delay: 0.2s; }
-.delay-300 { animation-delay: 0.3s; }
+@media (max-width: 639px) {
+  .search-section {
+    padding-bottom: 1rem;
+  }
+}
 
-/* Add a placeholder image for map background */
-.create-placeholder-image {
-  background-color: #f1f5f9;
-  background-image: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23e2e8f0' fill-opacity='1' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E");
+/* Fix for county details scrolling */
+.county-details-section {
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.5) rgba(229, 231, 235, 0.5);
+}
+
+.county-details-section::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.county-details-section::-webkit-scrollbar-track {
+  background: rgba(229, 231, 235, 0.5);
+  border-radius: 4px;
+}
+
+.county-details-section::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 4px;
+}
+
+/* Hide scrollbar for mobile tab navigation */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Mobile-first responsive improvements */
+@media (max-width: 639px) {
+  /* Reduce padding on mobile containers */
+  .container {
+    padding: 0 0.75rem;
+  }
+  
+  /* Tighter spacing for mobile cards */
+  .property-card {
+    margin-bottom: 1rem;
+  }
+  
+  /* Better mobile form spacing */
+  form {
+    gap: 0.75rem !important;
+  }
+  
+  /* Mobile button improvements */
+  button {
+    min-height: 44px; /* Touch target minimum */
+  }
+  
+  /* Mobile text improvements */
+  h1 {
+    line-height: 1.2;
+  }
+  
+  h2 {
+    line-height: 1.3;
+  }
+  
+  /* Mobile grid improvements */
+  .grid {
+    gap: 0.75rem;
+  }
+  
+  /* Mobile image gallery */
+  .image-gallery {
+    border-radius: 0.5rem;
+  }
+  
+  /* Ensure search bar has proper spacing on mobile */
+  .search-bar-container {
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  
+  /* Fix select dropdown text overflow on mobile */
+  select option {
+    padding: 0.25rem 0.5rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  /* Ensure form elements have proper touch targets */
+  input[type="text"], 
+  select, 
+  button {
+    min-height: 44px;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+  
+  /* Better mobile grid spacing */
+  .mobile-search-grid {
+    gap: 0.5rem;
+  }
+  
+  /* Mobile button improvements */
+  .mobile-search-button {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    min-height: 44px;
+  }
+  
+  /* Prevent horizontal scroll in search forms */
+  .search-form-container {
+    overflow-x: hidden;
+    width: 100%;
+  }
+  
+  /* Mobile dropdown improvements */
+  .mobile-select {
+    background-position: right 0.5rem center;
+    background-size: 1rem 1rem;
+  }
+
+  /* Ensure scroll indicator has extra padding on small screens so it isn't visually overlapped */
+  .hero-scroll-gap {
+    /* give the indicator extra breathing room on mobile */
+    padding-bottom: 1.25rem; /* 20px */
+  }
+
+  /* subtle pill behind the scroll indicator on mobile so it reads as a distinct element */
+  .hero-scroll-gap .flex.flex-col.items-center {
+    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0));
+    padding: 6px 10px;
+    border-radius: 9999px;
+  }
+
+  /* Make sure CityFeatures negative pull only applies on md+ (enforced in component),
+     but add a tiny top margin to CityFeatures on mobile as safety */
+  .max-w-7xl.mx-auto.px-4.py-12 {
+    margin-top: 0.5rem;
+  }
+}
+
+/* Extra small mobile devices */
+@media (max-width: 374px) {
+  .search-bar-container {
+    padding: 0.5rem;
+  }
+  
+  .mobile-search-grid {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  
+  /* Stack all filters vertically on very small screens */
+  .mobile-filters {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Fix for search bar positioning issues */
+.search-section {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  padding-bottom: 2rem;
+}
+
+@media (max-width: 639px) {
+  .search-section {
+    padding-bottom: 1rem;
+  }
 }
 
 /* Add these new styles to ensure county details are visible */
@@ -333,4 +593,178 @@ header, footer {
   background-repeat: no-repeat;
   background-position: left -40px top 0;
   animation: shimmer 2s infinite;
+}
+
+/* Ensure hero scroll gap has breathing room on all sizes and larger on tablet/desktop */
+.hero-scroll-gap {
+  padding-bottom: 1.25rem; /* default mobile spacing */
+}
+
+/* Subtle pill background around the indicator (keeps pointer-events none on inner so it won't intercept touch) */
+.hero-scroll-gap .flex.flex-col.items-center {
+  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0));
+  padding: 6px 10px;
+  border-radius: 9999px;
+}
+
+/* Increase the gap on medium and large screens to avoid overlap with pulled-up CityFeatures */
+@media (min-width: 768px) {
+  .hero-scroll-gap {
+    padding-bottom: 3rem; /* larger breathing room on tablet/desktop */
+  }
+  .hero-scroll-gap .flex.flex-col.items-center {
+    padding: 8px 14px;
+  }
+}
+
+/* Ensure CityFeatures negative pull only applies at large screens (component now uses lg:-mt-12).
+   Add safety: small top margin at medium to avoid accidental overlap. */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .max-w-7xl.mx-auto.px-4.py-12 {
+    margin-top: 0.5rem;
+  }
+}
+
+/* Add navbar & partners sizing variables for consistent placement */
+:root {
+  --navbar-height: 72px; /* adjust if your navbar differs */
+  --partners-height-mobile: 64px;
+  --partners-height-desktop: 104px;
+}
+
+/* Partners ticker — full-bleed white banner placed under the navbar */
+.partners-ticker {
+  width: 100vw;
+  /* position the ticker relative to the viewport so it starts at the navbar bottom */
+  position: absolute;
+  left: 0;
+  top: var(--navbar-height);
+  height: var(--partners-height-desktop);
+  display: block;
+  z-index: 70; /* above hero overlays */
+  overflow: hidden;
+  /* transparent background with a faint translucent overlay + blur for legibility */
+  background: transparent;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  /* faint overlay so logos remain legible over busy hero images */
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: 0 6px 18px rgba(6,12,34,0.06);
+  padding: 0;
+  pointer-events: none; /* decorative only - prevent intercepting clicks */
+}
+
+/* Vertically center the tracks inside the ticker */
+.partners-ticker .partners-track {
+  padding: 0 48px;
+  height: 100%;
+  align-items: center;
+}
+
+/* The scrolling track. Content is duplicated in markup to enable seamless loop */
+.partners-track {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  will-change: transform;
+  animation: partners-marquee 18s linear infinite;
+}
+
+/* Second track runs reverse/slower for depth (optional) */
+.partners-track--alt {
+  animation-direction: reverse;
+  animation-duration: 26s;
+  opacity: 0.98;
+}
+
+/* Logo styling — larger, lighter drop shadow */
+.partners-logo {
+  height: 64px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+  opacity: 1;
+  filter: drop-shadow(0 6px 14px rgba(16,24,40,0.08));
+  border-radius: 8px;
+  padding: 6px;
+}
+
+/* Mobile / small devices: slightly smaller logos & tighter spacing */
+@media (max-width: 639px) {
+  :root {
+    --partners-height-desktop: var(--partners-height-mobile);
+  }
+  .partners-ticker {
+    top: var(--navbar-height);
+    height: var(--partners-height-mobile);
+    z-index: 70;
+    pointer-events: none;
+  }
+  .partners-track {
+    padding: 0 18px;
+    gap: 18px;
+    animation-duration: 14s;
+  }
+  .partners-logo {
+    height: 40px;
+    padding: 4px;
+  }
+}
+
+/* Desktop: keep the taller banner and more breathing room */
+@media (min-width: 1024px) {
+  .partners-ticker {
+    height: var(--partners-height-desktop);
+  }
+  .partners-track {
+    padding: 0 72px;
+    gap: 44px;
+    animation-duration: 20s;
+  }
+  .partners-logo {
+    height: 72px;
+    padding: 8px;
+  }
+}
+
+/* Marquee animation - translate half the width (duplication ensures smoothness) */
+@keyframes partners-marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* gentle float on logos to add subtle life */
+.partners-logo {
+  animation: partners-float 6s ease-in-out infinite;
+}
+
+@keyframes partners-float {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+  100% { transform: translateY(0); }
+}
+
+/* Keep hero scroll gap intact (already present), ensure ticker sits just above hero */
+.hero-scroll-gap { padding-bottom: 1.25rem; }
+
+/* Small helper for glassy navbar fallback */
+.backdrop-blur-md {
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+/* Slightly stronger translucent background when used with utility bg-white/20 */
+.bg-white\/20 {
+  background-color: rgba(255,255,255,0.20) !important;
+}
+
+/* Slight translucent dark background helper for dark mode */
+.dark .bg-gray-900\/20 {
+  background-color: rgba(15, 23, 42, 0.20) !important;
+}
+
+/* Ensure the sticky navbar sits above absolutely positioned elements (ticker/hero overlays) */
+nav[role="navigation"], .backdrop-blur-md.sticky {
+  z-index: 70;
 }

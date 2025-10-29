@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuth } from '../context/auth-context';
 import { clearCachedSearchResults } from '../lib/searchCache';
+import PartnersTicker from './PartnersTicker';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -154,12 +155,20 @@ export default function Navbar() {
   
   // Return early if not client-side yet to prevent hydration issues
   if (!isClient) {
-    return <nav className="bg-white shadow-md z-50"></nav>;
+    return (
+      <>
+        <nav className="backdrop-blur-md bg-white/20 border-b border-white/10 sticky top-0 z-50 h-16"></nav>
+        <PartnersTicker />
+      </>
+    );
   }
-  
+ 
   const primaryLinks = [
-    { href: '/', label: 'Home' },
+    // { href: '/', label: 'Home' },
   ];
+  
+  // single shared style: thin blue border, transparent background — matches Pares logo border
+  const borderedButtonClass = "inline-flex items-center h-10 leading-none px-4 py-2 border border-blue-200 text-sm font-medium rounded-md text-blue-600 bg-transparent hover:bg-white/5 transition-colors";
 
   const authedLinks = [
     { href: '/dashboard', label: 'Dashboard' },
@@ -167,44 +176,149 @@ export default function Navbar() {
   ];
   
   return (
-    <nav className="bg-white shadow-md z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          {/* Left side - Logo and navigation links */}
-          <div className="flex">
-            <div className="flex-shrink-0 flex items-center">
-              <Link href="/" className="font-serif text-2xl text-blue-700 hover:text-blue-900 transition duration-300">
-                Pares
-              </Link>
-            </div>
-            <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-              {primaryLinks.map((link) => (
+    <>
+      <nav className="backdrop-blur-md bg-white/20 dark:bg-gray-900/20 border-b border-white/10 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            {/* Left side - Logo and navigation links */}
+            <div className="flex">
+              <div className="flex-shrink-0 flex items-center">
+                {/* add thin blue border and slight padding so logo remains visible on transparent navbar */}
                 <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`inline-flex items-center px-1 pt-1 border-b-2 ${
-                    router.pathname === link.href
-                      ? 'border-blue-500 text-gray-900'
-                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                  } text-sm font-medium`}
+                  href="/"
+                  className="font-serif text-2xl text-blue-700 hover:text-blue-900 transition duration-300 px-3 py-1 rounded-md border border-blue-200"
                 >
-                  {link.label}
+                  Pares
                 </Link>
-              ))}
+              </div>
+              <div className="hidden sm:ml-6 sm:flex sm:items-center sm:space-x-8">
+                {primaryLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    // Use identical button styling as the Login button for Home so size/height match
+                    className={
+                      link.href === '/'
+                        ? borderedButtonClass
+                        : `inline-flex items-center px-1 pt-1 border-b-2 ${
+                            router.pathname === link.href
+                              ? 'border-blue-500 text-gray-900'
+                              : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                          } text-sm font-medium`
+                    }
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+            
+            {/* Desktop auth links */}
+            <div className="hidden sm:ml-6 sm:flex sm:items-center">
+              {isAuthenticated ? (
+                <div className="flex items-center space-x-4">
+                  {/* MetaMask connection button for crypto investors */}
+                  {isCryptoInvestor && !walletConnected && (
+                    <button
+                      onClick={connectWallet}
+                      className={borderedButtonClass + " text-orange-600 hover:bg-white/6"} // consistent border + transparent bg
+                    >
+                      <svg className="w-4 h-4 mr-1" viewBox="0 0 35 33" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M32.9582 1L19.8241 10.7183L22.2665 5.09944L32.9582 1Z" fill="#E2761B" stroke="#E2761B" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M2.65857 1L15.6948 10.809L13.3456 5.09944L2.65857 1Z" fill="#E4761B" stroke="#E4761B" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M28.2031 23.5314L24.7152 28.8138L32.2261 30.8426L34.3838 23.6396L28.2031 23.5314Z" fill="#E4761B" stroke="#E4761B" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M1.23291 23.6396L3.37902 30.8426L10.8899 28.8138L7.40203 23.5314L1.23291 23.6396Z" fill="#E4761B" stroke="#E4761B" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M10.4808 14.5149L8.3577 17.6507L15.8105 17.9753L15.5494 9.98901L10.4808 14.5149Z" fill="#E4761B" stroke="#E4761B" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M25.1205 14.5149L19.9684 9.8808L19.8246 17.9753L27.2659 17.6507L25.1205 14.5149Z" fill="#E4761B" stroke="#E4761B" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M10.8899 28.8138L15.3304 26.6684L11.5037 23.6828L10.8899 28.8138Z" fill="#E4761B" stroke="#E4761B" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M20.2769 26.6684L24.7152 28.8138L24.1014 23.6828L20.2769 26.6684Z" fill="#E4761B" stroke="#E4761B" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      Connect Wallet
+                    </button>
+                  )}
+                  
+                  {/* Show wallet address if connected */}
+                  {isCryptoInvestor && walletConnected && (
+                    <div className="flex items-center px-3 py-1.5 bg-gray-100 border border-gray-300 rounded">
+                      <span className="h-2 w-2 rounded-full bg-green-500 mr-2"></span>
+                      <span className="text-xs font-medium text-gray-700">{formatAddress(walletAddress)}</span>
+                    </div>
+                  )}
+                  
+                  {authedLinks.map((link) => (
+                    <Link key={link.href} href={link.href} className={borderedButtonClass}>
+                      {link.label}
+                    </Link>
+                  ))}
+                  <button onClick={handleLogout} className={borderedButtonClass}>
+                    Sign out
+                  </button>
+                </div>
+              ) : (
+                <div className="space-x-4">
+                  <Link href="/login" className={borderedButtonClass}>
+                    Log in
+                  </Link>
+                  <Link href="/register" className={borderedButtonClass}>
+                    Sign up
+                  </Link>
+                </div>
+              )}
+            </div>
+            
+            {/* Mobile menu button */}
+            <div className="-mr-2 flex items-center sm:hidden">
+              <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
+                aria-expanded="false"
+              >
+                <span className="sr-only">Open main menu</span>
+                {!isOpen ? (
+                  <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                ) : (
+                  <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                )}
+              </button>
             </div>
           </div>
-          
-          {/* Desktop auth links */}
-          <div className="hidden sm:ml-6 sm:flex sm:items-center">
+        </div>
+
+        {/* Mobile menu */}
+        <div className={`${isOpen ? 'block' : 'hidden'} sm:hidden bg-white/10 dark:bg-gray-900/10 backdrop-blur-md border-t border-white/5`}>
+          <div className="pt-2 pb-3 space-y-1">
+            {primaryLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={
+                  link.href === '/'
+                    ? `block w-full px-4 py-2 text-base font-medium rounded-md border border-blue-200 text-blue-600 bg-transparent`
+                    : `block pl-3 pr-4 py-2 border-l-4 ${
+                        router.pathname === link.href
+                          ? 'border-blue-500 text-blue-700 bg-blue-50'
+                          : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                      } text-base font-medium`
+                }
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
+          <div className="pt-4 pb-3 border-t border-gray-200">
             {isAuthenticated ? (
-              <div className="flex items-center space-x-4">
-                {/* MetaMask connection button for crypto investors */}
+              <div className="space-y-1">
+                {/* Mobile MetaMask connection button */}
                 {isCryptoInvestor && !walletConnected && (
                   <button
                     onClick={connectWallet}
-                    className="inline-flex items-center px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded text-sm transition-colors"
+                    className="block w-full px-4 py-2 text-base font-medium rounded-md border border-blue-200 text-orange-600 bg-transparent"
                   >
-                    <svg className="w-4 h-4 mr-1" viewBox="0 0 35 33" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <svg className="w-5 h-5 mr-2" viewBox="0 0 35 33" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M32.9582 1L19.8241 10.7183L22.2665 5.09944L32.9582 1Z" fill="#E2761B" stroke="#E2761B" strokeLinecap="round" strokeLinejoin="round"/>
                       <path d="M2.65857 1L15.6948 10.809L13.3456 5.09944L2.65857 1Z" fill="#E4761B" stroke="#E4761B" strokeLinecap="round" strokeLinejoin="round"/>
                       <path d="M28.2031 23.5314L24.7152 28.8138L32.2261 30.8426L34.3838 23.6396L28.2031 23.5314Z" fill="#E4761B" stroke="#E4761B" strokeLinecap="round" strokeLinejoin="round"/>
@@ -214,158 +328,51 @@ export default function Navbar() {
                       <path d="M10.8899 28.8138L15.3304 26.6684L11.5037 23.6828L10.8899 28.8138Z" fill="#E4761B" stroke="#E4761B" strokeLinecap="round" strokeLinejoin="round"/>
                       <path d="M20.2769 26.6684L24.7152 28.8138L24.1014 23.6828L20.2769 26.6684Z" fill="#E4761B" stroke="#E4761B" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
-                    Connect Wallet
+                    Connect MetaMask Wallet
                   </button>
                 )}
                 
-                {/* Show wallet address if connected */}
+                {/* Show wallet address if connected (mobile) */}
                 {isCryptoInvestor && walletConnected && (
-                  <div className="flex items-center px-3 py-1.5 bg-gray-100 border border-gray-300 rounded">
-                    <span className="h-2 w-2 rounded-full bg-green-500 mr-2"></span>
-                    <span className="text-xs font-medium text-gray-700">{formatAddress(walletAddress)}</span>
+                  <div className="block pl-3 pr-4 py-2 text-base font-medium text-gray-500">
+                    <div className="flex items-center">
+                      <span className="h-2 w-2 rounded-full bg-green-500 mr-2"></span>
+                      <span>Wallet: {formatAddress(walletAddress)}</span>
+                    </div>
                   </div>
                 )}
-                
+              
                 {authedLinks.map((link) => (
                   <Link
                     key={link.href}
                     href={link.href}
-                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-800"
+                    className="block w-full px-4 py-2 text-base font-medium rounded-md border border-blue-200 text-blue-600 bg-transparent"
                   >
                     {link.label}
                   </Link>
                 ))}
                 <button
                   onClick={handleLogout}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                  className="block w-full px-4 py-2 text-base font-medium rounded-md border border-blue-200 text-blue-600 bg-transparent"
                 >
                   Sign out
                 </button>
-              </div>
-            ) : (
-              <div className="space-x-4">
-                <Link 
-                  href="/login" 
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-600 bg-white hover:bg-gray-50"
-                >
-                  Log in
-                </Link>
-                <Link 
-                  href="/register" 
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-                >
-                  Sign up
-                </Link>
-              </div>
-            )}
-          </div>
-          
-          {/* Mobile menu button */}
-          <div className="-mr-2 flex items-center sm:hidden">
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
-              aria-expanded="false"
-            >
-              <span className="sr-only">Open main menu</span>
-              {!isOpen ? (
-                <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              ) : (
-                <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile menu */}
-      <div className={`${isOpen ? 'block' : 'hidden'} sm:hidden`}>
-        <div className="pt-2 pb-3 space-y-1">
-          {primaryLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`block pl-3 pr-4 py-2 border-l-4 ${
-                router.pathname === link.href
-                  ? 'border-blue-500 text-blue-700 bg-blue-50'
-                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
-              } text-base font-medium`}
-            >
-              {link.label}
-            </Link>
-          ))}
-        </div>
-        <div className="pt-4 pb-3 border-t border-gray-200">
-          {isAuthenticated ? (
-            <div className="space-y-1">
-              {/* Mobile MetaMask connection button */}
-              {isCryptoInvestor && !walletConnected && (
-                <button
-                  onClick={connectWallet}
-                  className="flex items-center w-full pl-3 pr-4 py-2 text-base font-medium text-orange-600 hover:bg-orange-50 hover:text-orange-700"
-                >
-                  <svg className="w-5 h-5 mr-2" viewBox="0 0 35 33" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M32.9582 1L19.8241 10.7183L22.2665 5.09944L32.9582 1Z" fill="#E2761B" stroke="#E2761B" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M2.65857 1L15.6948 10.809L13.3456 5.09944L2.65857 1Z" fill="#E4761B" stroke="#E4761B" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M28.2031 23.5314L24.7152 28.8138L32.2261 30.8426L34.3838 23.6396L28.2031 23.5314Z" fill="#E4761B" stroke="#E4761B" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M1.23291 23.6396L3.37902 30.8426L10.8899 28.8138L7.40203 23.5314L1.23291 23.6396Z" fill="#E4761B" stroke="#E4761B" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M10.4808 14.5149L8.3577 17.6507L15.8105 17.9753L15.5494 9.98901L10.4808 14.5149Z" fill="#E4761B" stroke="#E4761B" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M25.1205 14.5149L19.9684 9.8808L19.8246 17.9753L27.2659 17.6507L25.1205 14.5149Z" fill="#E4761B" stroke="#E4761B" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M10.8899 28.8138L15.3304 26.6684L11.5037 23.6828L10.8899 28.8138Z" fill="#E4761B" stroke="#E4761B" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M20.2769 26.6684L24.7152 28.8138L24.1014 23.6828L20.2769 26.6684Z" fill="#E4761B" stroke="#E4761B" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  Connect MetaMask Wallet
-                </button>
-              )}
-              
-              {/* Show wallet address if connected (mobile) */}
-              {isCryptoInvestor && walletConnected && (
-                <div className="block pl-3 pr-4 py-2 text-base font-medium text-gray-500">
-                  <div className="flex items-center">
-                    <span className="h-2 w-2 rounded-full bg-green-500 mr-2"></span>
-                    <span>Wallet: {formatAddress(walletAddress)}</span>
-                  </div>
-                </div>
-              )}
-            
-              {authedLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 text-base font-medium"
-                >
-                  {link.label}
-                </Link>
-              ))}
-              <button
-                onClick={handleLogout}
-                className="block w-full text-left pl-3 pr-4 py-2 border-l-4 border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 text-base font-medium"
-              >
-                Sign out
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-1">
-              <Link 
-                href="/login" 
-                className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 text-base font-medium"
-              >
-                Log in
-              </Link>
-              <Link 
-                href="/register" 
-                className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 text-base font-medium"
-              >
-                Sign up
-              </Link>
-            </div>
-          )}
-        </div>
-      </div>
-    </nav>
-  );
-}
+               </div>
+             ) : (
+               <div className="space-y-1">
+                  <Link href="/login" className="block w-full px-4 py-2 text-base font-medium rounded-md border border-blue-200 text-blue-600 bg-transparent">
+                    Log in
+                  </Link>
+                  <Link href="/register" className="block w-full px-4 py-2 text-base font-medium rounded-md border border-blue-200 text-blue-600 bg-transparent">
+                    Sign up
+                  </Link>
+               </div>
+             )}
+           </div>
+         </div>
+       </nav>
+      {/* Always render partners ticker immediately below the navbar so it is present on every page */}
+      <PartnersTicker />
+    </>
+   );
+ }
