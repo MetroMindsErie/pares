@@ -3,8 +3,29 @@ import { formatPostDate, truncateSnippet, getRelativeTime } from '../utils/dateU
 
 /* Featured hero card for the top post */
 function FeaturedCard({ post }) {
+  // open link in new tab
+  const openLink = () => window.open(post.link, '_blank', 'noopener,noreferrer');
+  const handleClick = (e) => {
+    // if user clicked an inner anchor or button, don't duplicate navigation
+    if (e.target.closest('a') || e.target.closest('button')) return;
+    openLink();
+  };
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      openLink();
+    }
+  };
+
   return (
-    <article className="group relative rounded-2xl overflow-hidden shadow-2xl hover:scale-[1.01] transition-transform duration-300 bg-white/60 min-w-0 w-full lg:max-w-5xl mx-auto">
+    <article
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+      role="link"
+      tabIndex={0}
+      // make the card fully show the image/gradient (no semi-opaque white)
+      className="group relative rounded-2xl overflow-hidden shadow-2xl hover:scale-[1.01] transition-transform duration-300 bg-transparent min-w-0 w-full lg:max-w-5xl mx-auto cursor-pointer"
+    >
       {/* increase xs height so title has room; keep smaller heights at larger breakpoints */}
       <div className="relative h-56 sm:h-64 md:h-72 lg:h-96">
         {post.image ? (
@@ -65,8 +86,27 @@ function FeaturedCard({ post }) {
 
 /* Standard card for subsequent posts */
 function ImageCard({ post }) {
+  const openLink = () => window.open(post.link, '_blank', 'noopener,noreferrer');
+  const handleClick = (e) => {
+    if (e.target.closest('a') || e.target.closest('button')) return;
+    openLink();
+  };
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      openLink();
+    }
+  };
+
   return (
-    <article className="group relative rounded-2xl overflow-hidden shadow hover:shadow-lg transition-shadow duration-200 bg-white/60 min-w-0 max-w-full">
+    <article
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+      role="link"
+      tabIndex={0}
+      // remove semi-opaque white so image colors show through
+      className="group relative rounded-2xl overflow-hidden shadow hover:shadow-lg transition-shadow duration-200 bg-transparent min-w-0 max-w-full cursor-pointer"
+    >
       {/* slightly smaller on very small screens to avoid vertical overflow */}
       <div className="relative h-40 sm:h-44">
         {post.image ? (
@@ -108,7 +148,8 @@ function ImageCard({ post }) {
         </div>
       </div>
 
-      <div className="p-4 bg-white/60">
+      {/* footer should not block the card color/image */}
+      <div className="p-4 bg-transparent">
         <div className="text-sm text-slate-700">{getRelativeTime(post.pubDate)}</div>
       </div>
     </article>
@@ -160,8 +201,8 @@ export default function BiggerPocketsSection() {
 
   return (
     <section
-      className="relative rounded-3xl p-4 sm:p-6 lg:p-8 overflow-hidden"
-      style={{ background: 'linear-gradient(180deg, rgba(250,252,255,0.95), rgba(243,246,255,0.9))' }}
+      className="relative rounded-3xl p-4 sm:p-6 lg:p-8 overflow-hidden bg-transparent"
+      style={{ background: 'transparent' }}
       aria-labelledby="biggerpockets-heading"
     >
       {/* Decorative SVG pattern */}
