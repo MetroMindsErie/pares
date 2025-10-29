@@ -29,8 +29,9 @@ const ErieBrandedHero = ({ onSearchResults }) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 1.2 }}
-      className="relative overflow-hidden"
-      style={{ minHeight: '90vh' }}
+      // allow overflow so large headings aren't clipped by overlays, and add mobile top padding
+      className="relative overflow-visible"
+      style={{ minHeight: '85vh' }}
     >
       {/* Partners ticker (separate component) */}
       {/* <PartnersTicker /> */}
@@ -88,8 +89,9 @@ const ErieBrandedHero = ({ onSearchResults }) => {
       </div>
 
       {/* Main Hero Content */}
-      <div className="relative z-10 h-full flex items-center">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+      {/* add mobile padding-top so sticky navbar / ticker don't overlap the heading; remove padding on lg+ */}
+      <div className="relative z-10 h-full flex items-center pt-20 lg:pt-0">
+         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <div className="grid lg:grid-cols-2 gap-12 items-center min-h-[80vh]">
             
             {/* Left Column - Hero Text */}

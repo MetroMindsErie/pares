@@ -632,27 +632,38 @@ header, footer {
   --partners-height-desktop: 104px;
 }
 
-/* Partners ticker — full-bleed white banner placed under the navbar */
+/* Partners ticker — full-bleed banner placed under the navbar */
 .partners-ticker {
-  width: 100vw;
-  /* position the ticker relative to the viewport so it starts at the navbar bottom */
-  position: absolute;
+  width: 100%;
+  /* On mobile we keep the ticker in the document flow so it does not overlap the hero/avatar */
+  position: relative;
   left: 0;
-  top: var(--navbar-height);
-  height: var(--partners-height-desktop);
+  top: 0; /* ensure it's anchored at top of flow on mobile */
+  height: var(--partners-height-mobile);
   display: block;
-  z-index: 70; /* above hero overlays */
+  z-index: 50; /* below navbar and page content on mobile */
   overflow: hidden;
-  /* transparent background with a faint translucent overlay + blur for legibility */
+  /* keep the subtle styling */
   background: transparent;
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  /* faint overlay so logos remain legible over busy hero images */
   background-image: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
   border-bottom: 1px solid rgba(15, 23, 42, 0.06);
   box-shadow: 0 6px 18px rgba(6,12,34,0.06);
   padding: 0;
   pointer-events: none; /* decorative only - prevent intercepting clicks */
+}
+
+/* Switch to absolute full-bleed ticker on larger screens so it can overlay hero visuals */
+@media (min-width: 640px) {
+  .partners-ticker {
+    position: absolute;
+    top: var(--navbar-height);
+    width: 100vw;
+    left: 0;
+    height: var(--partners-height-desktop);
+    z-index: 70; /* above hero overlays on desktop as intended */
+  }
 }
 
 /* Vertically center the tracks inside the ticker */
@@ -695,10 +706,13 @@ header, footer {
   :root {
     --partners-height-desktop: var(--partners-height-mobile);
   }
+  /* Keep the ticker at the top of the document flow on mobile (don't offset it by navbar height)
+     and keep its z-index low so it won't cover the dashboard avatar. */
   .partners-ticker {
-    top: var(--navbar-height);
+    position: relative;
+    top: 0;
     height: var(--partners-height-mobile);
-    z-index: 70;
+    z-index: 50;
     pointer-events: none;
   }
   .partners-track {
@@ -766,7 +780,7 @@ header, footer {
 
 /* Ensure the sticky navbar sits above absolutely positioned elements (ticker/hero overlays) */
 nav[role="navigation"], .backdrop-blur-md.sticky {
-  z-index: 70;
+  z-index: 90;
 }
 
 /* Modern CityFeatures styles */

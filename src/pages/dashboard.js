@@ -303,18 +303,19 @@ export default function DashboardPage() {
       </div>
 
       {/* Main content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 sm:-mt-10">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-3 mb-6 sm:mb-8">
-          <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 transform hover:scale-105 transition-transform duration-200">
-            <StatsCard
-              title="Saved Properties"
-              value={savedProperties.length.toString()}
-              change={0}
-              icon="heart"
-            />
-          </div>
-        </div>
+      {/* ensure on mobile the content sits below the hero to avoid overlap; keep negative pull on sm+ */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 sm:-mt-10">
+         {/* Stats Cards */}
+         <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-3 mb-6 sm:mb-8">
+           <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 transform hover:scale-105 transition-transform duration-200">
+             <StatsCard
+               title="Saved Properties"
+               value={savedProperties.length.toString()}
+               change={0}
+               icon="heart"
+             />
+           </div>
+         </div>
 
         {/* Quick Actions and Recent Activity */}
         <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-3 mb-6 sm:mb-8">
