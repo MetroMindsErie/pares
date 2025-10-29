@@ -197,101 +197,204 @@ export async function getMediaUrls(listingKey) {
 
   // Trestle API integration for property search
 
+// --- helper utilities for building safer OData filters ---
+const ALLOWED_COUNTIES = ['Erie', 'Warren', 'Crawford'];
+
+const odataEscape = (val) => {
+  if (val === undefined || val === null) return '';
+  // Escape single quote for OData by doubling it
+  return String(val).replace(/'/g, "''");
+};
+
+const isZip = (s) => /^\d{5}$/.test(s);
+const isProbableAddress = (s) => {
+  if (!s) return false;
+  const trimmed = s.trim();
+  // simple heuristic: starts with a number (street number) OR contains common street suffixes
+  const startsWithNumber = /^\d+\s+/.test(trimmed);
+  const streetSuffixes = /\b(st|street|ave|avenue|rd|road|blvd|lane|ln|drive|dr|court|ct|way|place|pl|terrace|trl)\b/i;
+  return startsWithNumber || streetSuffixes.test(trimmed);
+};
+
+// --- new: generate address variants (directionals and street type abbreviations) ---
+const DIRECTIONS = [
+  ['north', 'n'],
+  ['south', 's'],
+  ['east', 'e'],
+  ['west', 'w'],
+  ['northeast', 'ne'],
+  ['northwest', 'nw'],
+  ['southeast', 'se'],
+  ['southwest', 'sw']
+];
+
+const STREET_TYPES = [
+  ['street','st'],
+  ['avenue','ave'],
+  ['road','rd'],
+  ['boulevard','blvd'],
+  ['lane','ln'],
+  ['drive','dr'],
+  ['court','ct'],
+  ['place','pl'],
+  ['terrace','ter'],
+  ['trail','trl'],
+  ['circle','cir'],
+  ['square','sq']
+];
+
+const generateVariants = (input) => {
+  if (!input) return [''];
+  const base = input.toLowerCase().trim();
+  const variants = new Set([base]);
+
+  const replaceWord = (str, from, to) => str.replace(new RegExp(`\\b${from}\\b`, 'g'), to);
+
+  // Apply direction and street-type replacements iteratively to build variants
+  [...DIRECTIONS, ...DIRECTIONS.map(d => [d[1], d[0]]), ...STREET_TYPES, ...STREET_TYPES.map(s => [s[1], s[0]])]
+    .forEach(([from, to]) => {
+      Array.from(variants).forEach(v => {
+        if (v.includes(from)) {
+          variants.add(replaceWord(v, from, to));
+        }
+      });
+    });
+
+  // also add variants with periods for single-letter directions (e.g., "e" -> "e.")
+  Array.from(variants).forEach(v => {
+    DIRECTIONS.forEach(([full, abbr]) => {
+      if (v.includes(` ${abbr} `) || v.startsWith(`${abbr} `) || v.endsWith(` ${abbr}`)) {
+        variants.add(v.replace(new RegExp(`\\b${abbr}\\b`, 'g'), `${abbr}.`));
+      }
+      if (v.includes(`${abbr}.`)) {
+        variants.add(v.replace(new RegExp(`\\b${abbr}\\.\\b`, 'g'), abbr));
+      }
+    });
+  });
+
+  return Array.from(variants);
+};
+
 export const searchProperties = async (searchParams) => {
   try {
     const filters = [];
-    
-    // Handle status and sold timeline filter
+
+    // Always limit to MLS counties (MLS only contains Erie, Warren, Crawford)
+    const countyClause = `(${ALLOWED_COUNTIES.map(c => `CountyOrParish eq '${odataEscape(c)}'`).join(' or ')})`;
+
+    // Normalize user input
+    const rawLocation = (searchParams.location || '').trim();
+
+    // STATUS + sold timeline handling (kept similar to previous logic)
     if (searchParams.status) {
-      filters.push(`StandardStatus eq '${searchParams.status}'`);
-      
-      // Add date range filter for sold properties
+      filters.push(`StandardStatus eq '${odataEscape(searchParams.status)}'`);
       if (searchParams.status === 'Closed' && searchParams.soldWithin) {
         const today = new Date();
         const pastDate = new Date();
-        pastDate.setDate(today.getDate() - parseInt(searchParams.soldWithin));
-        
+        pastDate.setDate(today.getDate() - parseInt(searchParams.soldWithin, 10));
         const formattedToday = today.toISOString().split('T')[0];
         const formattedPastDate = pastDate.toISOString().split('T')[0];
-        
         filters.push(`CloseDate ge ${formattedPastDate} and CloseDate le ${formattedToday}`);
       }
     }
-    
-    // Handle location search (county, zip, or address)
-    if (searchParams.location) {
-      const location = searchParams.location.trim();
-      
-      // Check if it's a zip code (5 digits)
-      if (/^\d{5}$/.test(location)) {
-        filters.push(`PostalCode eq '${location}'`);
+
+    // LOCATION handling (zip / address / county/city)
+    if (rawLocation) {
+      if (isZip(rawLocation)) {
+        // Exact postal code match
+        filters.push(`PostalCode eq '${odataEscape(rawLocation)}'`);
+      } else if (isProbableAddress(rawLocation)) {
+        // Generate variants to match "E" vs "East", "St" vs "Street", etc.
+        const fullVariants = generateVariants(rawLocation);
+        const escapedFullVariants = fullVariants.map(v => odataEscape(v));
+
+        // Build unparsed exact equality OR clauses for variants
+        const unparsedExactClauses = escapedFullVariants
+          .map(v => `tolower(UnparsedAddress) eq '${v}'`)
+          .join(' or ');
+
+        // Build unparsed contains() OR clauses for variants
+        const unparsedContainsClauses = escapedFullVariants
+          .map(v => `contains(tolower(UnparsedAddress), '${v}')`)
+          .join(' or ');
+
+        // If the user started with a number, try StreetNumber + StreetName variants
+        const parts = rawLocation.split(/\s+/);
+        const firstToken = parts[0];
+        let streetNumberClause = null;
+        if (/^\d+$/.test(firstToken) && parts.length > 1) {
+          const streetNumber = odataEscape(firstToken);
+          const streetNameRaw = parts.slice(1).join(' ');
+          const streetNameVariants = generateVariants(streetNameRaw);
+          const escapedStreetNameVariants = streetNameVariants.map(v => odataEscape(v));
+          const streetNameContains = escapedStreetNameVariants
+            .map(v => `contains(tolower(StreetName), '${v}')`)
+            .join(' or ');
+          streetNumberClause = `(StreetNumber eq '${streetNumber}' and (${streetNameContains}))`;
+        }
+
+        // Combine all generated address sub-clauses
+        const addressSubClauses = [
+          unparsedExactClauses ? `(${unparsedExactClauses})` : null,
+          unparsedContainsClauses ? `(${unparsedContainsClauses})` : null,
+          streetNumberClause
+        ].filter(Boolean);
+
+        filters.push(`(${addressSubClauses.join(' or ')})`);
       } else {
-        // Search in multiple fields for county or address
-        filters.push(
-          `(contains(tolower(City), tolower('${location}')) or ` +
-          `contains(tolower(CountyOrParish), tolower('${location}')) or ` +
-          `contains(tolower(UnparsedAddress), tolower('${location}')))`
-        );
+        // Treat as county / city / general text search
+        const escapedLower = odataEscape(rawLocation.toLowerCase());
+        filters.push(`(contains(tolower(City), '${escapedLower}') or contains(tolower(CountyOrParish), '${escapedLower}') or contains(tolower(UnparsedAddress), '${escapedLower}'))`);
       }
     }
-    
-    // Handle price range
-    if (searchParams.minPrice) {
-      filters.push(`ListPrice ge ${searchParams.minPrice}`);
-    }
-    
-    if (searchParams.maxPrice) {
-      filters.push(`ListPrice le ${searchParams.maxPrice}`);
-    }
-    
-    // Handle bedrooms
-    if (searchParams.beds) {
-      filters.push(`BedroomsTotal ge ${searchParams.beds}`);
-    }
-    
-    // Handle bathrooms
-    if (searchParams.baths) {
-      filters.push(`BathroomsTotalInteger ge ${searchParams.baths}`);
-    }
-    
-    // Property type filter
-    if (searchParams.propertyType) {
-      filters.push(`PropertyType eq '${searchParams.propertyType}'`);
-    }
 
-    // Square footage filters
+    // Price, beds, baths, property type, sqft (same as before but with escaping where applicable)
+    if (searchParams.minPrice) {
+      filters.push(`ListPrice ge ${parseInt(searchParams.minPrice, 10)}`);
+    }
+    if (searchParams.maxPrice) {
+      filters.push(`ListPrice le ${parseInt(searchParams.maxPrice, 10)}`);
+    }
+    if (searchParams.beds) {
+      filters.push(`BedroomsTotal ge ${parseInt(searchParams.beds, 10)}`);
+    }
+    if (searchParams.baths) {
+      filters.push(`BathroomsTotalInteger ge ${parseInt(searchParams.baths, 10)}`);
+    }
+    if (searchParams.propertyType) {
+      filters.push(`PropertyType eq '${odataEscape(searchParams.propertyType)}'`);
+    }
     if (searchParams.minSqFt) {
-      filters.push(`LivingArea ge ${searchParams.minSqFt}`);
+      filters.push(`LivingArea ge ${parseInt(searchParams.minSqFt, 10)}`);
     }
     if (searchParams.maxSqFt) {
-      filters.push(`LivingArea le ${searchParams.maxSqFt}`);
+      filters.push(`LivingArea le ${parseInt(searchParams.maxSqFt, 10)}`);
     }
+
+    // Ensure county limitation is always applied (avoid returning outside-MLS results)
+    filters.push(countyClause);
 
     // Build the filter query string
     const filterQuery = filters.length > 0 ? `$filter=${filters.join(' and ')}` : '';
-    
+
     console.log('Final filter query:', filterQuery || '[none]');
 
-    // Call getPropertiesByFilter with just the filter and let it handle top/skip/expand
+    // Reuse getPropertiesByFilter which already handles $top/$skip/$expand and media processing
     const response = await getPropertiesByFilter(filterQuery, 50, 0);
-    
-    console.log('Number of properties returned:', response.properties.length); // Debug log
-    console.log('Sample property statuses:', response.properties.slice(0, 3).map(p => ({ 
-      address: p.UnparsedAddress, 
-      status: p.StandardStatus 
-    }))); // Debug log
-    
-    // Format properties for the swiper and sort by price (least to most expensive)
+
+    console.log('Number of properties returned:', response.properties.length);
+
+    // Format and sort results for the UI (ascending price)
     const formattedProperties = response.properties
       .map(property => ({
         ...property,
-        media: property.media, // always first image
-        mediaArray: property.mediaArray // all images
+        media: property.media,
+        mediaArray: property.mediaArray
       }))
       .sort((a, b) => {
         const priceA = a.ListPrice || 0;
         const priceB = b.ListPrice || 0;
-        return priceA - priceB; // Sort ascending (least to most expensive)
+        return priceA - priceB;
       });
 
     return {
@@ -299,7 +402,6 @@ export const searchProperties = async (searchParams) => {
       nextLink: response.nextLink,
       total: formattedProperties.length
     };
-
   } catch (error) {
     console.error('Error searching properties:', error);
     throw new Error('Failed to search properties');
