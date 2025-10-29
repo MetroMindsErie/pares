@@ -19,8 +19,8 @@ function FeaturedCard({ post }) {
 
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent" />
 
-        <div className="absolute left-6 bottom-6 right-6">
-          <span className="inline-flex items-center rounded-full bg-amber-100/90 text-amber-800 text-xs px-3 py-1 font-semibold mb-3 shadow-sm">
+        <div className="absolute left-4 sm:left-6 bottom-4 sm:bottom-6 right-4 sm:right-6">
+          <span className="inline-flex items-center pt-2 rounded-full bg-amber-100/90 text-amber-800 text-xs sm:text-sm px-3 sm:px-4 py-1 sm:py-1 font-semibold mb-3 shadow-sm whitespace-nowrap">
             BiggerPockets
           </span>
 
@@ -175,7 +175,7 @@ export default function BiggerPocketsSection() {
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto">
-        <div className="mb-6 flex items-start justify-between gap-4">
+        <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h2 id="biggerpockets-heading" className="text-2xl sm:text-3xl font-extrabold text-slate-900">
               Real Estate Insights — BiggerPockets
@@ -185,16 +185,17 @@ export default function BiggerPocketsSection() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-emerald-700 shadow-sm">
+          <div className="mt-4 sm:mt-0 flex items-center gap-3 z-20">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/95 px-3 sm:px-4 py-1 sm:py-1 text-xs sm:text-sm font-semibold text-emerald-700 shadow-sm whitespace-nowrap">
               <span className="h-2 w-2 rounded-full bg-emerald-500" />
               Live Feed
             </div>
+
             <a
               href="https://www.biggerpockets.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white shadow hover:bg-slate-800"
+              className="inline-flex items-center gap-2 rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white shadow hover:bg-slate-800 whitespace-nowrap"
             >
               Visit BiggerPockets
             </a>

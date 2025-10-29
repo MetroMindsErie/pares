@@ -107,9 +107,9 @@ const CityFeatures = () => {
           {/* Left intro + CTA */}
           <div className="pr-4 lg:pr-8">
             <div className="inline-flex items-center gap-3 mb-4">
-              <span className="px-3 py-1 rounded-full bg-gradient-to-r from-cyan-200 to-blue-200 text-sm font-semibold text-slate-800">
+              {/* <span className="px-3 py-1 rounded-full bg-gradient-to-r from-cyan-200 to-blue-200 text-sm font-semibold text-slate-800">
                 ERIE HIGHLIGHTS
-              </span>
+              </span> */}
               <span className="text-sm text-slate-400">Curated for modern buyers & investors</span>
             </div>
 
