@@ -1,175 +1,144 @@
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useMotionValue, useTransform } from 'framer-motion';
 import { useRouter } from 'next/router';
 
 export function Hero() {
-  const [isClient, setIsClient] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
 
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  if (!isClient) {
-    return null;
-  }
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        duration: 0.8,
-        staggerChildren: 0.2
+  // Scroll to the main search input (if present) otherwise navigate to properties page
+  const handleExplore = () => {
+    // Prefer the SearchBar's location input
+    const searchInput = document.querySelector('input[name="location"]');
+    if (searchInput) {
+      // Scroll the input into view and focus it for immediate typing
+      searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      try {
+        searchInput.focus({ preventScroll: true });
+      } catch (e) {
+        searchInput.focus();
       }
+      return;
     }
+    // Fallback: navigate to properties page
+    router.push('/properties');
   };
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.6, ease: "easeOut" }
-    }
+  // Simple mouse parallax tokens for subtle motion
+  const mx = useMotionValue(0);
+  const my = useMotionValue(0);
+  const tx = useTransform(mx, (v) => `${v / 60}px`);
+  const ty = useTransform(my, (v) => `${v / 80}px`);
+
+  useEffect(() => setMounted(true), []);
+
+  const handleMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left - rect.width / 2;
+    const y = e.clientY - rect.top - rect.height / 2;
+    mx.set(x);
+    my.set(y);
+  };
+  const handleMouseLeave = () => {
+    mx.set(0);
+    my.set(0);
   };
 
-  const floatingVariants = {
-    float: {
-      y: [-10, 10, -10],
-      transition: {
-        duration: 6,
-        repeat: Infinity,
-        ease: "easeInOut"
-      }
-    }
-  };
+  if (!mounted) return null;
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 text-white">
-      {/* Animated background elements */}
-      <div className="absolute inset-0">
-        <div className="absolute top-10 left-10 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
-        <div className="absolute top-40 right-10 w-96 h-96 bg-purple-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse delay-700"></div>
-        <div className="absolute -bottom-32 left-1/3 w-80 h-80 bg-pink-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse delay-1000"></div>
-      </div>
+    <section
+      aria-label="Page outro — call to action"
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      className="relative overflow-hidden"
+      style={{ minHeight: '40vh' }}
+    >
+      {/* Background layers */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-indigo-900 to-blue-900 opacity-95" />
+        <svg className="absolute inset-0 w-full h-full opacity-6" aria-hidden>
+          <defs>
+            <pattern id="grid-outro" width="36" height="36" patternUnits="userSpaceOnUse">
+              <path d="M36 0H0V36" stroke="rgba(255,255,255,0.02)" strokeWidth="1" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#grid-outro)" />
+        </svg>
 
-      {/* Grid pattern overlay */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.3) 1px, transparent 0)`,
-          backgroundSize: '50px 50px'
-        }}></div>
-      </div>
-
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          className="text-center"
-        >
-          {/* Main heading */}
-          <motion.div variants={itemVariants} className="mb-8">
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6">
-              <span className="block bg-gradient-to-r from-white via-blue-100 to-blue-200 bg-clip-text text-transparent">
-                Your Dream Home
-              </span>
-              <span className="block text-2xl md:text-4xl lg:text-5xl font-normal text-blue-100 mt-2">
-                Awaits in Erie
-              </span>
-            </h1>
-          </motion.div>
-
-          {/* Subtitle */}
-          <motion.p 
-            variants={itemVariants}
-            className="text-xl md:text-2xl text-blue-100 max-w-3xl mx-auto mb-12 leading-relaxed"
-          >
-            Discover exceptional properties in Pennsylvania's crown jewel. 
-            From historic downtown gems to modern lakefront estates.
-          </motion.p>
-
-          {/* Feature highlights */}
-          <motion.div 
-            variants={itemVariants}
-            className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16 max-w-4xl mx-auto"
-          >
-            {[
-              { icon: "🏠", title: "Premium Listings", desc: "Curated selection of Erie's finest properties" },
-              { icon: "🔍", title: "Smart Search", desc: "AI-powered MLS integration for precise results" },
-              { icon: "💼", title: "Expert Guidance", desc: "Professional support throughout your journey" }
-            ].map((feature, index) => (
-              <motion.div
-                key={index}
-                variants={floatingVariants}
-                animate="float"
-                transition={{ delay: index * 0.5 }}
-                className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 hover:bg-white/15 transition-all duration-300"
-              >
-                <div className="text-4xl mb-4">{feature.icon}</div>
-                <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
-                <p className="text-blue-100 text-sm">{feature.desc}</p>
-              </motion.div>
-            ))}
-          </motion.div>
-
-          {/* Call-to-action buttons */}
-          {/* <motion.div 
-            variants={itemVariants}
-            className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16"
-          >
-            <motion.button
-              whileHover={{ scale: 1.05, boxShadow: "0 20px 40px rgba(0,0,0,0.3)" }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => router.push('/properties')}
-              className="px-8 py-4 bg-gradient-to-r from-white to-blue-50 text-blue-900 font-semibold rounded-full hover:from-blue-50 hover:to-white transition-all duration-300 shadow-lg"
-            >
-              Explore Properties
-            </motion.button>
-            
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => router.push('/contact')}
-              className="px-8 py-4 bg-transparent border-2 border-white text-white font-semibold rounded-full hover:bg-white hover:text-blue-900 transition-all duration-300"
-            >
-              Get Started Today
-            </motion.button>
-          </motion.div> */}
-
-          {/* Stats section */}
-          <motion.div 
-            variants={itemVariants}
-            className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto"
-          >
-            {[
-              { number: "500+", label: "Properties Listed" },
-              { number: "1000+", label: "Happy Clients" },
-              { number: "15+", label: "Years Experience" },
-              { number: "98%", label: "Client Satisfaction" }
-            ].map((stat, index) => (
-              <motion.div
-                key={index}
-                whileHover={{ scale: 1.1 }}
-                className="text-center"
-              >
-                <div className="text-3xl md:text-4xl font-bold text-white mb-2">{stat.number}</div>
-                <div className="text-blue-200 text-sm">{stat.label}</div>
-              </motion.div>
-            ))}
-          </motion.div>
+        <motion.div style={{ translateX: tx, translateY: ty }} className="absolute -left-16 -top-16 w-48 h-48 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-full opacity-18 filter blur-2xl" aria-hidden />
+        <motion.div style={{ translateX: tx }} className="absolute right-8 bottom-8 w-44 h-28 opacity-12" aria-hidden>
+          <svg viewBox="0 0 320 160" className="w-full h-full" fill="none">
+            <defs>
+              <linearGradient id="g" x1="0" x2="1">
+                <stop offset="0" stopColor="#60a5fa" stopOpacity="0.14" />
+                <stop offset="1" stopColor="#06b6d4" stopOpacity="0.06" />
+              </linearGradient>
+            </defs>
+            <rect width="320" height="160" rx="12" fill="url(#g)"></rect>
+          </svg>
         </motion.div>
       </div>
 
-      {/* Bottom wave decoration */}
-      <div className="absolute bottom-0 left-0 right-0">
-        <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path
-            d="M0 120L60 105C120 90 240 60 360 45C480 30 600 30 720 37.5C840 45 960 60 1080 67.5C1200 75 1320 75 1380 75L1440 75V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z"
-            fill="rgba(255,255,255,0.1)"
-          />
+      <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-12">
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
+          <div className="grid lg:grid-cols-2 gap-8 items-center">
+            {/* Left: compact CTA message */}
+            <div>
+              <p className="inline-flex items-center gap-3 mb-3 text-sm text-cyan-200 bg-white/4 px-3 py-1 rounded-full">
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M12 2v20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                Ready when you are
+              </p>
+
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white leading-tight mb-3">
+                Find modern homes with confident, tech-driven search
+              </h2>
+
+              <p className="text-sm sm:text-base text-white/80 max-w-xl mb-6">
+                Explore up-to-date MLS listings, save favorites, and get instant alerts — designed for buyers and investors who expect fast, reliable tools.
+              </p>
+
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={handleExplore}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-cyan-400 to-blue-600 text-white font-semibold rounded-md shadow hover:scale-[1.02] transition"
+                >
+                  Explore Listings
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5l7 7-7 7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </button>
+
+                <button
+                  onClick={() => router.push('/contact')}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 border border-white/20 text-white bg-transparent rounded-md hover:bg-white/5 transition"
+                >
+                  Contact an Agent
+                </button>
+              </div>
+            </div>
+
+            {/* Right: three compact feature cards for reassurance */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="p-4 rounded-xl bg-white/6 backdrop-blur-sm border border-white/6">
+                <h4 className="text-sm font-semibold text-white">Real-time Data</h4>
+                <p className="text-xs text-white/70 mt-1">Fresh MLS updates so you don't miss out.</p>
+              </div>
+              <div className="p-4 rounded-xl bg-white/6 backdrop-blur-sm border border-white/6">
+                <h4 className="text-sm font-semibold text-white">Save & Compare</h4>
+                <p className="text-xs text-white/70 mt-1">Track favorites and compare side-by-side.</p>
+              </div>
+              <div className="p-4 rounded-xl bg-white/6 backdrop-blur-sm border border-white/6">
+                <h4 className="text-sm font-semibold text-white">Expert Support</h4>
+                <p className="text-xs text-white/70 mt-1">Local agents ready to guide you.</p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Decorative bottom separator so footer sits nicely */}
+      <div className="absolute bottom-0 left-0 right-0 pointer-events-none">
+        <svg viewBox="0 0 1440 80" className="w-full h-12" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0 30 C240 60 480 0 720 30 C960 60 1200 0 1440 30 L1440 80 L0 80 Z" fill="rgba(255,255,255,0.03)" />
         </svg>
       </div>
     </section>

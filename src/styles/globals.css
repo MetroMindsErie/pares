@@ -768,3 +768,60 @@ header, footer {
 nav[role="navigation"], .backdrop-blur-md.sticky {
   z-index: 70;
 }
+
+/* Modern CityFeatures styles */
+.city-features-section {
+  background: linear-gradient(180deg, rgba(250,251,255,0.9), rgba(245,247,255,0.95));
+  position: relative;
+  overflow: hidden;
+}
+
+/* Feature card */
+.feature-card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.85), rgba(255,255,255,0.80));
+  border: 1px solid rgba(15,23,42,0.04);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: transform 0.36s cubic-bezier(.2,.9,.2,1), box-shadow 0.36s;
+  will-change: transform;
+  min-height: 96px;
+  display: flex;
+  align-items: flex-start;
+}
+
+/* Lift on hover for depth */
+.feature-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 45px rgba(8,12,30,0.08);
+}
+
+/* Badge containing the icon */
+.feature-badge {
+  box-shadow: 0 8px 20px rgba(12,20,40,0.06);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Make headings and text crisp */
+.city-features-section h2,
+.city-features-section h3 {
+  color: #0f172a; /* slate-900 */
+}
+
+/* Responsive tweaks */
+@media (max-width: 768px) {
+  .city-features-section {
+    padding-top: 2.5rem;
+    padding-bottom: 2.5rem;
+  }
+  .feature-card {
+    min-height: 88px;
+  }
+}
+
+/* Accessibility focus */
+.feature-card:focus-within {
+  outline: 3px solid rgba(59,130,246,0.16);
+  outline-offset: 2px;
+}

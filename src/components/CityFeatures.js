@@ -2,57 +2,175 @@
 import { motion } from 'framer-motion';
 
 const CityFeatures = () => {
+  const features = [
+    {
+      id: 'lakefront',
+      title: 'Lakefront Living',
+      desc: 'Stunning Lake Erie views and recreational access — waterfront homes, parks and trails.',
+      color: 'from-cyan-400 to-blue-600',
+      icon: (
+        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <path d="M3 12c2-4 6-7 9-7s7 3 9 7-2 7-9 7S3 16 3 12z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      )
+    },
+    {
+      id: 'downtown',
+      title: 'Revitalized Downtown',
+      desc: 'Mix of restored historic architecture and modern coworking, dining and retail.',
+      color: 'from-emerald-300 to-green-500',
+      icon: (
+        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <path d="M3 21h18M7 8v13M17 4v17M12 2v19" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      )
+    },
+    {
+      id: 'affordable',
+      title: 'Affordable Market',
+      desc: 'High value and strong investment potential compared to larger metros.',
+      color: 'from-purple-300 to-indigo-500',
+      icon: (
+        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <path d="M12 8v8M8 12h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      )
+    },
+    {
+      id: 'community',
+      title: 'Tight-knit Community',
+      desc: 'Local events, festivals, and neighborhoods that welcome families and investors.',
+      color: 'from-yellow-300 to-orange-400',
+      icon: (
+        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <path d="M12 11c2 0 4-2 4-4s-2-4-4-4-4 2-4 4 2 4 4 4zM6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      )
+    },
+    {
+      id: 'transport',
+      title: 'Accessible Transport',
+      desc: 'Quick regional connections, easy commutes and growing infrastructure projects.',
+      color: 'from-sky-300 to-cyan-500',
+      icon: (
+        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <path d="M3 12h18M7 6v12M17 6v12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      )
+    },
+    {
+      id: 'growth',
+      title: 'Growth Opportunities',
+      desc: 'New developments, incentives and redevelopment projects boosting local ROI.',
+      color: 'from-pink-300 to-rose-400',
+      icon: (
+        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <path d="M3 17l6-6 5 5 7-7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      )
+    }
+  ];
+
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      whileInView={{ opacity: 1 }}
+    <motion.section
+      initial={{ opacity: 0, y: 8 }}
+      whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8 }}
       viewport={{ once: true }}
-      // Negative pull only at lg so desktop alignment is safe; ensure lower stacking so scroll indicator is visible
-      className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:-mt-12 relative z-0 rounded-b-2xl overflow-hidden"
+      className="city-features-section relative overflow-hidden py-16 lg:py-24"
+      aria-label="City features and highlights"
     >
-      <div className="text-center mb-12">
-        <h2 className="text-3xl font-bold text-gray-900 mb-4">
-          Why Choose Erie, Pennsylvania?
-        </h2>
-        <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-          Discover the unique charm of Pennsylvania's only Great Lakes city, 
-          where urban sophistication meets natural beauty.
-        </p>
+      {/* decorative gradient shapes */}
+      <div className="absolute inset-0 pointer-events-none">
+        <svg className="absolute -right-20 -top-12 opacity-20 w-80 h-80" viewBox="0 0 200 200" aria-hidden>
+          <defs>
+            <linearGradient id="gA" x1="0" x2="1">
+              <stop offset="0" stopColor="#60A5FA" stopOpacity="0.18" />
+              <stop offset="1" stopColor="#06B6D4" stopOpacity="0.06" />
+            </linearGradient>
+          </defs>
+          <rect width="200" height="200" rx="32" fill="url(#gA)"></rect>
+        </svg>
+        <svg className="absolute -left-20 -bottom-12 opacity-16 w-72 h-72" viewBox="0 0 200 200" aria-hidden>
+          <defs>
+            <linearGradient id="gB" x1="0" x2="1">
+              <stop offset="0" stopColor="#C084FC" stopOpacity="0.12" />
+              <stop offset="1" stopColor="#F472B6" stopOpacity="0.06" />
+            </linearGradient>
+          </defs>
+          <circle cx="100" cy="100" r="100" fill="url(#gB)"></circle>
+        </svg>
       </div>
-      
-      <div className="grid md:grid-cols-3 gap-6">
-        <div className="text-center p-5 bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30">
-          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="grid lg:grid-cols-2 gap-10 items-start">
+          {/* Left intro + CTA */}
+          <div className="pr-4 lg:pr-8">
+            <div className="inline-flex items-center gap-3 mb-4">
+              <span className="px-3 py-1 rounded-full bg-gradient-to-r from-cyan-200 to-blue-200 text-sm font-semibold text-slate-800">
+                ERIE HIGHLIGHTS
+              </span>
+              <span className="text-sm text-slate-400">Curated for modern buyers & investors</span>
+            </div>
+
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 leading-tight mb-4">
+              Why Erie stands out — an investor & lifestyle-first city
+            </h2>
+
+            <p className="text-lg text-slate-600 mb-6 max-w-xl">
+              From waterfront living to a revitalized downtown and strong affordability, Erie blends opportunity with quality of life. Explore curated neighborhoods, market insights and properties built for long-term value.
+            </p>
+
+            <div className="flex flex-wrap gap-3 items-center">
+              <a
+                href="#"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-medium shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition"
+                aria-label="Explore neighborhoods"
+              >
+                Explore Neighborhoods
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </a>
+
+              <button
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-slate-200 text-slate-700 bg-white text-sm font-medium hover:bg-slate-50 transition"
+                aria-label="View market report"
+              >
+                Market Report
+              </button>
+            </div>
           </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">Lakefront Living</h3>
-          <p className="text-gray-600">Experience stunning Lake Erie waterfront properties with breathtaking views and recreational opportunities.</p>
-        </div>
-        
-        <div className="text-center p-5 bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
+
+          {/* Right: grid of feature cards */}
+          <div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {features.map((f, idx) => (
+                <article
+                  key={f.id}
+                  className={`feature-card group relative overflow-hidden rounded-2xl p-5 sm:p-6 transition hover:shadow-2xl`}
+                  aria-labelledby={`feat-${f.id}`}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className={`feature-badge bg-gradient-to-br ${f.color} text-white rounded-lg w-12 h-12 flex items-center justify-center flex-shrink-0 shadow-md`}>
+                      {f.icon}
+                    </div>
+                    <div>
+                      <h3 id={`feat-${f.id}`} className="text-sm font-semibold text-slate-900 mb-1">{f.title}</h3>
+                      <p className="text-sm text-slate-600">{f.desc}</p>
+                    </div>
+                  </div>
+
+                  <div className="absolute right-4 bottom-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <svg className="w-6 h-6 text-slate-300" viewBox="0 0 24 24" fill="none" aria-hidden>
+                      <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                </article>
+              ))}
+            </div>
           </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">Historic Downtown</h3>
-          <p className="text-gray-600">Explore beautifully restored historic buildings and modern urban developments in Erie's revitalized downtown.</p>
-        </div>
-        
-        <div className="text-center p-5 bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30">
-          <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-            </svg>
-          </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">Affordable Market</h3>
-          <p className="text-gray-600">Discover exceptional value in Erie's real estate market with competitive prices and strong investment potential.</p>
         </div>
       </div>
-    </motion.div>
+    </motion.section>
   );
 };
 

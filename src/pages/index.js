@@ -175,81 +175,7 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
         {/* Main Content Section - All content after the map */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           {/* Any content below the map goes here */}
-          {isAuthenticated ? (
-            <div className="space-y-24">
-              <motion.section 
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                transition={{ duration: 0.8 }}
-                viewport={{ once: true }}
-                className="section-transition"
-              >
-                <Blog />
-                {/* Added: link to full blog page */}
-                <div className="mt-4 flex justify-end">
-                  <a
-                    href="/blog"
-                    className="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-blue-700 hover:bg-blue-50"
-                  >
-                    View all posts
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </a>
-                </div>
-              </motion.section>
-              
-              {/* <motion.section 
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                transition={{ duration: 0.8 }}
-                viewport={{ once: true }}
-                className="section-transition"
-              >
-                <Stablecoin />
-              </motion.section> */}
-              
-              {/* <motion.section 
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                transition={{ duration: 0.8 }}
-                viewport={{ once: true }}
-                className="section-transition"
-              >
-                <Reels />
-              </motion.section> */}
-              
-              {/* <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8 }}
-                viewport={{ once: true }}
-                className="glass-effect rounded-2xl p-8 shadow-lg"
-              >
-                <Contact />
-              </motion.div> */}
-            </div>
-          ) : (
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              className="text-center py-8 sm:py-12 px-4 my-6 sm:my-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl shadow-sm"
-            >
-              <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900 mb-3 sm:mb-4">Welcome to our Guest Experience</h2>
-              <p className="text-sm sm:text-base md:text-lg text-gray-700 max-w-2xl mx-auto mb-6 sm:mb-8">
-                Enjoy our free guest tier with limited features. For a premium experience with full access to all properties and tools, please sign in.
-              </p>
-              <button 
-                onClick={() => router.push('/login')}
-                className="relative px-6 sm:px-8 py-2.5 sm:py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium rounded-lg transition-all duration-300 hover:shadow-xl hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 border-2 border-blue-400 hover:border-blue-300 shadow-lg text-sm sm:text-base"
-                aria-label="Sign in to access premium features"
-              >
-                <span className="relative z-10">Get Started</span>
-                <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-400/20 to-blue-500/20 blur-sm"></div>
-              </button>
-            </motion.div>
-          )}
+  
 
           {/* Hero Content */}
           <motion.div 
@@ -269,29 +195,42 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
             transition={{ delay: 1, duration: 0.8 }}
             className="flex justify-center py-10"
           >
-            <a 
-              href="#" 
+            {/* Avatar helper used for both auth and guest states */}
+            {/*
+              Avatar: gradient ring -> white inner circle -> initials or SVG icon.
+              Keeps label & hint text to the right for clarity.
+            */}
+            <button
+              type="button"
               onClick={handleEmailClick}
-              className="flex items-center space-x-2 px-6 py-3 bg-white hover:bg-gray-50 border-2 border-blue-200 hover:border-blue-300 rounded-full shadow-sm hover:shadow-lg transition-all duration-300 group"
               aria-label={user ? `Go to dashboard for ${user.email}` : "Sign in to your account"}
+              className="inline-flex items-center gap-4 px-5 py-3 border border-blue-200 rounded-md text-blue-600 bg-transparent hover:bg-white/5 shadow-sm hover:shadow-md transition-colors transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-300"
             >
-              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center">
-                <span className="text-white font-medium text-sm">
-                  {user?.email ? user.email[0].toUpperCase() : '👤'}
-                </span>
+              <div className="flex-shrink-0">
+                <div className="rounded-full p-[2px] bg-gradient-to-tr from-cyan-400 to-blue-600">
+                  <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-sm font-semibold text-gray-800 shadow">
+                    {/* Neutral user glyph — no initials */}
+                    <svg className="w-5 h-5 text-gray-700" viewBox="0 0 24 24" fill="none" aria-hidden>
+                      <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M4 20a8 8 0 0116 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                </div>
               </div>
-              <span className="text-gray-700 group-hover:text-blue-700">
-                {user?.email ? 'Go to Dashboard' : 'Sign in to your account'}
-              </span>
-              <svg 
-                className="w-4 h-4 text-blue-400 group-hover:text-blue-600 group-hover:transform group-hover:translate-x-1 transition-transform"
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
+
+              <div className="text-left">
+                <div className="text-sm font-semibold text-blue-600">
+                  {user ? 'Member Hub' : 'Start exploring'}
+                </div>
+                <div className="text-xs text-blue-600/80 -mt-0.5">
+                  {user ? 'Open your dashboard' : 'Create an account or sign in'}
+                </div>
+              </div>
+
+              <svg className="ml-3 w-4 h-4 text-blue-600/70" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
               </svg>
-            </a>
+            </button>
           </motion.div>
         </div>
       </main>
