@@ -141,7 +141,7 @@ const SearchResults = ({
             {viewMode === 'grid' ? (
             <div className="transition-all duration-500 ease-in-out">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-+              {visibleListings.map((listing) => {
+              {visibleListings.map((listing) => {
                const imageSrc = listing?.media || '/fallback-property.jpg';
 
                return (
