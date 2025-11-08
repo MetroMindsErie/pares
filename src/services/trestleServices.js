@@ -36,24 +36,84 @@ export async function getPropertyById(listingKey) {
 }
 
 export async function getPropertyDetails(listingKey) {
-  try {
-    const response = await axios.get(
-      `${API_BASE_URL}/trestle/odata/Property`,
-      {
-        params: { 
-          $filter: `ListingKey eq '${listingKey}'`,
-          $expand: 'Media,SaleHistory'  // Include sale history if available
-        },
-        headers: {
-          Authorization: `Bearer ${await fetchToken()}`,
-          Accept: 'application/json'
+  // Ensure we have a safe string and escape any single quotes for OData
+  const rawKey = String(listingKey ?? '');
+  const escapedKey = rawKey.replace(/'/g, "''"); // OData single-quote escape
+
+  // Acquire token once
+  const token = await fetchToken().catch(err => {
+    console.warn('fetchToken failed in getPropertyDetails:', err);
+    return null;
+  });
+
+  const headers = {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    Accept: 'application/json'
+  };
+
+  // Build entity-path request but URL-encode the quoted key to avoid malformed URLs
+  const entityQuoted = `'${escapedKey}'`;
+  const entityPath = `${API_BASE_URL}/trestle/odata/Property(${encodeURIComponent(entityQuoted)})`;
+  const filterValue = `ListingKey eq '${escapedKey}'`;
+  const listingIdFilter = `ListingId eq '${escapedKey}'`;
+
+  const attempts = [
+    // 1) Entity key path (URL-encoded quoted key)
+    async () => axios.get(entityPath, { params: { $expand: 'Media,SaleHistory' }, headers }),
+    // 2) $filter by ListingKey with escaped quoted value
+    async () => axios.get(`${API_BASE_URL}/trestle/odata/Property`, { params: { $filter: filterValue, $expand: 'Media,SaleHistory' }, headers }),
+    // 3) $filter by ListingId (alternate field)
+    async () => axios.get(`${API_BASE_URL}/trestle/odata/Property`, { params: { $filter: listingIdFilter, $expand: 'Media,SaleHistory' }, headers }),
+  ];
+
+  for (let i = 0; i < attempts.length; i++) {
+    try {
+      const res = await attempts[i]();
+      if (!res) continue;
+
+      // axios response -> res.data
+      const data = res.data;
+
+      // If response is an entity object (entity-path) it may return the record directly
+      if (data && !Array.isArray(data) && !Array.isArray(data.value) && Object.keys(data).length) {
+        const candidate = data.value ? data.value[0] : data;
+        if (candidate) {
+          return candidate;
         }
       }
-    );
-    return response.data.value[0];
-  } catch (error) {
-    console.error('Error fetching property details:', error);
-    throw error;
+
+      // Standard OData collection shape
+      const record = Array.isArray(data.value) && data.value.length ? data.value[0] : null;
+      if (record) return record;
+
+      console.warn(`getPropertyDetails attempt #${i + 1} returned no record for ${rawKey}`);
+    } catch (err) {
+      const status = err?.response?.status;
+      // Log more context for debugging but keep trying other strategies
+      console.warn(`getPropertyDetails attempt #${i + 1} failed for ${rawKey}:`, status || err.message);
+      // continue to next attempt
+      continue;
+    }
+  }
+
+  // Final fallback: fetch media only so UI can still show images
+  try {
+    const mediaUrls = await getMediaUrls(String(rawKey));
+    const mediaArray = Array.isArray(mediaUrls) ? mediaUrls : [];
+    return {
+      ListingKey: rawKey,
+      Media: mediaArray.map(url => ({ MediaURL: url })),
+      mediaArray,
+      media: mediaArray[0] || '/fallback-property.jpg'
+    };
+  } catch (fallbackErr) {
+    console.error('getPropertyDetails: fallback media fetch failed for', rawKey, fallbackErr);
+    return {
+      ListingKey: rawKey,
+      Media: [],
+      mediaArray: [],
+      media: '/fallback-property.jpg'
+    };
   }
 }
 
