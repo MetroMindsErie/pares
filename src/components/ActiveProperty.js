@@ -8,8 +8,9 @@ import BackToListingsButton from './BackToListingsButton';
 import Layout from './Layout';
 import BuyerAgent from './Property/BuyerAgent';
 import SavePropertyButton from './SavePropertyButton';
+import { TaxInformation, HistoryInformation, NeighborhoodCommunity, SchoolsEducation } from './Property/PropertyDataTabs';
 
-export const ActiveProperty = ({ property }) => {
+export const ActiveProperty = ({ property, contextLoading, taxData, historyData }) => {
   const [activeTab, setActiveTab] = useState('details');
 
   // Format price as currency
@@ -20,6 +21,8 @@ export const ActiveProperty = ({ property }) => {
       maximumFractionDigits: 0
     }).format(price);
   };
+
+  const ctx = property._localContext || deriveLocalContext(property);
 
   return (
     <Layout>
@@ -88,31 +91,28 @@ export const ActiveProperty = ({ property }) => {
 
           {/* Tabs */}
           <div className="border-b border-gray-200 mb-6">
-            <nav className="-mb-px flex overflow-x-auto" aria-label="Tabs">
-              <button
-                className={`mr-4 sm:mr-8 py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${activeTab === 'details'
-                    ? 'border-blue-700 text-blue-700'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            <nav className="-mb-px flex overflow-x-auto text-sm">
+              {['details','tax','history','neighborhood','schools'].map(id => (
+                <button
+                  key={id}
+                  onClick={()=>setActiveTab(id)}
+                  className={`mr-6 py-3 border-b-2 font-medium ${
+                    activeTab===id ? 'border-blue-700 text-blue-700' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
-                onClick={() => setActiveTab('details')}
-              >
-                Property Details
-              </button>
-              <button
-                className={`mr-4 sm:mr-8 py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${activeTab === 'features'
-                    ? 'border-blue-700 text-blue-700'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                onClick={() => setActiveTab('features')}
-              >
-                Features & Amenities
-              </button>
+                >
+                  {id==='details' && 'Property Details'}
+                  {id==='tax' && 'Tax Information'}
+                  {id==='history' && 'History'}
+                  {id==='neighborhood' && 'Neighborhood'}
+                  {id==='schools' && 'Schools'}
+                </button>
+              ))}
             </nav>
           </div>
 
-          {/* Tab Content */}
+          {/* Tab panels */}
           {activeTab === 'details' && (
-            <div>
+            <>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
                   <h3 className="text-lg font-semibold mb-3">Basic Information</h3>
@@ -179,38 +179,13 @@ export const ActiveProperty = ({ property }) => {
                   {property.PublicRemarks || 'No description provided.'}
                 </p>
               </div>
-            </div>
+            </>
           )}
 
-          {activeTab === 'features' && (
-            <div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="text-lg font-semibold mb-3">Property Features</h3>
-                  <ul className="list-disc pl-5 space-y-1 text-gray-700">
-                    {property.Cooling && <li>{property.Cooling}</li>}
-                    {property.Heating && <li>{property.Heating}</li>}
-                    {property.HasFireplace && <li>Fireplace</li>}
-                    {property.HasGarage && <li>Garage</li>}
-                    {property.GarageSpaces > 0 && <li>{property.GarageSpaces} Garage Spaces</li>}
-                    {property.HasPool && <li>Swimming Pool</li>}
-                    {property.HasBasement && <li>Basement</li>}
-                    {property.Stories > 0 && <li>{property.Stories} Stories</li>}
-                  </ul>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold mb-3">Interior Features</h3>
-                  <ul className="list-disc pl-5 space-y-1 text-gray-700">
-                    <li>Bedrooms: {property.BedroomsTotal || 'N/A'}</li>
-                    <li>Bathrooms: {property.BathroomsTotalInteger || 'N/A'}</li>
-                    <li>Living Area: {property.LivingArea ? `${property.LivingArea.toLocaleString()} sq ft` : 'N/A'}</li>
-                    {property.HasDining && <li>Dining Room</li>}
-                    {property.HasLaundryRoom && <li>Laundry Room</li>}
-                  </ul>
-                </div>
-              </div>
-            </div>
-          )}
+          {activeTab === 'tax' && <TaxInformation taxData={taxData} />}
+          {activeTab === 'history' && <HistoryInformation historyData={historyData} />}
+          {activeTab === 'neighborhood' && <NeighborhoodCommunity context={ctx} />}
+          {activeTab === 'schools' && <SchoolsEducation context={ctx} />}
         </div>
 
         {/* Contact Section */}
@@ -237,5 +212,31 @@ export const ActiveProperty = ({ property }) => {
 };
 
 ActiveProperty.propTypes = {
-  property: PropTypes.object.isRequired
+  property: PropTypes.object.isRequired,
+  taxData: PropTypes.object,
+  historyData: PropTypes.object,
+  contextLoading: PropTypes.bool
 };
+
+// helper to derive context from property if SSR/client fetch not available
+function deriveLocalContext(p) {
+  return {
+    listingKey: p.ListingKey || p.listing_key,
+    subdivision: p.SubdivisionName || p.Subdivision || p.Neighborhood || null,
+    communityFeatures: listFrom(p.CommunityFeatures),
+    associationAmenities: listFrom(p.AssociationAmenities),
+    lotFeatures: listFrom(p.LotFeatures),
+    schools: {
+      district: p.SchoolDistrict || p.HighSchoolDistrict || null,
+      elementary: p.ElementarySchool || null,
+      middle: p.MiddleOrJuniorSchool || null,
+      high: p.HighSchool || null
+    },
+    taxAnnualAmount: p.TaxAnnualAmount || null
+  };
+}
+function listFrom(raw) {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw.filter(Boolean).map(String);
+  return String(raw).split(/[,;]+/).map(s => s.trim()).filter(Boolean);
+}

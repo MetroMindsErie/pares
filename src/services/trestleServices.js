@@ -544,3 +544,5 @@ const processProperty = (property) => {
     property.media = [property.Media];
   }
 };
+
+// (No change needed; localContextService uses fetchToken)

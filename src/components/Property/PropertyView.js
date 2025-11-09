@@ -9,12 +9,15 @@ import {
   setCryptoViewToggleState 
 } from '../../utils/PropertyUtils';
 import SavePropertyButton from '../SavePropertyButton';
+import { fetchLocalContext } from '../../services/localContextService';
 
 
 const PropertyView = ({ propertyData, mlsData }) => {
   const { user, getUserRole, refreshUserData } = useAuth();
   const [userRole, setUserRole] = useState('user');
   const [isLoading, setIsLoading] = useState(true);
+  const [localContext, setLocalContext] = useState(null);
+  const [contextLoading, setContextLoading] = useState(true);
   const roleCheckCompleted = useRef(false);
   // Add state for crypto view toggle
   const [cryptoViewEnabled, setCryptoViewEnabled] = useState(false);
@@ -159,11 +162,35 @@ const PropertyView = ({ propertyData, mlsData }) => {
     }
   }, [userRole, isLoading, cryptoViewEnabled]);
   
+  // Fetch and merge local context; pass merged object to underlying templates.
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      if (!propertyData?.ListingKey) {
+        setContextLoading(false);
+        return;
+      }
+      setContextLoading(true);
+      const ctx = await fetchLocalContext(propertyData.ListingKey);
+      if (!cancelled) {
+        setLocalContext(ctx);
+        setContextLoading(false);
+      }
+    };
+    run();
+    return () => { cancelled = true; };
+  }, [propertyData?.ListingKey]);
+
   // Show loading state or the appropriate property template
-  if (isLoading) {
+  if (isLoading || contextLoading) {
     return <div className="animate-pulse p-4">Loading property view...</div>;
   }
   
+  const mergedProperty = {
+    ...propertyData,
+    _localContext: localContext
+  };
+
   return (
     <div>
       {/* Add SavePropertyButton with image URL */}
@@ -202,9 +229,9 @@ const PropertyView = ({ propertyData, mlsData }) => {
       
       {/* Render the appropriate view based on role AND toggle state */}
       {userRole === 'crypto_investor' && cryptoViewEnabled ? (
-        <CryptoProperty propertyData={propertyData} mlsData={mlsData} />
+        <CryptoProperty propertyData={mergedProperty} mlsData={mlsData} />
       ) : (
-        <ActiveProperty property={propertyData} />
+        <ActiveProperty property={mergedProperty} contextLoading={contextLoading} />
       )}
     </div>
   );

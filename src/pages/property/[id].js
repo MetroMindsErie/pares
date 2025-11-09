@@ -746,6 +746,72 @@ export async function getServerSideProps({ params }) {
       historyData = getMockHistoryData();
     }
 
+    // Fetch local context (neighborhood + schools) with same token
+    try {
+      const { data: ctxResp } = await axios.get(
+        `https://api-trestle.corelogic.com/trestle/odata/Property`,
+        {
+          params: {
+            $filter: `ListingKey eq '${params.id}'`,
+            $select: [
+              'ListingKey',
+              'SubdivisionName',
+              'Subdivision',
+              'Neighborhood',
+              'CommunityFeatures',
+              'AssociationAmenities',
+              'LotFeatures',
+              'ElementarySchool',
+              'MiddleOrJuniorSchool',
+              'HighSchool',
+              'SchoolDistrict',
+              'HighSchoolDistrict',
+              'TaxAnnualAmount'
+            ].join(',')
+          },
+          headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+        }
+      );
+
+      const ctxValue = Array.isArray(ctxResp?.value) ? ctxResp.value[0] : null;
+      if (ctxValue) {
+        transformedProperty._localContext = {
+          listingKey: ctxValue.ListingKey,
+          subdivision: ctxValue.SubdivisionName || ctxValue.Subdivision || ctxValue.Neighborhood || null,
+          communityFeatures: splitListSafe(ctxValue.CommunityFeatures),
+          associationAmenities: splitListSafe(ctxValue.AssociationAmenities),
+          lotFeatures: splitListSafe(ctxValue.LotFeatures),
+          schools: {
+            district: ctxValue.SchoolDistrict || ctxValue.HighSchoolDistrict || null,
+            elementary: ctxValue.ElementarySchool || null,
+            middle: ctxValue.MiddleOrJuniorSchool || null,
+            high: ctxValue.HighSchool || null
+          },
+          taxAnnualAmount: ctxValue.TaxAnnualAmount || null
+        };
+      }
+    } catch (e) {
+      console.warn('Local context fetch failed:', e?.response?.status || e.message);
+    }
+
+    // Fallback: derive context from already-fetched property if API returned nothing
+    if (!transformedProperty._localContext) {
+      transformedProperty._localContext = {
+        listingKey: transformedProperty.ListingKey || params.id,
+        subdivision: transformedProperty.SubdivisionName || transformedProperty.Subdivision || transformedProperty.Neighborhood || null,
+        communityFeatures: splitListSafe(transformedProperty.CommunityFeatures),
+        associationAmenities: splitListSafe(transformedProperty.AssociationAmenities),
+        lotFeatures: splitListSafe(transformedProperty.LotFeatures),
+        schools: {
+          district: transformedProperty.SchoolDistrict || transformedProperty.HighSchoolDistrict || null,
+          elementary: transformedProperty.ElementarySchool || null,
+          middle: transformedProperty.MiddleOrJuniorSchool || null,
+          high: transformedProperty.HighSchool || null
+        },
+        taxAnnualAmount: transformedProperty.TaxAnnualAmount || null
+      };
+    }
+
     return {
       props: {
         property: transformedProperty,
@@ -780,6 +846,13 @@ export async function getServerSideProps({ params }) {
   }
 }
 
+// helper to split comma/semicolon strings safely (accept array too)
+function splitListSafe(raw) {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw.filter(Boolean).map(String);
+  return String(raw).split(/[,;]+/).map(s => s.trim()).filter(Boolean);
+}
+
 export default function PropertyDetail({ property, isSold, taxData, historyData }) {
   // Handle error case
   if (!property || property.address === 'Property not found') {
@@ -804,7 +877,6 @@ export default function PropertyDetail({ property, isSold, taxData, historyData 
 
   // Route to appropriate component based on status
   const status = property.StandardStatus;
-  
   if (status === 'Closed') {
     return (
       <>
@@ -812,7 +884,7 @@ export default function PropertyDetail({ property, isSold, taxData, historyData 
           <title>{property.address || 'Property Details'} | Erie Pennsylvania Real Estate</title>
           <meta name="description" content={`View detailed information for ${property.address || 'this property'} including photos, features, and pricing.`} />
         </Head>
-        <SoldProperty property={property} />
+        <SoldProperty property={property} taxData={taxData} historyData={historyData} />
       </>
     );
   } else if (status === 'Pending' || status === 'ActiveUnderContract') {
@@ -822,7 +894,7 @@ export default function PropertyDetail({ property, isSold, taxData, historyData 
           <title>{property.address || 'Property Details'} | Erie Pennsylvania Real Estate</title>
           <meta name="description" content={`View detailed information for ${property.address || 'this property'} including photos, features, and pricing.`} />
         </Head>
-        <PendingProperty property={property} />
+        <PendingProperty property={property} taxData={taxData} historyData={historyData} />
       </>
     );
   } else if (status === 'Active') {
@@ -832,19 +904,18 @@ export default function PropertyDetail({ property, isSold, taxData, historyData 
           <title>{property.address || 'Property Details'} | Erie Pennsylvania Real Estate</title>
           <meta name="description" content={`View detailed information for ${property.address || 'this property'} including photos, features, and pricing.`} />
         </Head>
-        <ActiveProperty property={property} propertyData={property} mlsData={property} />
+        <ActiveProperty property={property} taxData={taxData} historyData={historyData} />
       </>
     );
   }
-   else {
-    return (
-      <>
-        <Head>
-          <title>{property.address || 'Property Details'} | Erie Pennsylvania Real Estate</title>
-          <meta name="description" content={`View detailed information for ${property.address || 'this property'} including photos, features, and pricing.`} />
-        </Head>
-        <PropertyDetailWithTabs property={property} isSold={isSold} taxData={taxData} historyData={historyData} />
-      </>
-    );
-  }
+  // Fallback (other statuses) use active template with tabs:
+  return (
+    <>
+      <Head>
+        <title>{property.address || 'Property Details'} | Erie Pennsylvania Real Estate</title>
+        <meta name="description" content={`View detailed information for ${property.address || 'this property'} including photos, features, and pricing.`} />
+      </Head>
+      <ActiveProperty property={property} taxData={taxData} historyData={historyData} />
+    </>
+  );
 }
