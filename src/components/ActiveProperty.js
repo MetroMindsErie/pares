@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBed, faBath, faRuler, faCar, faHouse, faCalendar } from '@fortawesome/free-solid-svg-icons';
@@ -9,6 +9,8 @@ import Layout from './Layout';
 import BuyerAgent from './Property/BuyerAgent';
 import SavePropertyButton from './SavePropertyButton';
 import { TaxInformation, HistoryInformation, NeighborhoodCommunity, SchoolsEducation } from './Property/PropertyDataTabs';
+import { useAuth } from '../context/auth-context';
+import { logPropertyView } from '../services/userActivityService';
 
 export const ActiveProperty = ({ property, contextLoading, taxData, historyData }) => {
   const [activeTab, setActiveTab] = useState('details');
@@ -23,6 +25,13 @@ export const ActiveProperty = ({ property, contextLoading, taxData, historyData 
   };
 
   const ctx = property._localContext || deriveLocalContext(property);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user?.id && property?.ListingKey) {
+      logPropertyView(user.id, property);
+    }
+  }, [user?.id, property?.ListingKey]);
 
   return (
     <Layout>

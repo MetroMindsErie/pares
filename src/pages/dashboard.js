@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import Head from 'next/head';
 import { useAuth } from '../context/auth-context';
 import WelcomeBanner from '../components/Dashboard/WelcomeBanner';
 import StatsCard from '../components/Dashboard/StatsCard';
@@ -7,9 +8,12 @@ import supabase from '../lib/supabase-setup';
 import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import { checkFacebookConnection } from '../services/facebookService';
+import AISuggestionsPanel from '../components/AISuggestionsPanel';
+import { AIAssistantPanel } from '../components/AIAssistantPanel';
+import { getCachedSearchResults } from '../lib/searchCache';
 
 export default function DashboardPage() {
-  const { user, isAuthenticated, loading, authChecked } = useAuth();
+  const { user, loading: authLoading } = useAuth(); // ensure proper destructure
   const [profile, setProfile] = useState(null);
   const [activities, setActivities] = useState([]);
   const [localLoading, setLocalLoading] = useState(true);
@@ -20,6 +24,8 @@ export default function DashboardPage() {
   const [savedProperties, setSavedProperties] = useState([]);
   const [savedPropertiesLoading, setSavedPropertiesLoading] = useState(true);
   const [savedPropertiesError, setSavedPropertiesError] = useState(null);
+  const [recentSearchParams, setRecentSearchParams] = useState(null);
+  const [recentProperties, setRecentProperties] = useState([]);
   const router = useRouter();
   
   // Use refs to track if effects have run to prevent loops
@@ -250,134 +256,186 @@ export default function DashboardPage() {
     return '/default-avatar.png';
   };
 
-  // Simplified loading check
-  const isLoading = loading || (localLoading && !profile);
+  useEffect(() => {
+    // Pull last cached search (if any) to aid regeneration
+    const cached = getCachedSearchResults();
+    if (cached && Array.isArray(cached)) {
+      setRecentProperties(cached);
+    }
+    // If you store last search params separately in localStorage, read them here
+    try {
+      const raw = localStorage.getItem('lastSearchParams');
+      if (raw) {
+        setRecentSearchParams(JSON.parse(raw));
+      }
+    } catch {}
+  }, []);
 
-  if (isLoading) {
+  // Remove isLoading (was undefined). Use authLoading only.
+  if (authLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex justify-center items-center">
-        <div className="flex flex-col items-center">
-          <div className="animate-spin h-10 w-10 border-4 border-blue-500 rounded-full border-t-transparent"></div>
-          <p className="mt-4 text-gray-600">Loading your dashboard...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-gray-600">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-gray-700">
+          Please log in to view your dashboard.
         </div>
       </div>
     );
   }
 
   return (
-    <Layout>
-      {/* Hero section with background image */}
-      <div className="relative bg-cover bg-center h-40 sm:h-48 md:h-64" 
-           style={{ 
-             backgroundImage: 'url("/dashboard-hero.jpg")',
-             backgroundBlendMode: 'overlay',
-             backgroundColor: 'rgba(0,0,0,0.5)'
-           }}>
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-900/70 to-transparent"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
-          {profile && (
-            <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 md:gap-6 text-center sm:text-left">
-              <img
-                src={getProfilePicture()}
-                alt={`${profile.first_name}'s profile`}
-                className="h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 rounded-full border-4 border-white/20 shadow-xl object-cover"
-                referrerPolicy="no-referrer"
-                crossOrigin="anonymous"
-                onError={(e) => {
-                  e.target.src = '/default-avatar.png';
-                }}
-              />
-              <div className="text-white">
-                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">
-                  Welcome back, {profile.first_name}!
-                </h1>
-                <p className="mt-1 sm:mt-2 text-blue-100 text-xs sm:text-sm md:text-base">
-                  Here's what's happening with your saved properties
-                </p>
+    <>
+      <Head>
+        <title>User Dashboard | Personalized Property Suggestions</title>
+      </Head>
+      <Layout>
+        {/* Hero section with background image */}
+        <div className="relative bg-cover bg-center h-40 sm:h-48 md:h-64" 
+             style={{ 
+               backgroundImage: 'url("/dashboard-hero.jpg")',
+               backgroundBlendMode: 'overlay',
+               backgroundColor: 'rgba(0,0,0,0.5)'
+             }}>
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-900/70 to-transparent"></div>
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
+            {profile && (
+              <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 md:gap-6 text-center sm:text-left">
+                <img
+                  src={getProfilePicture()}
+                  alt={`${profile.first_name}'s profile`}
+                  className="h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 rounded-full border-4 border-white/20 shadow-xl object-cover"
+                  referrerPolicy="no-referrer"
+                  crossOrigin="anonymous"
+                  onError={(e) => {
+                    e.target.src = '/default-avatar.png';
+                  }}
+                />
+                <div className="text-white">
+                  <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">
+                    Welcome back, {profile.first_name}!
+                  </h1>
+                  <p className="mt-1 sm:mt-2 text-blue-100 text-xs sm:text-sm md:text-base">
+                    Here's what's happening with your saved properties
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Main content */}
-      {/* ensure on mobile the content sits below the hero to avoid overlap; keep negative pull on sm+ */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 sm:-mt-10">
-         {/* Stats Cards */}
-         <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-3 mb-6 sm:mb-8">
-           <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 transform hover:scale-105 transition-transform duration-200">
-             <StatsCard
-               title="Saved Properties"
-               value={savedProperties.length.toString()}
-               change={0}
-               icon="heart"
-             />
-           </div>
-         </div>
-
-        {/* Quick Actions and Recent Activity */}
-        <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-3 mb-6 sm:mb-8">
-          {/* Quick Actions */}
-          <div className="bg-gradient-to-br from-white to-blue-50 rounded-lg shadow-lg p-4 sm:p-6 border border-blue-100">
-            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-blue-900">Quick Actions</h3>
-            <div className="space-y-2 sm:space-y-3">
-              <button
-                onClick={() => {
-                  // Clear any cached search results
-                  if (typeof window !== 'undefined') {
-                    sessionStorage.removeItem('searchResults');
-                    sessionStorage.removeItem('searchParams');
-                    localStorage.removeItem('lastSearchResults');
-                    localStorage.removeItem('lastSearchParams');
-                    sessionStorage.setItem('scrollToTop', 'true');
-                  }
-                  
-                  // Navigate to home
-                  window.location.href = '/';
-                }}
-                className="w-full text-left px-3 sm:px-4 py-2.5 sm:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 sm:gap-3 text-sm sm:text-base"
-              >
-                <span className="p-1.5 sm:p-2 bg-blue-500 rounded-full text-sm">🏠</span>
-                Browse Properties
-              </button>
-              <button
-                onClick={() => router.push('/saved-properties')}
-                className="w-full text-left px-3 sm:px-4 py-2.5 sm:py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 sm:gap-3 text-sm sm:text-base"
-              >
-                <span className="p-1.5 sm:p-2 bg-green-500 rounded-full text-sm">❤️</span>
-                View Saved Properties ({savedProperties.length})
-              </button>
-              <button
-                onClick={() => router.push('/create-profile')}
-                className="w-full text-left px-3 sm:px-4 py-2.5 sm:py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors flex items-center gap-2 sm:gap-3 text-sm sm:text-base"
-              >
-                <span className="p-1.5 sm:p-2 bg-gray-300 rounded-full text-sm">⚙️</span>
-                Profile Settings
-              </button>
-            </div>
-          </div>
-          
-          {/* Recent Activity */}
-          <div className="md:col-span-2 bg-gradient-to-br from-white to-blue-50 rounded-lg shadow-lg p-6 border border-blue-100">
-            <h3 className="text-lg font-semibold mb-4 text-blue-900">Recent Activity</h3>
-            {activities.length > 0 ? (
-              <div className="space-y-4">
-                {activities.map((activity, index) => (
-                  <div key={index} className="flex items-center gap-4 p-3 bg-white rounded-lg shadow-sm">
-                    <span className="text-2xl">{activity.icon}</span>
-                    <div className="flex-1">
-                      <p className="text-gray-800">{activity.title}</p>
-                      <p className="text-sm text-gray-500">{activity.time}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-center text-gray-500 py-4">No recent activities</p>
             )}
           </div>
         </div>
-      </div>
-    </Layout>
+
+        {/* Main content */}
+        {/* ensure on mobile the content sits below the hero to avoid overlap; keep negative pull on sm+ */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 sm:-mt-10">
+           {/* Stats Cards */}
+           <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-3 mb-6 sm:mb-8">
+             <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 transform hover:scale-105 transition-transform duration-200">
+               <StatsCard
+                 title="Saved Properties"
+                 value={savedProperties.length.toString()}
+                 change={0}
+                 icon="heart"
+               />
+             </div>
+           </div>
+
+          {/* Quick Actions and Recent Activity */}
+          <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-3 mb-6 sm:mb-8">
+            {/* Quick Actions */}
+            <div className="bg-gradient-to-br from-white to-blue-50 rounded-lg shadow-lg p-4 sm:p-6 border border-blue-100">
+              <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-blue-900">Quick Actions</h3>
+              <div className="space-y-2 sm:space-y-3">
+                <button
+                  onClick={() => {
+                    // Clear any cached search results
+                    if (typeof window !== 'undefined') {
+                      sessionStorage.removeItem('searchResults');
+                      sessionStorage.removeItem('searchParams');
+                      localStorage.removeItem('lastSearchResults');
+                      localStorage.removeItem('lastSearchParams');
+                      sessionStorage.setItem('scrollToTop', 'true');
+                    }
+                    
+                    // Navigate to home
+                    window.location.href = '/';
+                  }}
+                  className="w-full text-left px-3 sm:px-4 py-2.5 sm:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 sm:gap-3 text-sm sm:text-base"
+                >
+                  <span className="p-1.5 sm:p-2 bg-blue-500 rounded-full text-sm">🏠</span>
+                  Browse Properties
+                </button>
+                <button
+                  onClick={() => router.push('/saved-properties')}
+                  className="w-full text-left px-3 sm:px-4 py-2.5 sm:py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 sm:gap-3 text-sm sm:text-base"
+                >
+                  <span className="p-1.5 sm:p-2 bg-green-500 rounded-full text-sm">❤️</span>
+                  View Saved Properties ({savedProperties.length})
+                </button>
+                <button
+                  onClick={() => router.push('/create-profile')}
+                  className="w-full text-left px-3 sm:px-4 py-2.5 sm:py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors flex items-center gap-2 sm:gap-3 text-sm sm:text-base"
+                >
+                  <span className="p-1.5 sm:p-2 bg-gray-300 rounded-full text-sm">⚙️</span>
+                  Profile Settings
+                </button>
+              </div>
+            </div>
+            
+            {/* Recent Activity */}
+            <div className="md:col-span-2 bg-gradient-to-br from-white to-blue-50 rounded-lg shadow-lg p-6 border border-blue-100">
+              <h3 className="text-lg font-semibold mb-4 text-blue-900">Recent Activity</h3>
+              {activities.length > 0 ? (
+                <div className="space-y-4">
+                  {activities.map((activity, index) => (
+                    <div key={index} className="flex items-center gap-4 p-3 bg-white rounded-lg shadow-sm">
+                      <span className="text-2xl">{activity.icon}</span>
+                      <div className="flex-1">
+                        <p className="text-gray-800">{activity.title}</p>
+                        <p className="text-sm text-gray-500">{activity.time}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center text-gray-500 py-4">No recent activities</p>
+              )}
+            </div>
+          </div>
+
+          <AISuggestionsPanel
+            recentSearchParams={recentSearchParams}
+            recentProperties={recentProperties}
+          />
+
+          <AIAssistantPanel />
+
+          {/* Placeholder for additional dashboard widgets */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+              <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                Recent Activity
+              </h3>
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                Integrate property views or saved properties summary here.
+              </p>
+            </div>
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+              <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                Behavior Profile
+              </h3>
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                You can surface inferred budget, beds/baths ranges, and top cities here.
+              </p>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    </>
    );
  }

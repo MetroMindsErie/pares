@@ -545,4 +545,24 @@ const processProperty = (property) => {
   }
 };
 
+// Optional small export helper for candidate mapping (used by future integrations).
+// mapSearchResultsToCandidates(list) can be reused in dashboard if you want to
+// pass current results alongside historical context to AI again.
+export function mapSearchResultsToCandidates(list = []) {
+  return list.slice(0, 25).map(p => ({
+    listing_id: p.ListingKey,
+    city: p.City,
+    neighborhood: p.SubdivisionName || p.Subdivision || p.Neighborhood || null,
+    price: p.ListPrice || p.ClosePrice || null,
+    bedrooms: p.BedroomsTotal || null,
+    bathrooms: p.BathroomsTotalInteger || null,
+    property_type: (p.PropertyType || '').toLowerCase(),
+    highlights: [
+      p.HasBasement ? 'basement' : null,
+      p.HasFireplace ? 'fireplace' : null,
+      p.HasGarage ? 'garage' : null,
+      p.HasPool ? 'pool' : null
+    ].filter(Boolean)
+  }));
+}
 // (No change needed; localContextService uses fetchToken)

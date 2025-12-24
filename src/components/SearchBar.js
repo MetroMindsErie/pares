@@ -2,9 +2,14 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { searchProperties } from '../services/trestleServices';
+import { useAuth } from '../context/auth-context';
+import { logSearchQuery } from '../services/userActivityService';
+import { generatePropertySuggestions } from '../services/aiSuggestService';
+import { fetchLatestSuggestions } from '../lib/searchCache';
 
 const SearchBar = ({ onSearchResults }) => {
   const router = useRouter();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [searchParams, setSearchParams] = useState({
@@ -52,6 +57,14 @@ const SearchBar = ({ onSearchResults }) => {
       }
       
       const { properties, nextLink } = await searchProperties(query);
+      logSearchQuery(user?.id, searchParams, properties?.length || 0);
+      // Store last search params for dashboard regeneration
+      try { localStorage.setItem('lastSearchParams', JSON.stringify(searchParams)); } catch {}
+      if (user?.id && properties?.length) {
+        generatePropertySuggestions(user.id, searchParams, properties)
+          .then(s => console.log('AI suggestions parsed:', s))
+          .catch(()=>{});
+      }
       
       // Pass the search results to the parent component
       if (onSearchResults) {

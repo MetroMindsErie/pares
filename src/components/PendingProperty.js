@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBed, faBath, faRuler, faCar, faHouse, faCalendar, faClock } from '@fortawesome/free-solid-svg-icons';
@@ -10,9 +10,19 @@ import BuyerAgent from './Property/BuyerAgent';
 import SavePropertyButton from './SavePropertyButton';
 import { TaxInformation, HistoryInformation } from './Property/PropertyDataTabs';
 import { NeighborhoodCommunity, SchoolsEducation } from './Property/PropertyDataTabs';
+import { useAuth } from '../context/auth-context';
+import { logPropertyView } from '../services/userActivityService';
 
 export const PendingProperty = ({ property, taxData, historyData }) => {
   const [activeTab, setActiveTab] = useState('details');
+
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user?.id && property?.ListingKey) {
+      logPropertyView(user.id, property);
+    }
+  }, [user?.id, property?.ListingKey]);
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat('en-US', {

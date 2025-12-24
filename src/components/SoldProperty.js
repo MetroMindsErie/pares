@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBed, faBath, faRuler, faCalendar, faTag, faHouse } from '@fortawesome/free-solid-svg-icons';
@@ -10,6 +10,8 @@ import BuyerAgent from './Property/BuyerAgent';
 import SavePropertyButton from './SavePropertyButton';
 import { TaxInformation, HistoryInformation } from './Property/PropertyDataTabs';
 import { NeighborhoodCommunity, SchoolsEducation } from './Property/PropertyDataTabs';
+import { useAuth } from '../context/auth-context';
+import { logPropertyView } from '../services/userActivityService';
 
 export const SoldProperty = ({ property, taxData, historyData }) => {
   const [showRawDetails, setShowRawDetails] = useState(false);
@@ -34,6 +36,13 @@ export const SoldProperty = ({ property, taxData, historyData }) => {
   const ctx = property._localContext || deriveLocalContext(property);
   const hasNeighborhood = ctx && (ctx.subdivision || ctx.communityFeatures?.length || ctx.associationAmenities?.length || ctx.lotFeatures?.length);
   const hasSchools = ctx && Object.values(ctx.schools || {}).some(Boolean);
+
+  const { user } = useAuth();
+  useEffect(() => {
+    if (user?.id && property?.ListingKey) {
+      logPropertyView(user.id, property);
+    }
+  }, [user?.id, property?.ListingKey]);
 
   return (
     <Layout>
