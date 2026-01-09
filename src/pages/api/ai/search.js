@@ -12,8 +12,10 @@ function parseBasicSearch(query) {
   const q = String(query || '').toLowerCase();
 
   const out = {
+    price_min: null,
     price_max: null,
     beds_min: null,
+    zip: null,
     location: null,
     status: 'Active',
     want_lease: false,
@@ -26,30 +28,62 @@ function parseBasicSearch(query) {
   else if (/\b(pending|under contract)\b/.test(q)) out.status = 'Pending';
   else if (/\b(expired)\b/.test(q)) out.status = 'Expired';
 
-  // price max: "under 250k", "below 300000", "<= 400k", "under 250,000"
-  const priceMatch = q.match(/\b(under|below|less than|<=)\s*\$?\s*(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)(k|m)?\b/);
-  if (priceMatch) {
-    const raw = priceMatch[2].replace(/,/g, '');
-    const suffix = priceMatch[3];
-    let num = Number(raw);
-    if (!Number.isNaN(num)) {
-      if (suffix === 'k') num *= 1000;
-      if (suffix === 'm') num *= 1_000_000;
-      out.price_max = Math.round(num);
+  const normalizeAmount = (raw, suffix) => {
+    if (!raw) return null;
+    const cleaned = String(raw).replace(/,/g, '');
+    let num = Number(cleaned);
+    if (Number.isNaN(num)) return null;
+    if (suffix === 'k') num *= 1000;
+    if (suffix === 'm') num *= 1_000_000;
+    return Math.round(num);
+  };
+
+  // Zip code (5-digit)
+  const zipMatch = q.match(/\b(\d{5})\b/);
+  if (zipMatch) out.zip = zipMatch[1];
+
+  // price range: "between 200k and 300k"
+  const betweenMatch = q.match(
+    /\bbetween\s*\$?\s*(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)(k|m)?\s+and\s+\$?\s*(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)(k|m)?\b/
+  );
+  if (betweenMatch) {
+    const min = normalizeAmount(betweenMatch[1], betweenMatch[2]);
+    const max = normalizeAmount(betweenMatch[3], betweenMatch[4]);
+    if (min !== null) out.price_min = min;
+    if (max !== null) out.price_max = max;
+  } else {
+    // price max: "under 250k", "below 300000", "<= 400k", "under 250,000"
+    const maxMatch = q.match(
+      /\b(under|below|less than|<=)\s*\$?\s*(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)(k|m)?\b/
+    );
+    if (maxMatch) {
+      const max = normalizeAmount(maxMatch[2], maxMatch[3]);
+      if (max !== null) out.price_max = max;
+    }
+
+    // price min: "over 300k", "above 200000", ">= 150k"
+    const minMatch = q.match(
+      /\b(over|above|more than|greater than|>=|at least)\s*\$?\s*(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)(k|m)?\b/
+    );
+    if (minMatch) {
+      const min = normalizeAmount(minMatch[2], minMatch[3]);
+      if (min !== null) out.price_min = min;
     }
   }
 
-  // beds: "3 beds", "3 bed", "3br"
-  const bedsMatch = q.match(/\b(\d+)\s*(beds?|br)\b/);
+  // beds: "3 beds", "3 bed", "3br", "3+ beds"
+  const bedsMatch = q.match(/\b(\d+)\s*\+?\s*(beds?|br)\b/);
   if (bedsMatch) {
     const num = Number(bedsMatch[1]);
     if (!Number.isNaN(num)) out.beds_min = num;
   }
 
-  // location: "in erie" or "erie"
-  const inMatch = q.match(/\bin\s+([a-z\s]+?)(?:\bwith\b|\bunder\b|\bbelow\b|\bfor\b|\b$)/);
+  // location: "in erie" or "in 16505" or fallback county
+  const inMatch = q.match(/\bin\s+([a-z0-9\s]+?)(?:\bwith\b|\bunder\b|\bbelow\b|\bover\b|\babove\b|\bbetween\b|\bfor\b|\b$)/);
   if (inMatch) {
-    out.location = inMatch[1].trim();
+    const term = inMatch[1].trim();
+    if (/^\d{5}$/.test(term)) out.zip = term;
+    else out.location = term;
   } else {
     // fallback: if query contains one of the target counties
     const county = ALLOWED_COUNTIES.find((c) => q.includes(c.toLowerCase()));
@@ -129,6 +163,8 @@ export default async function handler(req, res) {
 
     // Phase A: retrieve real listings from Trestle (authoritative datasource)
     const parsed = parseBasicSearch(query);
+    console.log('[AI_PROXY] query', query);
+    console.log('[AI_PROXY] parsed', parsed);
     const filters = [];
 
     // County restriction (MLS coverage)
@@ -137,6 +173,14 @@ export default async function handler(req, res) {
     // Default status
     if (parsed.status) {
       filters.push(`StandardStatus eq '${odataEscape(parsed.status)}'`);
+    }
+
+    if (parsed.zip) {
+      filters.push(`PostalCode eq '${odataEscape(parsed.zip)}'`);
+    }
+
+    if (parsed.price_min) {
+      filters.push(`ListPrice ge ${Math.floor(parsed.price_min)}`);
     }
 
     if (parsed.price_max) {

@@ -1,8 +1,13 @@
 "use client";
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import supabase from '../lib/supabase-setup';
 import { useAuth } from '../context/auth-context';
+
+function storageKeyForUser(userId) {
+  return userId ? `aiSearch:lastResponse:${userId}` : null;
+}
 
 export function AIAssistantPanel() {
   const { user } = useAuth();
@@ -10,6 +15,24 @@ export function AIAssistantPanel() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [lastResponse, setLastResponse] = useState(null);
+  const [restoredAt, setRestoredAt] = useState(null);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const key = storageKeyForUser(user.id);
+    if (!key) return;
+    try {
+      const raw = window.localStorage.getItem(key);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed?.response) {
+        setLastResponse(parsed.response);
+        setRestoredAt(parsed?.savedAt || null);
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }, [user?.id]);
 
   const canSearch = useMemo(
     () => input.trim().length > 0 && !loading,
@@ -42,6 +65,26 @@ export function AIAssistantPanel() {
 
       const json = await res.json();
       setLastResponse(json);
+
+      // Persist the last successful result so it can be viewed later
+      if (user?.id) {
+        const key = storageKeyForUser(user.id);
+        if (key) {
+          try {
+            window.localStorage.setItem(
+              key,
+              JSON.stringify({
+                savedAt: new Date().toISOString(),
+                query: input.trim(),
+                response: json
+              })
+            );
+            setRestoredAt(new Date().toISOString());
+          } catch {
+            // ignore storage errors
+          }
+        }
+      }
     } catch (e) {
       setError(e?.message || 'AI search failed');
     } finally {
@@ -54,7 +97,7 @@ export function AIAssistantPanel() {
       <div className="mb-4">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">AI Search</h2>
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Search using your Easters AI service (Supabase-backed SQL retrieval).
+          Search using Trestle-backed retrieval + Easters AI reasoning.
         </p>
       </div>
 
@@ -85,6 +128,12 @@ export function AIAssistantPanel() {
             <div className="mt-3 text-sm text-red-600 dark:text-red-400">{error}</div>
           ) : null}
 
+          {restoredAt && !loading ? (
+            <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+              Showing last saved results ({new Date(restoredAt).toLocaleString()})
+            </div>
+          ) : null}
+
           {lastResponse?.answer ? (
             <div className="mt-4 text-sm text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
               {lastResponse.answer}
@@ -107,9 +156,10 @@ export function AIAssistantPanel() {
               <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Top Listings</div>
               <div className="space-y-2">
                 {lastResponse.listings.slice(0, 5).map((l) => (
-                  <div
+                  <Link
                     key={l.id}
-                    className="flex items-center justify-between gap-3 border border-gray-200 dark:border-gray-700 rounded-md p-3 bg-white dark:bg-gray-900"
+                    href={`/property/${encodeURIComponent(l.id)}`}
+                    className="flex items-center justify-between gap-3 border border-gray-200 dark:border-gray-700 rounded-md p-3 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800"
                   >
                     <div className="min-w-0">
                       <div className="text-sm text-gray-900 dark:text-gray-100 truncate">
@@ -123,7 +173,8 @@ export function AIAssistantPanel() {
                         {l.status ? ` • ${l.status}` : ''}
                       </div>
                     </div>
-                  </div>
+                    <div className="shrink-0 text-xs text-indigo-600 dark:text-indigo-400">View</div>
+                  </Link>
                 ))}
               </div>
             </div>
