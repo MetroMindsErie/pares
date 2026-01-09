@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "capture:context": "node scripts/capture-dev-context.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

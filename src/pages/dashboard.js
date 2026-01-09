@@ -299,7 +299,7 @@ export default function DashboardPage() {
         {/* Hero section with background image */}
         <div className="relative bg-cover bg-center h-40 sm:h-48 md:h-64" 
              style={{ 
-               backgroundImage: 'url("/dashboard-hero.jpg")',
+               backgroundImage: 'url("/paresfinal.jpg")',
                backgroundBlendMode: 'overlay',
                backgroundColor: 'rgba(0,0,0,0.5)'
              }}>

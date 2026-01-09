@@ -42,9 +42,10 @@ export async function GET(request) {
   try {
     // Get search parameters from the request URL
     const { searchParams } = new URL(request.url);
-    
-    // Log the search parameters to help with debugging
 
+    const requestId = Math.random().toString(36).slice(2, 8);
+    // Log the incoming search params (safe; no secrets expected here)
+    console.log(`[TRESTLE:${requestId}] /api/properties params:`, Object.fromEntries(searchParams.entries()));
     
     // Check if we're in development mode
     const isDevelopment = process.env.NODE_ENV === 'development';
@@ -201,13 +202,14 @@ export async function GET(request) {
     
     // Build the Trestle API URL with formatted parameters
     const trestleUrl = `${trestleBaseUrl}/trestle/odata/Property?${formattedParams.toString()}`;
-    
 
+    console.log(`[TRESTLE:${requestId}] GET ${trestleUrl}`);
     
     try {
       // Get OAuth token for Trestle API
       const token = await getTrestleToken();
 
+      console.log(`[TRESTLE:${requestId}] token acquired (${token ? 'present' : 'missing'})`);
       
       // Make the request to the Trestle API with the token
       const response = await fetch(trestleUrl, {
@@ -217,6 +219,8 @@ export async function GET(request) {
         },
         cache: 'no-store' // Disable caching to always get fresh data
       });
+
+      console.log(`[TRESTLE:${requestId}] upstream status ${response.status}`);
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -241,6 +245,7 @@ export async function GET(request) {
       // Process the response
       const data = await response.json();
 
+      console.log(`[TRESTLE:${requestId}] upstream results ${(data?.value?.length ?? 0)} nextLink ${data?.['@odata.nextLink'] ? 'present' : 'none'}`);
       
       // Map the response to include property images and format data
       const properties = (data.value || []).map(property => {

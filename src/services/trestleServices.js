@@ -1,7 +1,10 @@
 // /services/trestleService.js
 import axios from 'axios';
 
-const API_BASE_URL = 'https://api-trestle.corelogic.com';
+// Route all Trestle calls through our Next.js server proxy so:
+// 1) queries are visible in server logs, and
+// 2) client never sees OAuth client credentials or bearer tokens.
+const API_BASE_URL = '/api/trestle';
 
 export const fetchToken = async () => {
   try {
@@ -16,14 +19,13 @@ export const fetchToken = async () => {
 export async function getPropertyById(listingKey) {
   try {
     const response = await axios.get(
-      `${API_BASE_URL}/trestle/odata/Property`,
+      `${API_BASE_URL}/odata/Property`,
       {
         params: { 
           $filter: `ListingKey eq '${listingKey}'`,
           $expand: 'Media,SaleHistory'  // Include sale history if available
         },
         headers: {
-          Authorization: `Bearer ${await fetchToken()}`,
           Accept: 'application/json'
         }
       }
@@ -40,20 +42,13 @@ export async function getPropertyDetails(listingKey) {
   const rawKey = String(listingKey ?? '');
   const escapedKey = rawKey.replace(/'/g, "''"); // OData single-quote escape
 
-  // Acquire token once
-  const token = await fetchToken().catch(err => {
-    console.warn('fetchToken failed in getPropertyDetails:', err);
-    return null;
-  });
-
   const headers = {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     Accept: 'application/json'
   };
 
   // Build entity-path request but URL-encode the quoted key to avoid malformed URLs
   const entityQuoted = `'${escapedKey}'`;
-  const entityPath = `${API_BASE_URL}/trestle/odata/Property(${encodeURIComponent(entityQuoted)})`;
+  const entityPath = `${API_BASE_URL}/odata/Property(${encodeURIComponent(entityQuoted)})`;
   const filterValue = `ListingKey eq '${escapedKey}'`;
   const listingIdFilter = `ListingId eq '${escapedKey}'`;
 
@@ -61,9 +56,9 @@ export async function getPropertyDetails(listingKey) {
     // 1) Entity key path (URL-encoded quoted key)
     async () => axios.get(entityPath, { params: { $expand: 'Media,SaleHistory' }, headers }),
     // 2) $filter by ListingKey with escaped quoted value
-    async () => axios.get(`${API_BASE_URL}/trestle/odata/Property`, { params: { $filter: filterValue, $expand: 'Media,SaleHistory' }, headers }),
+    async () => axios.get(`${API_BASE_URL}/odata/Property`, { params: { $filter: filterValue, $expand: 'Media,SaleHistory' }, headers }),
     // 3) $filter by ListingId (alternate field)
-    async () => axios.get(`${API_BASE_URL}/trestle/odata/Property`, { params: { $filter: listingIdFilter, $expand: 'Media,SaleHistory' }, headers }),
+    async () => axios.get(`${API_BASE_URL}/odata/Property`, { params: { $filter: listingIdFilter, $expand: 'Media,SaleHistory' }, headers }),
   ];
 
   for (let i = 0; i < attempts.length; i++) {
@@ -120,9 +115,8 @@ export async function getPropertyDetails(listingKey) {
 // trestleServices.js
 export const getPropertiesByFilter = async (filterQuery, top = 9, skip = 0) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/trestle/odata/Property?${filterQuery}&$top=${top}&$skip=${skip}&$expand=Media`, {
+    const response = await fetch(`${API_BASE_URL}/odata/Property?${filterQuery}&$top=${top}&$skip=${skip}&$expand=Media`, {
       headers: {
-        Authorization: `Bearer ${await fetchToken()}`,
         Accept: 'application/json'
       }
     });
@@ -192,7 +186,7 @@ export const getPropertiesByFilter = async (filterQuery, top = 9, skip = 0) => {
 export async function getMediaUrls(listingKey) {
     try {
       const response = await axios.get(
-        `${API_BASE_URL}/trestle/odata/Media`,
+        `${API_BASE_URL}/odata/Media`,
         {
           params: {
             $filter: `ResourceRecordKey eq '${listingKey}' and MediaCategory eq 'Photo'`,
@@ -200,7 +194,6 @@ export async function getMediaUrls(listingKey) {
             $select: 'MediaURL'
           },
           headers: {
-            Authorization: `Bearer ${await fetchToken()}`,
             Accept: 'application/json'
           }
         }
@@ -220,11 +213,7 @@ export async function getMediaUrls(listingKey) {
   }
 
   export const fetchCountyNames = async () => {
-    const response = await fetch('https://api-trestle.corelogic.com/trestle/odata/Lookup', {
-      headers: {
-        Authorization: `Bearer ${await fetchToken()}`
-      }
-    });
+    const response = await fetch(`${API_BASE_URL}/odata/Lookup`, { headers: { Accept: 'application/json' } });
     const data = await response.json();
     const counties = data.value
       .filter(item => item.LookupType === 'CountyOrParish' && ['Erie', 'Crawford', 'Warren'].includes(item.LookupValue))
@@ -235,7 +224,7 @@ export async function getMediaUrls(listingKey) {
   export const fetchMediaUrls = async (listingKey) => {
     try {
       const response = await axios.get(
-        `https://api-trestle.corelogic.com/trestle/odata/Media`,
+        `${API_BASE_URL}/odata/Media`,
         {
           params: {
             $filter: `ResourceRecordKey eq '${listingKey}'`,
@@ -243,7 +232,6 @@ export async function getMediaUrls(listingKey) {
             $select: 'MediaURL',
           },
           headers: {
-            Authorization: `Bearer ${await fetchToken()}`,
             Accept: 'application/json',
           },
         }
@@ -484,9 +472,8 @@ export const getNextProperties = async (nextLink) => {
       queryParams += queryParams.includes('?') ? '&$expand=Media' : '?$expand=Media';
     }
     
-    const response = await fetch(`${API_BASE_URL}/trestle/odata/Property?${queryParams}`, {
+    const response = await fetch(`${API_BASE_URL}/odata/Property?${queryParams}`, {
       headers: {
-        Authorization: `Bearer ${await fetchToken()}`,
         Accept: 'application/json'
       }
     });

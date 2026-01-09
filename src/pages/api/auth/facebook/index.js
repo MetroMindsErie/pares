@@ -2,7 +2,17 @@
 export default async function handler(req, res) {
   try {
     const clientId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID;
-    const redirectUri = `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/facebook/callback`;
+    if (!clientId) {
+      return res.status(500).json({ error: 'Facebook App ID not configured' });
+    }
+
+    const forwardedProto = (req.headers['x-forwarded-proto'] || '').toString().split(',')[0].trim();
+    const forwardedHost = (req.headers['x-forwarded-host'] || '').toString().split(',')[0].trim();
+    const host = forwardedHost || (req.headers.host || '').toString();
+    const proto = forwardedProto || 'http';
+    const requestOrigin = host ? `${proto}://${host}` : '';
+    const baseUrl = requestOrigin || process.env.NEXT_PUBLIC_BASE_URL || '';
+    const redirectUri = `${baseUrl}/api/auth/facebook/callback`;
     
     // Make sure both user_videos and user_posts are included in the scope
     const scope = 'email,public_profile,user_videos,user_posts';
