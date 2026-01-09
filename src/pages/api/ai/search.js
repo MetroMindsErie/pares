@@ -19,9 +19,11 @@ function parseBasicSearch(query) {
     location: null,
     status: 'Active',
     want_lease: false,
+    want_income: false,
   };
 
   out.want_lease = /\b(rent|rental|lease)\b/.test(q);
+  out.want_income = /\b(duplex|triplex|fourplex|quadplex|multi\s*-?\s*family|multifamily|residential\s*income|income\s*property)\b/.test(q);
 
   // status heuristics
   if (/\b(sold|closed)\b/.test(q)) out.status = 'Closed';
@@ -78,12 +80,26 @@ function parseBasicSearch(query) {
     if (!Number.isNaN(num)) out.beds_min = num;
   }
 
-  // location: "in erie" or "in 16505" or fallback county
-  const inMatch = q.match(/\bin\s+([a-z0-9\s]+?)(?:\bwith\b|\bunder\b|\bbelow\b|\bover\b|\babove\b|\bbetween\b|\bfor\b|\b$)/);
+  // location: "in erie" or "near erie" or "in 16505" or fallback county
+  // Use lookaheads so we don't accidentally include trailing phrases like "near the university".
+  const inMatch = q.match(
+    /\bin\s+([a-z0-9\s]+?)(?=\bwith\b|\bunder\b|\bbelow\b|\bover\b|\babove\b|\bbetween\b|\bnear\b|\baround\b|\bfor\b|\b$)/
+  );
+  const nearMatch = q.match(
+    /\bnear\s+(?:the\s+)?([a-z0-9\s]+?)(?=\bwith\b|\bunder\b|\bbelow\b|\bover\b|\babove\b|\bbetween\b|\bin\b|\bfor\b|\b$)/
+  );
+
   if (inMatch) {
     const term = inMatch[1].trim();
     if (/^\d{5}$/.test(term)) out.zip = term;
     else out.location = term;
+  } else if (nearMatch) {
+    const term = nearMatch[1].trim();
+    // "near the university" isn't a stable geo filter, so ignore those.
+    if (term && !/(university|campus)/.test(term)) {
+      if (/^\d{5}$/.test(term)) out.zip = term;
+      else out.location = term;
+    }
   } else {
     // fallback: if query contains one of the target counties
     const county = ALLOWED_COUNTIES.find((c) => q.includes(c.toLowerCase()));
@@ -194,6 +210,12 @@ export default async function handler(req, res) {
     if (parsed.location) {
       const loc = odataEscape(parsed.location);
       filters.push(`(contains(tolower(City), '${loc.toLowerCase()}') or contains(tolower(CountyOrParish), '${loc.toLowerCase()}') or contains(tolower(UnparsedAddress), '${loc.toLowerCase()}'))`);
+    }
+
+    // Property type intent (duplex/multifamily/income)
+    // These fields appear to be enums; equality comparisons work reliably.
+    if (parsed.want_income) {
+      filters.push("PropertyType eq 'ResidentialIncome'");
     }
 
     // Default to sale listings unless user explicitly asks to rent/lease.

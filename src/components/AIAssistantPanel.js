@@ -153,9 +153,9 @@ export function AIAssistantPanel() {
 
           {Array.isArray(lastResponse?.listings) && lastResponse.listings.length > 0 ? (
             <div className="mt-4">
-              <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Top Listings</div>
+              <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Listings</div>
               <div className="space-y-2">
-                {lastResponse.listings.slice(0, 5).map((l) => (
+                {lastResponse.listings.map((l) => (
                   <Link
                     key={l.id}
                     href={`/property/${encodeURIComponent(l.id)}`}
