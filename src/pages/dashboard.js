@@ -8,9 +8,7 @@ import supabase from '../lib/supabase-setup';
 import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import { checkFacebookConnection } from '../services/facebookService';
-import AISuggestionsPanel from '../components/AISuggestionsPanel';
 import { AIAssistantPanel } from '../components/AIAssistantPanel';
-import { getCachedSearchResults } from '../lib/searchCache';
 
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth(); // ensure proper destructure
@@ -24,8 +22,6 @@ export default function DashboardPage() {
   const [savedProperties, setSavedProperties] = useState([]);
   const [savedPropertiesLoading, setSavedPropertiesLoading] = useState(true);
   const [savedPropertiesError, setSavedPropertiesError] = useState(null);
-  const [recentSearchParams, setRecentSearchParams] = useState(null);
-  const [recentProperties, setRecentProperties] = useState([]);
   const router = useRouter();
   
   // Use refs to track if effects have run to prevent loops
@@ -256,21 +252,6 @@ export default function DashboardPage() {
     return '/default-avatar.png';
   };
 
-  useEffect(() => {
-    // Pull last cached search (if any) to aid regeneration
-    const cached = getCachedSearchResults();
-    if (cached && Array.isArray(cached)) {
-      setRecentProperties(cached);
-    }
-    // If you store last search params separately in localStorage, read them here
-    try {
-      const raw = localStorage.getItem('lastSearchParams');
-      if (raw) {
-        setRecentSearchParams(JSON.parse(raw));
-      }
-    } catch {}
-  }, []);
-
   // Remove isLoading (was undefined). Use authLoading only.
   if (authLoading) {
     return (
@@ -407,12 +388,6 @@ export default function DashboardPage() {
               )}
             </div>
           </div>
-
-          <AISuggestionsPanel
-            recentSearchParams={recentSearchParams}
-            recentProperties={recentProperties}
-          />
-
           <AIAssistantPanel />
 
           {/* Placeholder for additional dashboard widgets */}

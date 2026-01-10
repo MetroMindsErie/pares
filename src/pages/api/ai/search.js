@@ -586,6 +586,44 @@ export default async function handler(req, res) {
 
     const text = await upstream.text();
 
+    // If we relaxed constraints, ensure the client sees the disclosure even if upstream
+    // doesn't echo it (e.g., stale container / older build).
+    if (retrievalNotes.length > 0) {
+      try {
+        const parsedUpstream = JSON.parse(text);
+        if (parsedUpstream && typeof parsedUpstream === 'object') {
+          if (!Array.isArray(parsedUpstream.reasoning)) parsedUpstream.reasoning = [];
+          const existing = new Set(
+            parsedUpstream.reasoning
+              .filter((r) => typeof r === 'string')
+              .map((r) => String(r))
+          );
+
+          // Insert after the first couple of standard lines if present.
+          const insertAt = Math.min(2, parsedUpstream.reasoning.length);
+          const notesToInsert = retrievalNotes
+            .filter((n) => typeof n === 'string' && n.trim().length > 0)
+            .filter((n) => !existing.has(n))
+            .slice(0, 4);
+
+          if (notesToInsert.length > 0) {
+            parsedUpstream.reasoning.splice(insertAt, 0, ...notesToInsert);
+          }
+
+          // Also annotate the attempt label for debugging/transparency.
+          if (retrievalAttempt && typeof retrievalAttempt === 'string') {
+            parsedUpstream.retrieval_attempt = retrievalAttempt;
+          }
+
+          res.status(upstream.status);
+          res.setHeader('Content-Type', 'application/json');
+          return res.send(JSON.stringify(parsedUpstream));
+        }
+      } catch {
+        // ignore JSON patch errors; fall back to raw upstream response
+      }
+    }
+
     // Log search (best-effort; never block response)
     if (supabase && userId) {
       try {
