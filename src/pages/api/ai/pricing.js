@@ -94,6 +94,29 @@ function mapTrestlePropertyToListing(p) {
   };
 }
 
+function inferCityFromComps(comps) {
+  if (!Array.isArray(comps) || comps.length === 0) return '';
+  const counts = new Map();
+  const exemplar = new Map();
+  for (const c of comps) {
+    const raw = String(c?.city || '').trim();
+    if (!raw) continue;
+    const key = normalizeLoose(raw);
+    if (!key) continue;
+    counts.set(key, (counts.get(key) || 0) + 1);
+    if (!exemplar.has(key)) exemplar.set(key, raw);
+  }
+  let bestKey = '';
+  let bestCount = 0;
+  for (const [k, n] of counts.entries()) {
+    if (n > bestCount) {
+      bestCount = n;
+      bestKey = k;
+    }
+  }
+  return bestKey ? (exemplar.get(bestKey) || '') : '';
+}
+
 async function lookupSubjectAnyStatusByAddress(addr, { countyHint } = {}) {
   const parsed = parseAddressParts(addr);
   const clauses = [];
@@ -321,6 +344,7 @@ export default async function handler(req, res) {
       const startedAt = Date.now();
       const normalizedCounty = normalizeLoose(countyTrim).replace(/\bcounty\b/g, '').trim();
       const zip5 = (zipTrim.match(/\b\d{5}\b/) || [null])[0];
+      const parsedAddr = parseAddressParts(addr);
       const { subjectRaw: subjectAnyStatus, parsed: parsedForMarket } = await lookupSubjectAnyStatusByAddress(addr, { countyHint: normalizedCounty });
       const cityToken = subjectAnyStatus
         ? normalizeLoose(String(subjectAnyStatus?.City || subjectAnyStatus?.PostalCity || '')).trim() || null
@@ -371,7 +395,8 @@ export default async function handler(req, res) {
 
       let subject = {
         id: '',
-        address: addr,
+        // Use a geocode-friendly street-only address; county/state/zip are separate fields.
+        address: parsedAddr.streetRaw || addr,
         city: cityToken || '',
         county: countyTrim,
         state: 'PA',
@@ -382,6 +407,8 @@ export default async function handler(req, res) {
         property_type: 'Residential',
         status: 'Unknown',
         sqft: 0,
+        lat: null,
+        lng: null,
       };
 
       // Prefer subject-based comps if we can find any MLS record (any status) for the address.
@@ -446,6 +473,13 @@ export default async function handler(req, res) {
           closePrices = twelveMonth.closePrices;
           expanded = true;
         }
+      }
+
+      // If the user entered street+county+zip (no city), infer a likely city from comps.
+      // This makes client-side geocoding for the "Your home" marker much more reliable.
+      if (!subjectAnyStatus && (!subject.city || !String(subject.city).trim())) {
+        const inferred = inferCityFromComps(comps);
+        if (inferred) subject.city = inferred;
       }
 
       const p25 = percentile(closePrices, 0.25);

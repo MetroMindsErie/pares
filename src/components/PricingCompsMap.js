@@ -20,7 +20,7 @@ function normalizeAddressKey(s) {
     .trim();
 }
 
-async function geocodeAddress(address) {
+async function geocodeAddress(address, { signal } = {}) {
   const query = String(address || '').trim();
   if (!query) return null;
 
@@ -39,7 +39,7 @@ async function geocodeAddress(address) {
   // Nominatim (OpenStreetMap) geocoding. Client-side only.
   // Note: keep requests rate-limited.
   const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`;
-  const res = await fetch(url);
+  const res = await fetch(url, { signal });
   if (!res.ok) return null;
   const json = await res.json().catch(() => null);
   const first = Array.isArray(json) ? json[0] : null;
@@ -127,6 +127,17 @@ function formatMoney(n) {
   return `$${Math.round(v).toLocaleString()}`;
 }
 
+function FitOnceAcker({ subjectPoint, onAck }) {
+  useEffect(() => {
+    if (!subjectPoint) return;
+    const t = setTimeout(() => {
+      onAck();
+    }, 0);
+    return () => clearTimeout(t);
+  }, [subjectPoint, onAck]);
+  return null;
+}
+
 export default function PricingCompsMap({ subject, comps }) {
   const [geoSubject, setGeoSubject] = useState(null);
   const [geoComps, setGeoComps] = useState(() => new Map());
@@ -135,6 +146,8 @@ export default function PricingCompsMap({ subject, comps }) {
   const mountedRef = useRef(true);
   const fittingRef = useRef(false);
   const [userInteracted, setUserInteracted] = useState(false);
+  const [didFitWithSubject, setDidFitWithSubject] = useState(false);
+  const [forceFitOnce, setForceFitOnce] = useState(false);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -170,6 +183,14 @@ export default function PricingCompsMap({ subject, comps }) {
     return pts;
   }, [subjectPoint, compPoints]);
 
+  // If the user interacts before the subject geocode resolves, auto-fit may be disabled.
+  // Force exactly one fit when the subject point becomes available so the "Your home" pin is visible.
+  useEffect(() => {
+    if (!subjectPoint) return;
+    if (didFitWithSubject) return;
+    setForceFitOnce(true);
+  }, [subjectPoint, didFitWithSubject]);
+
   // Default to PA-ish center while we geocode missing coordinates.
   const center = subjectPoint || compPoints[0] || [40.9, -77.85];
   const initialZoom = allPoints.length > 0 ? 13 : 7;
@@ -180,7 +201,6 @@ export default function PricingCompsMap({ subject, comps }) {
 
   // Geocode subject if missing coords.
   useEffect(() => {
-    let cancelled = false;
     if (!subject || subjectPoint) return () => {};
 
     const q = [subject?.address, subject?.city, subject?.county, subject?.state, subject?.zip]
@@ -188,17 +208,21 @@ export default function PricingCompsMap({ subject, comps }) {
       .join(', ');
     if (!q) return () => {};
 
-    geocodeQueueRef.current = geocodeQueueRef.current
-      .then(() => new Promise((r) => setTimeout(r, 250)))
-      .then(() => geocodeAddress(q))
-      .then((pt) => {
-        if (cancelled) return;
+    // Important: don't put the subject behind the comps queue.
+    // Otherwise, if there are many comps to geocode, the user's home pin may never appear.
+    const controller = new AbortController();
+    (async () => {
+      try {
+        const pt = await geocodeAddress(q, { signal: controller.signal });
+        if (!mountedRef.current) return;
         if (pt) setGeoSubject(pt);
-      })
-      .catch(() => {});
+      } catch {
+        // ignore
+      }
+    })();
 
     return () => {
-      cancelled = true;
+      controller.abort();
     };
   }, [subject?.address, subjectPoint, subject]);
 
@@ -255,20 +279,20 @@ export default function PricingCompsMap({ subject, comps }) {
             onUserInteraction={() => setUserInteracted(true)}
           />
 
-          <FitBounds points={allPoints} enabled={!userInteracted} fittingRef={fittingRef} />
+          <FitBounds
+            points={allPoints}
+            enabled={!userInteracted || forceFitOnce}
+            fittingRef={fittingRef}
+          />
 
-          {subjectPoint ? (
-            <Marker position={subjectPoint} icon={subjectIcon}>
-              <Popup>
-                <div className="text-sm">
-                  <div className="font-semibold">Your home</div>
-                  <div>{subject?.address}</div>
-                  <div className="text-xs text-gray-700">
-                    {subject?.beds ? `${subject.beds} bd` : ''}{subject?.baths ? ` • ${subject.baths} ba` : ''}{subject?.sqft ? ` • ${Math.round(subject.sqft).toLocaleString()} sqft` : ''}
-                  </div>
-                </div>
-              </Popup>
-            </Marker>
+          {forceFitOnce ? (
+            <FitOnceAcker
+              subjectPoint={subjectPoint}
+              onAck={() => {
+                if (subjectPoint) setDidFitWithSubject(true);
+                setForceFitOnce(false);
+              }}
+            />
           ) : null}
 
           {Array.isArray(comps)
@@ -314,6 +338,21 @@ export default function PricingCompsMap({ subject, comps }) {
                 );
               })
             : null}
+
+          {/* Render subject last so it stays visually on top of overlapping comp markers. */}
+          {subjectPoint ? (
+            <Marker position={subjectPoint} icon={subjectIcon} zIndexOffset={1000} riseOnHover>
+              <Popup>
+                <div className="text-sm">
+                  <div className="font-semibold">Your home</div>
+                  <div>{subject?.address}</div>
+                  <div className="text-xs text-gray-700">
+                    {subject?.beds ? `${subject.beds} bd` : ''}{subject?.baths ? ` • ${subject.baths} ba` : ''}{subject?.sqft ? ` • ${Math.round(subject.sqft).toLocaleString()} sqft` : ''}
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
+          ) : null}
         </MapContainer>
       </div>
 
