@@ -12,6 +12,9 @@ function odataEscape(val) {
 function parseBasicSearch(query) {
   const q = String(query || '').toLowerCase();
 
+  const hasLeaseIntent = /\b(lease|for\s+rent|renting)\b/.test(q);
+  const hasRentalKeyword = /\b(rent|rental|rentals)\b/.test(q);
+
   const out = {
     price_min: null,
     price_max: null,
@@ -23,13 +26,15 @@ function parseBasicSearch(query) {
     sold_within_days: null,
     status: 'Active',
     status_explicit: false,
+    // want_lease means the user wants *lease listings* (e.g., $/month), not "a rental property" purchase.
     want_lease: false,
     want_income: false,
     want_residential: false,
     want_commercial: false,
   };
 
-  out.want_lease = /\b(rent|rental|lease)\b/.test(q);
+  // We finalize want_lease after price parsing (below) to disambiguate "rental".
+  out.want_lease = hasLeaseIntent;
   out.want_income = /\b(duplex|triplex|fourplex|quadplex|multi\s*-?\s*family|multifamily|residential\s*income|income\s*property)\b/.test(q);
   out.want_residential = /\b(single\s*-?\s*family|house|home|residential)\b/.test(q);
   out.want_commercial = /\b(commercial|retail|office|industrial)\b/.test(q);
@@ -110,6 +115,18 @@ function parseBasicSearch(query) {
     if (minMatch) {
       const min = normalizeAmount(minMatch[2], minMatch[3]);
       if (min !== null) out.price_min = min;
+    }
+  }
+
+  // Finalize lease intent.
+  // Heuristic:
+  // - If the query clearly indicates leasing ("lease", "for rent"), treat as lease listings.
+  // - If the query only says "rental(s)" and the price looks like monthly rent (<= 10k), treat as lease listings.
+  // - Otherwise treat "rental" as "rental property" (purchase), not a lease listing.
+  const monthlySignal = /\b(per\s+month|\/\s*mo|\/\s*month|monthly|\$\s*\d+\s*\/\s*mo)\b/.test(q);
+  if (!out.want_lease && hasRentalKeyword) {
+    if (monthlySignal || (typeof out.price_max === 'number' && out.price_max > 0 && out.price_max <= 10000)) {
+      out.want_lease = true;
     }
   }
 
@@ -284,19 +301,33 @@ export default async function handler(req, res) {
     // - seller: default to recent Closed comps unless user explicitly asked for a status
     const roleDefaults = {
       preferPropertyType: null,
+      propertyTypeStrict: false,
       overrideStatus: null,
       overrideSoldWithinDays: null,
     };
 
-    if (role === 'buyer') {
-      if (!parsed.want_income && !parsed.want_commercial) {
-        roleDefaults.preferPropertyType = 'Residential';
+    // Explicit property-type intent should be treated as strict so we don't top-up into other types.
+    if (parsed.want_commercial) {
+      roleDefaults.preferPropertyType = 'CommercialSale';
+      roleDefaults.propertyTypeStrict = true;
+    } else if (parsed.want_residential && !parsed.want_income) {
+      roleDefaults.preferPropertyType = 'Residential';
+      roleDefaults.propertyTypeStrict = true;
+    }
+
+    if (!roleDefaults.preferPropertyType) {
+      if (role === 'buyer') {
+        if (!parsed.want_income && !parsed.want_commercial) {
+          roleDefaults.preferPropertyType = 'Residential';
+        }
+      } else if (role === 'investor') {
+        if (!parsed.want_commercial && !parsed.want_residential && !parsed.want_income) {
+          roleDefaults.preferPropertyType = 'ResidentialIncome';
+        }
       }
-    } else if (role === 'investor') {
-      if (!parsed.want_commercial && !parsed.want_residential && !parsed.want_income) {
-        roleDefaults.preferPropertyType = 'ResidentialIncome';
-      }
-    } else if (role === 'seller') {
+    }
+
+    if (role === 'seller') {
       if (!parsed.status_explicit) {
         roleDefaults.overrideStatus = 'Closed';
         roleDefaults.overrideSoldWithinDays = parsed.sold_within_days || 365;
@@ -405,6 +436,7 @@ export default async function handler(req, res) {
     const rolePropertyFilter = roleDefaults.preferPropertyType
       ? `PropertyType eq '${odataEscape(roleDefaults.preferPropertyType)}'`
       : null;
+    const rolePropertyStrict = Boolean(roleDefaults.propertyTypeStrict);
 
     const orderBy = parsed.status === 'Closed' ? 'CloseDate desc' : 'ListPrice asc';
 
@@ -461,8 +493,8 @@ export default async function handler(req, res) {
       })
     );
 
-    // If role-based property filter is too restrictive, try without it.
-    if (rolePropertyFilter) {
+    // If role-based property filter is too restrictive, try without it (only if it's a preference).
+    if (rolePropertyFilter && !rolePropertyStrict) {
       attempts.push(
         buildAttempt({
           label: 'no_role_property_type',
@@ -485,7 +517,7 @@ export default async function handler(req, res) {
           notes: ['Relaxed search: removed MLS area constraint to find nearby matches'],
         })
       );
-      if (rolePropertyFilter) {
+      if (rolePropertyFilter && !rolePropertyStrict) {
         attempts.push(
           buildAttempt({
             label: 'no_mls_area_no_role_property_type',
@@ -529,8 +561,9 @@ export default async function handler(req, res) {
     retrievalAttempt = chosen?.label || 'primary';
     retrievalNotes.push(...(chosen?.notes || []));
 
-    // If role-based property filter is too restrictive, top up with a relaxed query (never overrides existing matches).
-    if (chosen?.rolePropertyApplied && mappedListings.length > 0 && mappedListings.length < 25) {
+    // If role-based property filter is a *preference*, top up with a relaxed query (never overrides existing matches).
+    // Never top-up if the user explicitly asked for a property type (strict intent).
+    if (chosen?.rolePropertyApplied && !rolePropertyStrict && mappedListings.length > 0 && mappedListings.length < 25) {
       console.log('[AI_PROXY] role filter returned', mappedListings.length, '— topping up without role PropertyType filter');
       const relaxed = await fetchAndMap(chosen.baseFilter);
       const relaxedListings = relaxed.mappedListings;
