@@ -9,9 +9,17 @@ function storageKeyForUser(userId) {
   return userId ? `aiSearch:lastResponse:${userId}` : null;
 }
 
+const ROLE_OPTIONS = [
+  { value: 'buyer', label: 'Buyer' },
+  { value: 'seller', label: 'Seller' },
+  { value: 'investor', label: 'Investor' },
+  { value: 'realtor', label: 'Realtor' },
+];
+
 export function AIAssistantPanel() {
   const { user } = useAuth();
   const [input, setInput] = useState('');
+  const [role, setRole] = useState('buyer');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [lastResponse, setLastResponse] = useState(null);
@@ -28,6 +36,9 @@ export function AIAssistantPanel() {
       if (parsed?.response) {
         setLastResponse(parsed.response);
         setRestoredAt(parsed?.savedAt || null);
+      }
+      if (typeof parsed?.role === 'string' && parsed.role) {
+        setRole(parsed.role);
       }
     } catch {
       // ignore storage errors
@@ -55,7 +66,7 @@ export function AIAssistantPanel() {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {})
         },
-        body: JSON.stringify({ query: input.trim() })
+        body: JSON.stringify({ query: input.trim(), role })
       });
 
       if (!res.ok) {
@@ -76,6 +87,7 @@ export function AIAssistantPanel() {
               JSON.stringify({
                 savedAt: new Date().toISOString(),
                 query: input.trim(),
+                role,
                 response: json
               })
             );
@@ -105,6 +117,22 @@ export function AIAssistantPanel() {
         <div className="text-sm text-gray-700 dark:text-gray-300">Log in to use the assistant.</div>
       ) : (
         <>
+          <div className="mt-3">
+            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Role</label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              disabled={loading}
+              className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 text-sm"
+            >
+              {ROLE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className="mt-3 flex gap-2">
             <input
               value={input}

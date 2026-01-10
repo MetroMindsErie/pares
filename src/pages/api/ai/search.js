@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { fetchTrestleOData } from '../../../lib/trestleServer';
 
 const ALLOWED_COUNTIES = ['Erie', 'Warren', 'Crawford'];
+const ALLOWED_ROLES = new Set(['seller', 'buyer', 'investor', 'realtor']);
 
 function odataEscape(val) {
   if (val === undefined || val === null) return '';
@@ -17,18 +18,57 @@ function parseBasicSearch(query) {
     beds_min: null,
     zip: null,
     location: null,
+    mls_area: null,
+    mls_area_num: null,
+    sold_within_days: null,
     status: 'Active',
+    status_explicit: false,
     want_lease: false,
     want_income: false,
+    want_residential: false,
+    want_commercial: false,
   };
 
   out.want_lease = /\b(rent|rental|lease)\b/.test(q);
   out.want_income = /\b(duplex|triplex|fourplex|quadplex|multi\s*-?\s*family|multifamily|residential\s*income|income\s*property)\b/.test(q);
+  out.want_residential = /\b(single\s*-?\s*family|house|home|residential)\b/.test(q);
+  out.want_commercial = /\b(commercial|retail|office|industrial)\b/.test(q);
 
   // status heuristics
-  if (/\b(sold|closed)\b/.test(q)) out.status = 'Closed';
-  else if (/\b(pending|under contract)\b/.test(q)) out.status = 'Pending';
-  else if (/\b(expired)\b/.test(q)) out.status = 'Expired';
+  if (/\b(sold|closed)\b/.test(q)) {
+    out.status = 'Closed';
+    out.status_explicit = true;
+  } else if (/\b(pending|under contract)\b/.test(q)) {
+    out.status = 'Pending';
+    out.status_explicit = true;
+  } else if (/\b(expired)\b/.test(q)) {
+    out.status = 'Expired';
+    out.status_explicit = true;
+  } else if (/\b(active|available)\b/.test(q)) {
+    out.status = 'Active';
+    out.status_explicit = true;
+  }
+
+  // Time window parsing (for sold/closed queries)
+  // Examples:
+  // - "sold within the past year"
+  // - "sold in the last 12 months"
+  // - "sold in the last 30 days"
+  if (/\b(past|last)\s+year\b|\blast\s+12\s+months\b|\bpast\s+12\s+months\b/.test(q)) {
+    out.sold_within_days = 365;
+  } else {
+    const daysMatch = q.match(/\b(?:past|last)\s+(\d{1,3})\s+days\b/);
+    if (daysMatch) {
+      const n = Number(daysMatch[1]);
+      if (!Number.isNaN(n) && n > 0) out.sold_within_days = n;
+    } else {
+      const monthsMatch = q.match(/\b(?:past|last)\s+(\d{1,2})\s+months\b/);
+      if (monthsMatch) {
+        const n = Number(monthsMatch[1]);
+        if (!Number.isNaN(n) && n > 0) out.sold_within_days = n * 30;
+      }
+    }
+  }
 
   const normalizeAmount = (raw, suffix) => {
     if (!raw) return null;
@@ -83,7 +123,7 @@ function parseBasicSearch(query) {
   // location: "in erie" or "near erie" or "in 16505" or fallback county
   // Use lookaheads so we don't accidentally include trailing phrases like "near the university".
   const inMatch = q.match(
-    /\bin\s+([a-z0-9\s]+?)(?=\bwith\b|\bunder\b|\bbelow\b|\bover\b|\babove\b|\bbetween\b|\bnear\b|\baround\b|\bfor\b|\b$)/
+    /\bin\s+([a-z0-9\s]+?)(?=\bin\b|\bwith\b|\bunder\b|\bbelow\b|\bover\b|\babove\b|\bbetween\b|\bnear\b|\baround\b|\bwithin\b|\blast\b|\bpast\b|\bsell\b|\bsold\b|\bfor\b|\b$)/
   );
   const nearMatch = q.match(
     /\bnear\s+(?:the\s+)?([a-z0-9\s]+?)(?=\bwith\b|\bunder\b|\bbelow\b|\bover\b|\babove\b|\bbetween\b|\bin\b|\bfor\b|\b$)/
@@ -104,6 +144,59 @@ function parseBasicSearch(query) {
     // fallback: if query contains one of the target counties
     const county = ALLOWED_COUNTIES.find((c) => q.includes(c.toLowerCase()));
     if (county) out.location = county.toLowerCase();
+  }
+
+  // Sanitize location: avoid accidentally including verbs like "sell" (e.g. "in erie sell for")
+  if (out.location) {
+    out.location = out.location
+      .replace(/\b(sell|sold|buy|rent|lease)\b.*$/i, '')
+      .replace(/\b(within|last|past)\b.*$/i, '')
+      .trim();
+    if (!out.location) out.location = null;
+  }
+
+  // MLS Area numeric parsing (e.g., "area 5", "mlsarea5", "mls area 5")
+  const areaNumMatch = q.match(/\b(?:mls\s*area|mlsarea|area)\s*(\d{1,2})\b/);
+  if (areaNumMatch) {
+    const n = Number(areaNumMatch[1]);
+    if (!Number.isNaN(n)) {
+      out.mls_area_num = n;
+      // If user typed "in area 5", don't treat that as a city/location constraint.
+      if (out.location && /^area\s*\d{1,2}$/.test(out.location)) out.location = null;
+    }
+  }
+
+  // MLS Area parsing (Erie market)
+  // Examples users may type:
+  // - "north east erie" / "northeast erie" / "erie northeast"
+  // We map these to MLSAreaMajor contains("Erie Northeast") style filtering.
+  const areaMatch = q.match(/\b(north\s*east|northeast|north\s*west|northwest|south\s*east|southeast|south\s*west|southwest)\s+erie\b|\berie\s+(northeast|northwest|southeast|southwest)\b/);
+  if (areaMatch) {
+    const rawDir = (areaMatch[1] || areaMatch[2] || '').replace(/\s+/g, ' ').trim();
+    if (rawDir) {
+      const dirNorm = rawDir.replace('north east', 'northeast').replace('north west', 'northwest').replace('south east', 'southeast').replace('south west', 'southwest');
+      const label =
+        dirNorm === 'northeast' ? 'Erie Northeast' :
+        dirNorm === 'northwest' ? 'Erie Northwest' :
+        dirNorm === 'southeast' ? 'Erie Southeast' :
+        dirNorm === 'southwest' ? 'Erie Southwest' : null;
+
+      if (label) {
+        out.mls_area = label;
+        // Always normalize base location to Erie so we don't over-restrict City filter.
+        out.location = 'erie';
+      }
+    }
+  }
+
+  // Normalize location if it's just an area reference.
+  if (out.location && /^(?:area|mls\s*area|mlsarea)\s*\d{1,2}$/.test(out.location)) {
+    out.location = null;
+  }
+
+  // If a user typed something like "north east erie" as the location, normalize it.
+  if (out.location && /\berie\b/.test(out.location) && /\b(north|south|east|west)\b/.test(out.location)) {
+    out.location = 'erie';
   }
 
   return out;
@@ -161,6 +254,8 @@ export default async function handler(req, res) {
 
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
     const query = body?.query;
+    const roleRaw = body?.role;
+    const role = typeof roleRaw === 'string' && ALLOWED_ROLES.has(roleRaw) ? roleRaw : 'buyer';
 
     if (!query || typeof query !== 'string') {
       return res.status(400).json({ error: 'Invalid request: query must be a string' });
@@ -180,8 +275,48 @@ export default async function handler(req, res) {
     // Phase A: retrieve real listings from Trestle (authoritative datasource)
     const parsed = parseBasicSearch(query);
     console.log('[AI_PROXY] query', query);
+    console.log('[AI_PROXY] role', role);
     console.log('[AI_PROXY] parsed', parsed);
+
+    // Role-specific retrieval defaults (safe, with fallback)
+    // - buyer: default to Residential (exclude ResidentialIncome/CommercialSale) unless user explicitly asked for income/commercial
+    // - investor: prefer ResidentialIncome unless user explicitly asked for commercial/residential
+    // - seller: default to recent Closed comps unless user explicitly asked for a status
+    const roleDefaults = {
+      preferPropertyType: null,
+      overrideStatus: null,
+      overrideSoldWithinDays: null,
+    };
+
+    if (role === 'buyer') {
+      if (!parsed.want_income && !parsed.want_commercial) {
+        roleDefaults.preferPropertyType = 'Residential';
+      }
+    } else if (role === 'investor') {
+      if (!parsed.want_commercial && !parsed.want_residential && !parsed.want_income) {
+        roleDefaults.preferPropertyType = 'ResidentialIncome';
+      }
+    } else if (role === 'seller') {
+      if (!parsed.status_explicit) {
+        roleDefaults.overrideStatus = 'Closed';
+        roleDefaults.overrideSoldWithinDays = parsed.sold_within_days || 365;
+      }
+    }
+
+    if (roleDefaults.overrideStatus) {
+      parsed.status = roleDefaults.overrideStatus;
+    }
+    if (typeof roleDefaults.overrideSoldWithinDays === 'number') {
+      parsed.sold_within_days = roleDefaults.overrideSoldWithinDays;
+    }
+
+    console.log('[AI_PROXY] role defaults', roleDefaults);
     const filters = [];
+
+    // Track whether we relax constraints, and why.
+    // These notes are forwarded to /ai/explain so the UI can be transparent about what changed.
+    const retrievalNotes = [];
+    let retrievalAttempt = 'primary';
 
     // County restriction (MLS coverage)
     filters.push(`(${ALLOWED_COUNTIES.map((c) => `CountyOrParish eq '${odataEscape(c)}'`).join(' or ')})`);
@@ -191,16 +326,42 @@ export default async function handler(req, res) {
       filters.push(`StandardStatus eq '${odataEscape(parsed.status)}'`);
     }
 
+    // Sold/Closed within a time window
+    if (parsed.status === 'Closed' && typeof parsed.sold_within_days === 'number') {
+      const since = new Date();
+      since.setDate(since.getDate() - parsed.sold_within_days);
+      const ymd = since.toISOString().slice(0, 10);
+      filters.push(`CloseDate ge ${ymd}`);
+    }
+
+    // Pending within a time window (use ContractStatusChangeDate; PendingTimestamp can be null)
+    if (parsed.status === 'Pending' && typeof parsed.sold_within_days === 'number') {
+      const since = new Date();
+      since.setDate(since.getDate() - parsed.sold_within_days);
+      const ymd = since.toISOString().slice(0, 10);
+      filters.push(`ContractStatusChangeDate ge ${ymd}`);
+    }
+
+    // Sold/Closed within a time window
+    if (parsed.status === 'Closed' && typeof parsed.sold_within_days === 'number') {
+      const since = new Date();
+      since.setDate(since.getDate() - parsed.sold_within_days);
+      const ymd = since.toISOString().slice(0, 10);
+      filters.push(`CloseDate ge ${ymd}`);
+    }
+
     if (parsed.zip) {
       filters.push(`PostalCode eq '${odataEscape(parsed.zip)}'`);
     }
 
+    // Price field differs by status
+    const priceField = parsed.status === 'Closed' ? 'ClosePrice' : 'ListPrice';
     if (parsed.price_min) {
-      filters.push(`ListPrice ge ${Math.floor(parsed.price_min)}`);
+      filters.push(`${priceField} ge ${Math.floor(parsed.price_min)}`);
     }
 
     if (parsed.price_max) {
-      filters.push(`ListPrice le ${Math.floor(parsed.price_max)}`);
+      filters.push(`${priceField} le ${Math.floor(parsed.price_max)}`);
     }
 
     if (parsed.beds_min) {
@@ -210,6 +371,21 @@ export default async function handler(req, res) {
     if (parsed.location) {
       const loc = odataEscape(parsed.location);
       filters.push(`(contains(tolower(City), '${loc.toLowerCase()}') or contains(tolower(CountyOrParish), '${loc.toLowerCase()}') or contains(tolower(UnparsedAddress), '${loc.toLowerCase()}'))`);
+    }
+
+    // MLS Area filtering (optional). Use contains because MLSAreaMajor includes numeric prefixes.
+    if (parsed.mls_area) {
+      const area = odataEscape(parsed.mls_area);
+      filters.push(`contains(tolower(MLSAreaMajor), '${area.toLowerCase()}')`);
+    }
+
+    // MLS Area numeric filtering (e.g., "area 5" => "5 - ...")
+    if (typeof parsed.mls_area_num === 'number') {
+      const prefix = `${parsed.mls_area_num} -`;
+      const nextPrefix = `${parsed.mls_area_num + 1} -`;
+      // Avoid `contains(..., '5 -')` because it also matches areas like '15 -', '25 -', etc.
+      // Use either startswith or a lexicographic range.
+      filters.push(`(startswith(MLSAreaMajor, '${odataEscape(prefix)}') or (MLSAreaMajor ge '${odataEscape(prefix)}' and MLSAreaMajor lt '${odataEscape(nextPrefix)}'))`);
     }
 
     // Property type intent (duplex/multifamily/income)
@@ -222,29 +398,157 @@ export default async function handler(req, res) {
     // This MLS feed exposes PropertyType as an enum, so string comparisons/functions are unreliable.
     // Heuristic: rental ListPrice is typically a monthly amount (< 10k).
     if (!parsed.want_lease) {
-      filters.push('ListPrice ge 10000');
+      filters.push(`${priceField} ge 10000`);
     }
 
-    const trestleParams = {
-      $filter: filters.join(' and '),
-      $top: '25',
-      $skip: '0',
-      $expand: 'Media',
-      $orderby: 'ListPrice asc'
+    // Role-driven property type preference (applied as a first-pass filter; we will relax if needed)
+    const rolePropertyFilter = roleDefaults.preferPropertyType
+      ? `PropertyType eq '${odataEscape(roleDefaults.preferPropertyType)}'`
+      : null;
+
+    const orderBy = parsed.status === 'Closed' ? 'CloseDate desc' : 'ListPrice asc';
+
+    const fetchAndMap = async (filterString) => {
+      const trestleParams = {
+        $filter: filterString,
+        $top: '25',
+        $skip: '0',
+        $expand: 'Media',
+        $orderby: orderBy
+      };
+
+      console.log('[AI_PROXY] trestle retrieve params', trestleParams);
+      const trestle = await fetchTrestleOData('odata/Property', trestleParams);
+      const trestleValues = Array.isArray(trestle?.json?.value) ? trestle.json.value : [];
+      return {
+        trestle,
+        trestleParams,
+        mappedListings: trestleValues.map(mapTrestlePropertyToListing).filter((l) => l.id),
+      };
     };
 
-    console.log('[AI_PROXY] trestle retrieve params', trestleParams);
+    const hasAreaConstraint = filters.some((f) => f.includes('MLSAreaMajor'));
+    const incomeExplicit = Boolean(parsed.want_income);
+    const roleFilterIsIncome = Boolean(rolePropertyFilter && /ResidentialIncome/.test(rolePropertyFilter));
 
-    const trestle = await fetchTrestleOData('odata/Property', trestleParams);
-    const trestleValues = Array.isArray(trestle?.json?.value) ? trestle.json.value : [];
-    const mappedListings = trestleValues.map(mapTrestlePropertyToListing).filter((l) => l.id);
+    const buildAttempt = ({
+      label,
+      dropArea,
+      dropRoleProperty,
+      dropIncome,
+      notes,
+    }) => {
+      const baseFilters = filters
+        .filter((f) => (dropArea ? !f.includes('MLSAreaMajor') : true))
+        .filter((f) => (dropIncome ? !/PropertyType eq 'ResidentialIncome'/.test(f) : true));
+
+      const baseFilter = baseFilters.join(' and ');
+      const rp = dropRoleProperty ? null : rolePropertyFilter;
+      const filter = rp ? `${baseFilter} and ${rp}` : baseFilter;
+      return { label, filter, baseFilter, rolePropertyApplied: Boolean(rp), notes };
+    };
+
+    const attempts = [];
+
+    // Primary attempt.
+    attempts.push(
+      buildAttempt({
+        label: 'primary',
+        dropArea: false,
+        dropRoleProperty: false,
+        dropIncome: false,
+        notes: [],
+      })
+    );
+
+    // If role-based property filter is too restrictive, try without it.
+    if (rolePropertyFilter) {
+      attempts.push(
+        buildAttempt({
+          label: 'no_role_property_type',
+          dropArea: false,
+          dropRoleProperty: true,
+          dropIncome: false,
+          notes: ['Relaxed search: removed role-based property type preference'],
+        })
+      );
+    }
+
+    // If an MLS area constraint yields 0, expand the geo constraint but keep intent.
+    if (hasAreaConstraint) {
+      attempts.push(
+        buildAttempt({
+          label: 'no_mls_area',
+          dropArea: true,
+          dropRoleProperty: false,
+          dropIncome: false,
+          notes: ['Relaxed search: removed MLS area constraint to find nearby matches'],
+        })
+      );
+      if (rolePropertyFilter) {
+        attempts.push(
+          buildAttempt({
+            label: 'no_mls_area_no_role_property_type',
+            dropArea: true,
+            dropRoleProperty: true,
+            dropIncome: false,
+            notes: [
+              'Relaxed search: removed MLS area constraint to find nearby matches',
+              'Relaxed search: removed role-based property type preference',
+            ],
+          })
+        );
+      }
+    }
+
+    // Last resort: if user explicitly asked for income/multifamily and we still got 0,
+    // show other property types (with a clear disclosure).
+    if (incomeExplicit || roleFilterIsIncome) {
+      attempts.push(
+        buildAttempt({
+          label: 'no_income_constraint',
+          dropArea: false,
+          dropRoleProperty: roleFilterIsIncome, // drop role RI preference if present
+          dropIncome: true,
+          notes: ['Relaxed search: removed multifamily/income constraint to show alternatives'],
+        })
+      );
+    }
+
+    let chosen = null;
+    for (const attempt of attempts) {
+      console.log('[AI_PROXY] retrieval attempt', attempt.label);
+      const result = await fetchAndMap(attempt.filter);
+      if (result.mappedListings.length > 0 || attempt === attempts[attempts.length - 1]) {
+        chosen = { ...attempt, ...result };
+        break;
+      }
+    }
+
+    let mappedListings = chosen?.mappedListings || [];
+    retrievalAttempt = chosen?.label || 'primary';
+    retrievalNotes.push(...(chosen?.notes || []));
+
+    // If role-based property filter is too restrictive, top up with a relaxed query (never overrides existing matches).
+    if (chosen?.rolePropertyApplied && mappedListings.length > 0 && mappedListings.length < 25) {
+      console.log('[AI_PROXY] role filter returned', mappedListings.length, '— topping up without role PropertyType filter');
+      const relaxed = await fetchAndMap(chosen.baseFilter);
+      const relaxedListings = relaxed.mappedListings;
+      const seen = new Set(mappedListings.map((l) => l.id));
+      for (const l of relaxedListings) {
+        if (seen.has(l.id)) continue;
+        mappedListings.push(l);
+        seen.add(l.id);
+        if (mappedListings.length >= 25) break;
+      }
+    }
 
     // Phase B: call Easters AI explanation endpoint using provided listings
     console.log('[AI_PROXY] ->', `${ragBase}/ai/explain`, `(listings=${mappedListings.length})`);
     const upstream = await fetch(`${ragBase}/ai/explain`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, listings: mappedListings })
+      body: JSON.stringify({ query, role, listings: mappedListings, retrieval_notes: retrievalNotes, retrieval_attempt: retrievalAttempt })
     });
 
     const text = await upstream.text();
@@ -265,7 +569,7 @@ export default async function handler(req, res) {
 
         await supabase.from('user_search_queries').insert({
           user_id: userId,
-          query_params: { query },
+          query_params: { query, role },
           results_count: resultsCount
         });
       } catch {
