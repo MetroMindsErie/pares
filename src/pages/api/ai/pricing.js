@@ -36,6 +36,7 @@ function parseAddressParts(input) {
   const zip = zipMatch ? zipMatch[0] : null;
 
   const cityToken = rest.split(' ').find((t) => t.length >= 3) || null;
+  const mentionsCounty = /\bcounty\b/i.test(restRaw);
 
   // Use a compact street query for UnparsedAddress contains().
   const streetQuery = normalizeLoose(`${streetNumber || ''} ${streetTokens.slice(0, 3).join(' ')}`);
@@ -48,6 +49,7 @@ function parseAddressParts(input) {
     streetNameToken: streetTokens[0] || null,
     cityToken,
     zip,
+    mentionsCounty,
   };
 }
 
@@ -61,9 +63,18 @@ function logPricing(...args) {
   console.log('[pricing]', ...args);
 }
 
+function wantsDebug(req) {
+  const v = req?.query?.debug;
+  return v === '1' || v === 'true';
+}
+
 function mapTrestlePropertyToListing(p) {
   const unparsed = p?.UnparsedAddress ? String(p.UnparsedAddress) : '';
   const fallbackAddress = `${p?.StreetNumber || ''} ${p?.StreetName || ''}`.trim();
+
+  const lat = Number(p?.Latitude);
+  const lng = Number(p?.Longitude);
+  const hasValidCoords = Number.isFinite(lat) && Number.isFinite(lng) && !(Math.abs(lat) < 0.000001 && Math.abs(lng) < 0.000001);
 
   return {
     id: String(p?.ListingKey || p?.ListingId || p?.ListingKeyNumeric || ''),
@@ -78,6 +89,89 @@ function mapTrestlePropertyToListing(p) {
     property_type: String(p?.PropertyType || ''),
     status: String(p?.StandardStatus || ''),
     sqft: Number(p?.LivingArea ?? 0),
+    lat: hasValidCoords ? lat : null,
+    lng: hasValidCoords ? lng : null,
+  };
+}
+
+async function lookupSubjectAnyStatusByAddress(addr, { countyHint } = {}) {
+  const parsed = parseAddressParts(addr);
+  const clauses = [];
+
+  const normalizedCountyHint = normalizeLoose(countyHint || '').replace(/\bcounty\b/g, '').trim();
+  const parsedCity = normalizeLoose(parsed.cityToken || '').trim();
+  const shouldUseCityToken =
+    Boolean(parsed.cityToken) &&
+    !parsed.zip &&
+    !parsed.mentionsCounty &&
+    !(normalizedCountyHint && parsedCity && parsedCity === normalizedCountyHint);
+
+  if (parsed.streetNumber && parsed.streetNameToken) {
+    const c = [
+      `StreetNumber eq '${odataEscape(parsed.streetNumber)}'`,
+      `contains(tolower(UnparsedAddress), '${odataEscape(`${parsed.streetNumber} ${parsed.streetNameToken}`)}')`,
+    ];
+    if (shouldUseCityToken) c.push(`contains(tolower(City), '${odataEscape(parsed.cityToken)}')`);
+    if (parsed.zip) c.push(`PostalCode eq '${odataEscape(parsed.zip)}'`);
+    clauses.push(`(${c.join(' and ')})`);
+  }
+
+  if (parsed.streetQuery) {
+    clauses.push(`contains(tolower(UnparsedAddress), '${odataEscape(parsed.streetQuery)}')`);
+  }
+
+  if (!clauses.length) {
+    clauses.push(`contains(tolower(UnparsedAddress), '${odataEscape(normalizeLoose(addr))}')`);
+  }
+
+  const subjectFilter = clauses.join(' or ');
+
+  const subjectSelect =
+    'ListingKey,UnparsedAddress,StreetNumber,StreetName,City,CountyOrParish,StateOrProvince,PostalCode,PropertyType,PropertySubType,BedroomsTotal,BathroomsTotalInteger,LivingArea,Latitude,Longitude,StandardStatus,ClosePrice,ListPrice,CloseDate,YearBuilt,LotSizeAcres,MLSAreaMajor,ModificationTimestamp';
+
+  const subjectRes = await fetchTrestleOData('odata/Property', {
+    $top: '5',
+    $select: subjectSelect,
+    $filter: subjectFilter,
+    $orderby: 'ModificationTimestamp desc',
+  });
+
+  const subjectRows = Array.isArray(subjectRes?.json?.value) ? subjectRes.json.value : [];
+  return { subjectRaw: subjectRows[0] || null, parsed };
+}
+
+function computeAdjustedRangeFromComps({ comps, subjectSqft }) {
+  const subjectArea = Number(subjectSqft);
+  if (!Number.isFinite(subjectArea) || subjectArea <= 0) return null;
+
+  const ppsf = comps
+    .map((c) => {
+      const price = Number(c?.price);
+      const sqft = Number(c?.sqft);
+      if (!Number.isFinite(price) || price <= 0) return null;
+      if (!Number.isFinite(sqft) || sqft <= 0) return null;
+      return price / sqft;
+    })
+    .filter((n) => Number.isFinite(n) && n > 0)
+    .sort((a, b) => a - b);
+
+  if (ppsf.length < 3) return null;
+
+  const p25 = percentile(ppsf, 0.25);
+  const p50 = percentile(ppsf, 0.5);
+  const p75 = percentile(ppsf, 0.75);
+
+  const low = Number.isFinite(p25) ? Math.round(p25 * subjectArea) : null;
+  const mid = Number.isFinite(p50) ? Math.round(p50 * subjectArea) : null;
+  const high = Number.isFinite(p75) ? Math.round(p75 * subjectArea) : null;
+
+  if (!low || !mid || !high) return null;
+
+  return {
+    low,
+    mid,
+    high,
+    ppsf_stats: { p25, p50, p75, n: ppsf.length },
   };
 }
 
@@ -128,7 +222,7 @@ async function fetchClosedComps({ sinceDays, subjectRaw }) {
   const compsRes = await fetchTrestleOData('odata/Property', {
     $top: '25',
     $select:
-      'ListingKey,UnparsedAddress,StreetNumber,StreetName,City,CountyOrParish,StateOrProvince,PostalCode,PropertyType,PropertySubType,BedroomsTotal,BathroomsTotalInteger,LivingArea,StandardStatus,ClosePrice,ListPrice,CloseDate',
+      'ListingKey,UnparsedAddress,StreetNumber,StreetName,City,CountyOrParish,StateOrProvince,PostalCode,PropertyType,PropertySubType,BedroomsTotal,BathroomsTotalInteger,LivingArea,Latitude,Longitude,StandardStatus,ClosePrice,ListPrice,CloseDate',
     $filter: compFilters.join(' and '),
     $orderby: 'CloseDate desc',
   });
@@ -169,7 +263,7 @@ async function fetchClosedCompsForMarket({ sinceDays, cityToken, county, zip }) 
   const compsRes = await fetchTrestleOData('odata/Property', {
     $top: '25',
     $select:
-      'ListingKey,UnparsedAddress,StreetNumber,StreetName,City,CountyOrParish,StateOrProvince,PostalCode,PropertyType,PropertySubType,BedroomsTotal,BathroomsTotalInteger,LivingArea,StandardStatus,ClosePrice,ListPrice,CloseDate',
+      'ListingKey,UnparsedAddress,StreetNumber,StreetName,City,CountyOrParish,StateOrProvince,PostalCode,PropertyType,PropertySubType,BedroomsTotal,BathroomsTotalInteger,LivingArea,Latitude,Longitude,StandardStatus,ClosePrice,ListPrice,CloseDate',
     $filter: compFilters.join(' and '),
     $orderby: 'CloseDate desc',
   });
@@ -216,6 +310,8 @@ export default async function handler(req, res) {
     const addr = address.trim();
     if (!addr) return res.status(400).json({ error: 'Invalid request: address required' });
 
+    const includeDebug = wantsDebug(req);
+
     // If the UI provides county+zip, skip subject matching entirely (many owner addresses won't exist as a listing).
     // Use county/zip-based comps directly.
     const countyTrim = typeof county === 'string' ? county.trim() : '';
@@ -225,51 +321,143 @@ export default async function handler(req, res) {
       const startedAt = Date.now();
       const normalizedCounty = normalizeLoose(countyTrim).replace(/\bcounty\b/g, '').trim();
       const zip5 = (zipTrim.match(/\b\d{5}\b/) || [null])[0];
-      const parsedForMarket = parseAddressParts(addr);
-      const cityToken = parsedForMarket.cityToken;
+      const { subjectRaw: subjectAnyStatus, parsed: parsedForMarket } = await lookupSubjectAnyStatusByAddress(addr, { countyHint: normalizedCounty });
+      const cityToken = subjectAnyStatus
+        ? normalizeLoose(String(subjectAnyStatus?.City || subjectAnyStatus?.PostalCity || '')).trim() || null
+        : (parsedForMarket.mentionsCounty ? null : parsedForMarket.cityToken);
+
+      // ZIP resilience:
+      // - If we matched an MLS subject, prefer its ZIP (user might have typed the wrong ZIP).
+      // - Otherwise, treat the provided ZIP as a hint and sanity-check it against county/city.
+      const subjectZip5 = subjectAnyStatus
+        ? (String(subjectAnyStatus?.PostalCode || '').match(/\b\d{5}\b/) || [null])[0]
+        : null;
+
+      let zipUsed = subjectZip5 || zip5;
+      let zipIgnoredReason = null;
+
+      if (!subjectZip5 && zipUsed && normalizedCounty) {
+        try {
+          const zipSanityFilters = [
+            `PostalCode eq '${odataEscape(zipUsed)}'`,
+            `contains(tolower(CountyOrParish), '${odataEscape(String(normalizedCounty).toLowerCase())}')`,
+          ];
+          if (cityToken) {
+            zipSanityFilters.push(`contains(tolower(City), '${odataEscape(cityToken)}')`);
+          }
+
+          const sanityRes = await fetchTrestleOData('odata/Property', {
+            $top: '1',
+            $select: 'ListingKey',
+            $filter: zipSanityFilters.join(' and '),
+          });
+
+          const sanityRows = Array.isArray(sanityRes?.json?.value) ? sanityRes.json.value : [];
+          if (!sanityRows.length) {
+            zipIgnoredReason = cityToken
+              ? 'zip_not_in_county_city'
+              : 'zip_not_in_county';
+            zipUsed = null;
+          }
+        } catch {
+          // If sanity-check fails, keep zipUsed; we still have relaxation fallbacks below.
+          zipIgnoredReason = null;
+        }
+      }
 
       logPricing('market pricing request:', { county: normalizedCounty, zip: zip5 || zipTrim, address: addr, cityToken });
 
       const relaxation = [];
 
-      // 1) Strict: county + zip
-      const sixMonth = await fetchClosedCompsForMarket({ sinceDays: 183, county: normalizedCounty, zip: zip5 });
-      let comps = sixMonth.comps;
-      let closePrices = sixMonth.closePrices;
+      let subject = {
+        id: '',
+        address: addr,
+        city: cityToken || '',
+        county: countyTrim,
+        state: 'PA',
+        zip: zipUsed || zipTrim,
+        price: 0,
+        beds: 0,
+        baths: 0,
+        property_type: 'Residential',
+        status: 'Unknown',
+        sqft: 0,
+      };
+
+      // Prefer subject-based comps if we can find any MLS record (any status) for the address.
+      // This allows us to use beds/baths/sqft/type to tighten comps and compute a $/sqft-adjusted estimate.
+      let comps = [];
+      let closePrices = [];
       let expanded = false;
 
-      if (closePrices.length < 3) {
-        const twelveMonth = await fetchClosedCompsForMarket({ sinceDays: 365, county: normalizedCounty, zip: zip5 });
-        comps = twelveMonth.comps;
-        closePrices = twelveMonth.closePrices;
-        expanded = true;
+      if (subjectAnyStatus) {
+        subject = mapTrestlePropertyToListing(subjectAnyStatus);
+
+        // Attempt 6mo -> 12mo using subject-based filters.
+        const sixMonth = await fetchClosedComps({ sinceDays: 183, subjectRaw: subjectAnyStatus });
+        comps = sixMonth.comps;
+        closePrices = sixMonth.closePrices;
+
+        if (closePrices.length < 3) {
+          const twelveMonth = await fetchClosedComps({ sinceDays: 365, subjectRaw: subjectAnyStatus });
+          comps = twelveMonth.comps;
+          closePrices = twelveMonth.closePrices;
+          expanded = true;
+        }
+
+        // If subject-based comps are still too thin, fall back to market comps.
+        if (closePrices.length < 3) {
+          relaxation.push('Relaxed pricing comps: subject-based comps were thin; using area comps instead.');
+        }
       }
 
-      // 2) Relax: drop zip, use county + city (if we have it)
-      if (closePrices.length < 3 && cityToken) {
-        relaxation.push('Relaxed pricing comps: dropped ZIP; using county + city.');
-        const twelveMonth = await fetchClosedCompsForMarket({ sinceDays: 365, county: normalizedCounty, zip: null, cityToken });
-        comps = twelveMonth.comps;
-        closePrices = twelveMonth.closePrices;
-        expanded = true;
-      }
-
-      // 3) Relax: county only
       if (closePrices.length < 3) {
-        relaxation.push('Relaxed pricing comps: using county-wide comps.');
-        const twelveMonth = await fetchClosedCompsForMarket({ sinceDays: 365, county: normalizedCounty, zip: null, cityToken: null });
-        comps = twelveMonth.comps;
-        closePrices = twelveMonth.closePrices;
-        expanded = true;
+        // 1) Strict: county + zip
+        if (zipIgnoredReason) {
+          relaxation.push('ZIP code looks inconsistent with the selected county/city; ignoring ZIP to avoid pulling the wrong comps.');
+        }
+
+        const sixMonth = await fetchClosedCompsForMarket({ sinceDays: 183, county: normalizedCounty, zip: zipUsed });
+        comps = sixMonth.comps;
+        closePrices = sixMonth.closePrices;
+        expanded = false;
+
+        if (closePrices.length < 3) {
+          const twelveMonth = await fetchClosedCompsForMarket({ sinceDays: 365, county: normalizedCounty, zip: zipUsed });
+          comps = twelveMonth.comps;
+          closePrices = twelveMonth.closePrices;
+          expanded = true;
+        }
+
+        // 2) Relax: drop zip, use county + city (if we have it)
+        if (closePrices.length < 3 && cityToken) {
+          relaxation.push('Relaxed pricing comps: dropped ZIP; using county + city.');
+          const twelveMonth = await fetchClosedCompsForMarket({ sinceDays: 365, county: normalizedCounty, zip: null, cityToken });
+          comps = twelveMonth.comps;
+          closePrices = twelveMonth.closePrices;
+          expanded = true;
+        }
+
+        // 3) Relax: county only
+        if (closePrices.length < 3) {
+          relaxation.push('Relaxed pricing comps: using county-wide comps.');
+          const twelveMonth = await fetchClosedCompsForMarket({ sinceDays: 365, county: normalizedCounty, zip: null, cityToken: null });
+          comps = twelveMonth.comps;
+          closePrices = twelveMonth.closePrices;
+          expanded = true;
+        }
       }
 
       const p25 = percentile(closePrices, 0.25);
       const p50 = percentile(closePrices, 0.5);
       const p75 = percentile(closePrices, 0.75);
 
-      const low = Number.isFinite(p25) ? Math.round(p25) : null;
-      const mid = Number.isFinite(p50) ? Math.round(p50) : null;
-      const high = Number.isFinite(p75) ? Math.round(p75) : null;
+      // If we have a subject sqft, compute an adjusted estimate using $/sqft so the midpoint is tailored to the home size.
+      const adjusted = computeAdjustedRangeFromComps({ comps, subjectSqft: subject?.sqft });
+
+      const low = adjusted?.low ?? (Number.isFinite(p25) ? Math.round(p25) : null);
+      const mid = adjusted?.mid ?? (Number.isFinite(p50) ? Math.round(p50) : null);
+      const high = adjusted?.high ?? (Number.isFinite(p75) ? Math.round(p75) : null);
 
       // CMA playbook chunks
       let cmaChunks = [];
@@ -290,6 +478,9 @@ export default async function handler(req, res) {
       }
 
       const reasoning = [
+        subjectAnyStatus
+          ? `Subject lookup: ${subject.address}${subject.city ? `, ${subject.city}` : ''}${subject.zip ? ` ${subject.zip}` : ''} • ${subject.property_type || 'Residential'} • ${subject.beds || 0} bd / ${subject.baths || 0} ba • ${subject.sqft ? `${Math.round(subject.sqft).toLocaleString()} sqft` : 'sqft unknown'} (status: ${subject.status || 'Unknown'}).`
+          : `Subject lookup: no MLS record found for this address; using area comps.`,
         `Using comps in PA near: ${normalizedCounty || countyTrim} County${zip5 ? `, ${zip5}` : ''}.`,
         expanded
           ? `Pulled ${comps.length} closed comps from the last 12 months (expanded from 6 months due to low comp count).`
@@ -301,7 +492,11 @@ export default async function handler(req, res) {
       }
 
       if (mid && low && high) {
-        reasoning.push(`Price range (low/mid/high from comps): $${low.toLocaleString()} / $${mid.toLocaleString()} / $${high.toLocaleString()}`);
+        reasoning.push(
+          adjusted
+            ? `Adjusted value estimate using $/sqft (low/mid/high): $${low.toLocaleString()} / $${mid.toLocaleString()} / $${high.toLocaleString()}`
+            : `Price range (low/mid/high from comps): $${low.toLocaleString()} / $${mid.toLocaleString()} / $${high.toLocaleString()}`
+        );
       }
 
       if (cmaChunks.length > 0) {
@@ -316,33 +511,33 @@ export default async function handler(req, res) {
 
       const disclaimer = 'This is an estimate based on comparable sales, not a formal appraisal.';
       const answer = low && mid && high
-        ? `Estimated price range: $${low.toLocaleString()}–$${high.toLocaleString()} (market midpoint ~$${mid.toLocaleString()}). ${disclaimer}`
+        ? `Estimated value ~$${mid.toLocaleString()} (range $${low.toLocaleString()}–$${high.toLocaleString()}). ${disclaimer}`
         : `Found ${comps.length} comps, but couldn’t compute a stable range (missing/invalid ClosePrice). ${disclaimer}`;
 
       const durationMs = Date.now() - startedAt;
       logPricing('done (county+zip):', { comps: comps.length, usablePrices: closePrices.length, expanded, durationMs });
 
-      const debug = shouldLogPricing()
-        ? { county: normalizedCounty || countyTrim, zip: zip5 || zipTrim, duration_ms: durationMs }
+      const debug = includeDebug
+        ? {
+          path: 'county+zip',
+          county: normalizedCounty || countyTrim,
+          zip_input: zip5 || zipTrim,
+          zip_used: zipUsed,
+          zip_ignored_reason: zipIgnoredReason,
+          duration_ms: durationMs,
+          subject_matched: Boolean(subjectAnyStatus),
+          used_market_fallback: !subjectAnyStatus,
+          expanded_window: expanded,
+          comps: comps.length,
+          usable_prices: closePrices.length,
+          adjusted_method: adjusted ? 'ppsf' : 'closeprice',
+        }
         : undefined;
 
       return res.json({
         answer,
         reasoning,
-        subject: {
-          id: '',
-          address: addr,
-          city: '',
-          county: countyTrim,
-          state: 'PA',
-          zip: zipTrim,
-          price: 0,
-          beds: 0,
-          baths: 0,
-          property_type: 'Residential',
-          status: 'Unknown',
-          sqft: 0,
-        },
+        subject,
         price_range: low && mid && high ? { low, mid, high } : null,
         comp_stats: { p25, p50, p75, comps: comps.length },
         deal_quality: null,
@@ -364,7 +559,8 @@ export default async function handler(req, res) {
         // UnparsedAddress is the most reliable string field across feeds.
         `contains(tolower(UnparsedAddress), '${odataEscape(`${parsed.streetNumber} ${parsed.streetNameToken}`)}')`,
       ];
-      if (parsed.cityToken) c.push(`contains(tolower(City), '${odataEscape(parsed.cityToken)}')`);
+      // If we have a ZIP, City is often unnecessary (and can be wrong for county-style inputs).
+      if (parsed.cityToken && !parsed.zip) c.push(`contains(tolower(City), '${odataEscape(parsed.cityToken)}')`);
       if (parsed.zip) c.push(`PostalCode eq '${odataEscape(parsed.zip)}'`);
       clauses.push(`(${c.join(' and ')})`);
     }
@@ -384,7 +580,7 @@ export default async function handler(req, res) {
     logPricing('subjectFilter:', subjectFilter);
 
     const subjectSelect =
-      'ListingKey,UnparsedAddress,StreetNumber,StreetName,City,CountyOrParish,StateOrProvince,PostalCode,PropertyType,PropertySubType,BedroomsTotal,BathroomsTotalInteger,LivingArea,StandardStatus,ClosePrice,ListPrice,CloseDate,MLSAreaMajor,ModificationTimestamp';
+      'ListingKey,UnparsedAddress,StreetNumber,StreetName,City,CountyOrParish,StateOrProvince,PostalCode,PropertyType,PropertySubType,BedroomsTotal,BathroomsTotalInteger,LivingArea,Latitude,Longitude,StandardStatus,ClosePrice,ListPrice,CloseDate,MLSAreaMajor,ModificationTimestamp';
 
     let subjectRes;
     if (subjectId && subjectId.trim()) {
@@ -407,7 +603,7 @@ export default async function handler(req, res) {
     const subjectRows = Array.isArray(subjectRes?.json?.value) ? subjectRes.json.value : [];
     const subjectRaw = subjectRows[0] || null;
 
-    const debug = shouldLogPricing()
+    const debug = includeDebug
       ? { attempted_subject_filter: subjectFilter, parsed_address: parsed }
       : undefined;
 
@@ -447,7 +643,7 @@ export default async function handler(req, res) {
       usedMarketFallback = true;
       subject = {
         id: '',
-        address: parsed.streetRaw || parsed.raw,
+        address: parsed.raw,
         city: cityToken || '',
         county: '',
         state: 'PA',
@@ -458,6 +654,8 @@ export default async function handler(req, res) {
         property_type: 'Residential',
         status: 'Unknown',
         sqft: 0,
+        lat: null,
+        lng: null,
       };
 
       const sixMonth = await fetchClosedCompsForMarket({ sinceDays: 183, cityToken, county: '', zip });
@@ -561,7 +759,20 @@ export default async function handler(req, res) {
       comp_stats: { p25, p50, p75, comps: comps.length },
       deal_quality: verdict,
       listings: comps,
-      ...(debug ? { debug: { ...debug, subject_matched: Boolean(subjectRaw), used_market_fallback: usedMarketFallback, duration_ms: durationMs } } : {}),
+      ...(debug
+        ? {
+          debug: {
+            ...debug,
+            path: subjectRaw ? 'subject+comps' : 'market-fallback',
+            subject_matched: Boolean(subjectRaw),
+            used_market_fallback: usedMarketFallback,
+            expanded_window: expanded,
+            comps: comps.length,
+            usable_prices: closePrices.length,
+            duration_ms: durationMs,
+          },
+        }
+        : {}),
     });
   } catch (e) {
     return res.status(500).json({ error: 'Pricing failed', details: e?.message || String(e) });

@@ -2,8 +2,21 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import supabase from '../lib/supabase-setup';
 import { useAuth } from '../context/auth-context';
+
+const PricingCompsMap = dynamic(() => import('./PricingCompsMap'), { ssr: false });
+
+function isValidLatLng(lat, lng) {
+  const la = Number(lat);
+  const lo = Number(lng);
+  if (!Number.isFinite(la) || !Number.isFinite(lo)) return false;
+  if (Math.abs(la) < 0.000001 && Math.abs(lo) < 0.000001) return false;
+  if (la < -90 || la > 90) return false;
+  if (lo < -180 || lo > 180) return false;
+  return true;
+}
 
 function storageKeyForUser(userId) {
   return userId ? `aiSearch:lastResponse:${userId}` : null;
@@ -56,6 +69,22 @@ export function AIAssistantPanel() {
       .filter((r) => typeof r === 'string' && r.startsWith('Relaxed search:'))
       .slice(0, 3);
   }, [lastResponse?.reasoning]);
+
+  const pricingMapData = useMemo(() => {
+    const subject = lastResponse?.subject;
+    const listings = lastResponse?.listings;
+    if (!subject || !Array.isArray(listings) || listings.length === 0) return null;
+
+    const hasSubjectCoords = isValidLatLng(subject?.lat, subject?.lng);
+    const hasAnyCompCoords = listings.some((l) => isValidLatLng(l?.lat, l?.lng));
+    const hasSubjectAddress = typeof subject?.address === 'string' && subject.address.trim().length > 0;
+    const hasAnyCompAddress = listings.some((l) => typeof l?.address === 'string' && l.address.trim().length > 0);
+
+    // Show map if we have at least one way to locate points: coords OR addresses (geocoding fallback).
+    if (!hasSubjectCoords && !hasAnyCompCoords && !hasSubjectAddress && !hasAnyCompAddress) return null;
+
+    return { subject, comps: listings };
+  }, [lastResponse?.subject, lastResponse?.listings]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -377,6 +406,10 @@ export function AIAssistantPanel() {
                     ))}
                   </ul>
                 </div>
+              ) : null}
+
+              {tab === 'pricing' && pricingMapData ? (
+                <PricingCompsMap subject={pricingMapData.subject} comps={pricingMapData.comps} />
               ) : null}
 
               <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Listings</div>

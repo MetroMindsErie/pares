@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { initClient } from '../lib/setup-client';
+import 'leaflet/dist/leaflet.css';
 import '../styles/globals.css';
 import '../styles/propertyTemplates.css';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
