@@ -8,6 +8,7 @@
     "dev:log": "node scripts/dev-with-log.mjs",
     "capture:context": "node scripts/capture-dev-context.mjs",
     "ai:smoke": "node scripts/ai-smoke.mjs",
+    "phase2:smoke": "node scripts/phase2-smoke.mjs",
     "cma:ingest:playbook": "node scripts/ingest-cma-playbook.mjs",
     "build": "next build",
     "start": "next start",
