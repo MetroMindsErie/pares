@@ -1,8 +1,19 @@
 import { createClient } from '@supabase/supabase-js';
 import { fetchTrestleOData } from '../../../lib/trestleServer';
+import crypto from 'node:crypto';
 
 const ALLOWED_COUNTIES = ['Erie', 'Warren', 'Crawford'];
 const ALLOWED_ROLES = new Set(['seller', 'buyer', 'investor', 'realtor']);
+
+function shouldLogAiFlow() {
+  return process.env.NODE_ENV !== 'production' || process.env.DEBUG_AI_FLOW === '1';
+}
+
+function logAiFlow(traceId, ...args) {
+  if (!shouldLogAiFlow()) return;
+  // eslint-disable-next-line no-console
+  console.log(`[AI_FLOW][${traceId}]`, ...args);
+}
 
 function odataEscape(val) {
   if (val === undefined || val === null) return '';
@@ -266,6 +277,8 @@ export default async function handler(req, res) {
   }
 
   try {
+    const traceId = crypto.randomUUID();
+    const startedAt = Date.now();
     // Default to IPv4 loopback to avoid occasional localhost/IPv6 resolution issues.
     const ragBase = process.env.RAG_API_URL || 'http://127.0.0.1:3001';
 
@@ -277,6 +290,9 @@ export default async function handler(req, res) {
     if (!query || typeof query !== 'string') {
       return res.status(400).json({ error: 'Invalid request: query must be a string' });
     }
+
+    logAiFlow(traceId, 'start', { ragBase, role });
+    logAiFlow(traceId, 'query', String(query).trim().slice(0, 220));
 
     // Optional: identify user from Bearer token (for logging)
     const authHeader = req.headers.authorization || '';
@@ -294,6 +310,7 @@ export default async function handler(req, res) {
     console.log('[AI_PROXY] query', query);
     console.log('[AI_PROXY] role', role);
     console.log('[AI_PROXY] parsed', parsed);
+    logAiFlow(traceId, 'parsed', parsed);
 
     // Role-specific retrieval defaults (safe, with fallback)
     // - buyer: default to Residential (exclude ResidentialIncome/CommercialSale) unless user explicitly asked for income/commercial
@@ -342,6 +359,7 @@ export default async function handler(req, res) {
     }
 
     console.log('[AI_PROXY] role defaults', roleDefaults);
+    logAiFlow(traceId, 'role defaults', roleDefaults);
     const filters = [];
 
     // Track whether we relax constraints, and why.
@@ -450,6 +468,7 @@ export default async function handler(req, res) {
       };
 
       console.log('[AI_PROXY] trestle retrieve params', trestleParams);
+      logAiFlow(traceId, 'trestle retrieve', { orderBy, top: 25 });
       const trestle = await fetchTrestleOData('odata/Property', trestleParams);
       const trestleValues = Array.isArray(trestle?.json?.value) ? trestle.json.value : [];
       return {
@@ -550,6 +569,7 @@ export default async function handler(req, res) {
     let chosen = null;
     for (const attempt of attempts) {
       console.log('[AI_PROXY] retrieval attempt', attempt.label);
+      logAiFlow(traceId, 'retrieval attempt', { label: attempt.label });
       const result = await fetchAndMap(attempt.filter);
       if (result.mappedListings.length > 0 || attempt === attempts[attempts.length - 1]) {
         chosen = { ...attempt, ...result };
@@ -565,6 +585,7 @@ export default async function handler(req, res) {
     // Never top-up if the user explicitly asked for a property type (strict intent).
     if (chosen?.rolePropertyApplied && !rolePropertyStrict && mappedListings.length > 0 && mappedListings.length < 25) {
       console.log('[AI_PROXY] role filter returned', mappedListings.length, '— topping up without role PropertyType filter');
+      logAiFlow(traceId, 'top-up without role filter', { current: mappedListings.length });
       const relaxed = await fetchAndMap(chosen.baseFilter);
       const relaxedListings = relaxed.mappedListings;
       const seen = new Set(mappedListings.map((l) => l.id));
@@ -578,13 +599,25 @@ export default async function handler(req, res) {
 
     // Phase B: call Easters AI explanation endpoint using provided listings
     console.log('[AI_PROXY] ->', `${ragBase}/ai/explain`, `(listings=${mappedListings.length})`);
+    logAiFlow(traceId, 'upstream request', {
+      url: `${ragBase}/ai/explain`,
+      listings: mappedListings.length,
+      retrievalAttempt,
+      retrievalNotes: retrievalNotes.slice(0, 4),
+    });
     const upstream = await fetch(`${ragBase}/ai/explain`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-Trace-Id': traceId },
       body: JSON.stringify({ query, role, listings: mappedListings, retrieval_notes: retrievalNotes, retrieval_attempt: retrievalAttempt })
     });
 
     const text = await upstream.text();
+
+    logAiFlow(traceId, 'upstream response', {
+      status: upstream.status,
+      elapsed_ms: Date.now() - startedAt,
+      trace_header: upstream.headers.get('x-trace-id') || null,
+    });
 
     // If we relaxed constraints, ensure the client sees the disclosure even if upstream
     // doesn't echo it (e.g., stale container / older build).
@@ -615,6 +648,23 @@ export default async function handler(req, res) {
             parsedUpstream.retrieval_attempt = retrievalAttempt;
           }
 
+          parsedUpstream.trace_id = traceId;
+          res.setHeader('X-Trace-Id', traceId);
+
+          try {
+            const top = Array.isArray(parsedUpstream?.listings) ? parsedUpstream.listings[0] : null;
+            logAiFlow(traceId, 'result summary', {
+              deal_score: parsedUpstream?.deal_score,
+              suggested_offer: parsedUpstream?.suggested_offer,
+              top_id: top?.id,
+              top_deal_score: top?.deal_score,
+              top_vector_score: top?.vector_score,
+              reasoning_preview: Array.isArray(parsedUpstream?.reasoning) ? parsedUpstream.reasoning.slice(0, 8) : null,
+            });
+          } catch {
+            // ignore
+          }
+
           res.status(upstream.status);
           res.setHeader('Content-Type', 'application/json');
           return res.send(JSON.stringify(parsedUpstream));
@@ -622,6 +672,20 @@ export default async function handler(req, res) {
       } catch {
         // ignore JSON patch errors; fall back to raw upstream response
       }
+    }
+
+    // Best-effort: if upstream returned JSON, attach trace_id even when no retrieval notes.
+    try {
+      const parsedUpstream = JSON.parse(text);
+      if (parsedUpstream && typeof parsedUpstream === 'object') {
+        parsedUpstream.trace_id = traceId;
+        res.status(upstream.status);
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('X-Trace-Id', traceId);
+        return res.send(JSON.stringify(parsedUpstream));
+      }
+    } catch {
+      // ignore
     }
 
     // Log search (best-effort; never block response)
@@ -650,6 +714,7 @@ export default async function handler(req, res) {
 
     res.status(upstream.status);
     res.setHeader('Content-Type', upstream.headers.get('content-type') || 'application/json');
+    res.setHeader('X-Trace-Id', traceId);
     return res.send(text);
   } catch (e) {
     return res.status(500).json({
