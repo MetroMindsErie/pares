@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:all": "concurrently -n web,ai \"npm run dev\" \"npm --prefix ../easters_ai_v1 run dev\"",
     "dev:log": "node scripts/dev-with-log.mjs",
     "capture:context": "node scripts/capture-dev-context.mjs",
     "ai:smoke": "node scripts/ai-smoke.mjs",

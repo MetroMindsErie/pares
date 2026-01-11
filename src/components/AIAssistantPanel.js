@@ -5,6 +5,8 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import supabase from '../lib/supabase-setup';
 import { useAuth } from '../context/auth-context';
+import { clearUserActivity, pushUserActivity } from '../utils/activityStorage';
+import { cacheGetEntry, cacheRemove, cacheSet } from '../utils/clientCache';
 
 const PricingCompsMap = dynamic(() => import('./PricingCompsMap'), { ssr: false });
 
@@ -19,8 +21,14 @@ function isValidLatLng(lat, lng) {
 }
 
 function storageKeyForUser(userId) {
-  return userId ? `aiSearch:lastResponse:${userId}` : null;
+  return userId ? `aiAssistant:lastSearch:v1:${userId}` : null;
 }
+
+function pricingStorageKeyForUser(userId) {
+  return userId ? `aiAssistant:lastPricing:v1:${userId}` : null;
+}
+
+const ASSISTANT_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
 
 const ROLE_OPTIONS = [
   { value: 'buyer', label: 'Buyer' },
@@ -88,23 +96,55 @@ export function AIAssistantPanel() {
 
   useEffect(() => {
     if (!user?.id) return;
+
     const key = storageKeyForUser(user.id);
-    if (!key) return;
-    try {
-      const raw = window.localStorage.getItem(key);
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (parsed?.response) {
-        setLastResponse(parsed.response);
-        setRestoredAt(parsed?.savedAt || null);
-      }
-      if (typeof parsed?.role === 'string' && parsed.role) {
-        setRole(parsed.role);
-      }
-    } catch {
-      // ignore storage errors
+    const pricingKey = pricingStorageKeyForUser(user.id);
+    if (!key || !pricingKey) return;
+
+    const searchEntry = cacheGetEntry(key, { ttlMs: ASSISTANT_CACHE_TTL_MS });
+    const pricingEntry = cacheGetEntry(pricingKey, { ttlMs: ASSISTANT_CACHE_TTL_MS });
+
+    const candidates = [
+      searchEntry?.data ? { kind: 'search', savedAt: searchEntry.savedAt, payload: searchEntry.data } : null,
+      pricingEntry?.data ? { kind: 'pricing', savedAt: pricingEntry.savedAt, payload: pricingEntry.data } : null,
+    ].filter(Boolean);
+
+    if (candidates.length === 0) {
+      cacheRemove(key);
+      cacheRemove(pricingKey);
+      return;
+    }
+
+    candidates.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
+    const winner = candidates[0];
+
+    setTab(winner.kind);
+    setLastResponse(winner.payload?.response || null);
+    setRestoredAt(winner.savedAt ? new Date(winner.savedAt).toISOString() : null);
+
+    if (winner.kind === 'search') {
+      if (typeof winner.payload?.role === 'string' && winner.payload.role) setRole(winner.payload.role);
+      if (typeof winner.payload?.query === 'string' && winner.payload.query) setInput(winner.payload.query);
+    }
+
+    if (winner.kind === 'pricing') {
+      if (typeof winner.payload?.pricingStreet === 'string') setPricingStreet(winner.payload.pricingStreet);
+      if (typeof winner.payload?.pricingCounty === 'string') setPricingCounty(winner.payload.pricingCounty);
+      if (typeof winner.payload?.pricingZip === 'string') setPricingZip(winner.payload.pricingZip);
     }
   }, [user?.id]);
+
+  const clearAssistantState = () => {
+    if (!user?.id) return;
+    const key = storageKeyForUser(user.id);
+    const pricingKey = pricingStorageKeyForUser(user.id);
+    if (key) cacheRemove(key);
+    if (pricingKey) cacheRemove(pricingKey);
+    clearUserActivity(user.id);
+    setRestoredAt(null);
+    setLastResponse(null);
+    setError(null);
+  };
 
   const canSearch = useMemo(
     () => input.trim().length > 0 && !anyLoading,
@@ -148,21 +188,22 @@ export function AIAssistantPanel() {
       if (user?.id) {
         const key = storageKeyForUser(user.id);
         if (key) {
-          try {
-            window.localStorage.setItem(
-              key,
-              JSON.stringify({
-                savedAt: new Date().toISOString(),
-                query: input.trim(),
-                role,
-                response: json
-              })
-            );
-            setRestoredAt(new Date().toISOString());
-          } catch {
-            // ignore storage errors
-          }
+          cacheSet(
+            key,
+            {
+              query: input.trim(),
+              role,
+              response: json,
+            },
+            { ttlMs: ASSISTANT_CACHE_TTL_MS }
+          );
+          setRestoredAt(new Date().toISOString());
         }
+
+        pushUserActivity(user.id, {
+          type: 'ai_search',
+          title: `AI search: ${input.trim().slice(0, 80)}${input.trim().length > 80 ? '…' : ''}`,
+        });
       }
     } catch (e) {
       setError(e?.message || 'AI search failed');
@@ -217,6 +258,32 @@ export function AIAssistantPanel() {
 
       const json = await res.json();
       setLastResponse(json);
+
+      if (user?.id) {
+        const pricingKey = pricingStorageKeyForUser(user.id);
+        if (pricingKey) {
+          cacheSet(
+            pricingKey,
+            {
+              pricingStreet: pricingStreet.trim(),
+              pricingCounty: pricingCounty.trim(),
+              pricingZip: pricingZip.trim(),
+              response: json,
+            },
+            { ttlMs: ASSISTANT_CACHE_TTL_MS }
+          );
+          setRestoredAt(new Date().toISOString());
+        }
+
+        pushUserActivity(user.id, {
+          type: 'cma_pricing',
+          title: `CMA pricing: ${pricingStreet.trim().slice(0, 60)}${pricingStreet.trim().length > 60 ? '…' : ''}`,
+          meta: {
+            county: pricingCounty.trim(),
+            zip: pricingZip.trim(),
+          },
+        });
+      }
     } catch (e) {
       setError(e?.message || 'Pricing failed');
     } finally {
@@ -368,6 +435,18 @@ export function AIAssistantPanel() {
           {restoredAt && !anyLoading ? (
             <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
               Showing last saved results ({new Date(restoredAt).toLocaleString()})
+            </div>
+          ) : null}
+
+          {!anyLoading && (lastResponse || restoredAt) ? (
+            <div className="mt-2">
+              <button
+                onClick={clearAssistantState}
+                className="text-xs text-gray-600 dark:text-gray-400 hover:underline"
+                type="button"
+              >
+                Clear saved assistant state
+              </button>
             </div>
           ) : null}
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import L from 'leaflet';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
+import { cacheGet, cacheSet } from '../utils/clientCache';
 
 function isValidLatLng(lat, lng) {
   const la = Number(lat);
@@ -26,14 +27,11 @@ async function geocodeAddress(address, { signal } = {}) {
 
   const cacheKey = `cma:geocode:v1:${normalizeAddressKey(query)}`;
 
-  try {
-    const cached = typeof window !== 'undefined' ? window.localStorage.getItem(cacheKey) : null;
-    if (cached) {
-      const parsed = JSON.parse(cached);
-      if (isValidLatLng(parsed?.lat, parsed?.lng)) return { lat: Number(parsed.lat), lng: Number(parsed.lng) };
-    }
-  } catch {
-    // ignore
+  const GEOCODE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+  const cached = cacheGet(cacheKey, { ttlMs: GEOCODE_TTL_MS });
+  if (cached && isValidLatLng(cached?.lat, cached?.lng)) {
+    return { lat: Number(cached.lat), lng: Number(cached.lng) };
   }
 
   // Nominatim (OpenStreetMap) geocoding. Client-side only.
@@ -47,11 +45,7 @@ async function geocodeAddress(address, { signal } = {}) {
   const lng = Number(first?.lon);
   if (!isValidLatLng(lat, lng)) return null;
 
-  try {
-    window.localStorage.setItem(cacheKey, JSON.stringify({ lat, lng, ts: Date.now() }));
-  } catch {
-    // ignore
-  }
+  cacheSet(cacheKey, { lat, lng }, { ttlMs: GEOCODE_TTL_MS });
 
   return { lat, lng };
 }

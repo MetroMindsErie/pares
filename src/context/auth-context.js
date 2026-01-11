@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { cacheRemove, makeUserCacheKey } from '../utils/clientCache';
 
 const AuthContext = createContext({
   isAuthenticated: false,
@@ -42,6 +43,29 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     if (isBrowser) {
+      const ensureUserRow = async (supabaseClient, authUser) => {
+        if (!supabaseClient || !authUser?.id) return;
+        try {
+          const { data: existing, error: existingError } = await supabaseClient
+            .from('users')
+            .select('id')
+            .eq('id', authUser.id)
+            .maybeSingle();
+
+          if (existingError || !existing) {
+            await supabaseClient.from('users').insert({
+              id: authUser.id,
+              email: authUser.email,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              hasprofile: false,
+            });
+          }
+        } catch (err) {
+          console.error('Error ensuring user record exists:', err);
+        }
+      };
+
       const initializeAuth = async () => {
         try {
 
@@ -62,6 +86,9 @@ export const AuthProvider = ({ children }) => {
             setError(error.message);
           } else if (data && data.session) {
 
+            // Ensure a corresponding users table row exists.
+            await ensureUserRow(supabaseClient, data.session.user);
+
             
             try {
               // Fetch full user data including roles from the users table
@@ -69,7 +96,7 @@ export const AuthProvider = ({ children }) => {
                 .from('users')
                 .select('*')  // Select all fields including roles
                 .eq('id', data.session.user.id)
-                .single();
+                .maybeSingle();
                 
               if (!userError && userData) {
                 // Merge the auth user with database user data
@@ -84,7 +111,7 @@ export const AuthProvider = ({ children }) => {
                 setUser(mergedUser);
                 setHasProfile(!!userData.hasprofile);
               } else {
-                console.error('Failed to fetch user data:', userError);
+                if (userError) console.error('Failed to fetch user data:', userError);
                 setUser(data.session.user); // Fall back to just auth user
               }
             } catch (err) {
@@ -102,6 +129,9 @@ export const AuthProvider = ({ children }) => {
             
             if (event === 'SIGNED_IN' && session) {
 
+              // Ensure a corresponding users table row exists.
+              await ensureUserRow(supabaseClient, session.user);
+
               setIsAuthenticated(true);
               
               try {
@@ -110,7 +140,7 @@ export const AuthProvider = ({ children }) => {
                   .from('users')
                   .select('*')  // Select all fields including roles
                   .eq('id', session.user.id)
-                  .single();
+                  .maybeSingle();
                   
                 if (!userError && userData) {
                   // Merge the auth user with database user data
@@ -125,7 +155,7 @@ export const AuthProvider = ({ children }) => {
                   setUser(mergedUser);
                   setHasProfile(!!userData.hasprofile);
                 } else {
-                  console.error('Failed to fetch user data on auth change:', userError);
+                  if (userError) console.error('Failed to fetch user data on auth change:', userError);
                   setUser(session.user); // Fall back to just auth user
                 }
               } catch (err) {
@@ -251,6 +281,8 @@ export const AuthProvider = ({ children }) => {
     setError(null);
     
     try {
+      const userIdToClear = user?.id || null;
+
       // Clear any provider tokens in localStorage (including Facebook)
       try {
         localStorage.removeItem('facebook_token');
@@ -269,6 +301,13 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       setIsAuthenticated(false);
       setHasProfile(null);
+
+      // Clear per-user client caches so a subsequent login never restores stale state.
+      if (userIdToClear) {
+        cacheRemove(`aiAssistant:lastSearch:v1:${userIdToClear}`);
+        cacheRemove(`aiAssistant:lastPricing:v1:${userIdToClear}`);
+        cacheRemove(makeUserCacheKey({ namespace: 'userActivity', version: 'v1', userId: userIdToClear }));
+      }
       
       const { error } = await supabaseClient.auth.signOut();
       

@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -20,7 +22,8 @@ export async function POST(request) {
     return new NextResponse(text, {
       status: res.status,
       headers: {
-        'Content-Type': res.headers.get('content-type') || 'application/json'
+        'Content-Type': res.headers.get('content-type') || 'application/json',
+        'Cache-Control': 'no-store'
       }
     });
   } catch (e) {
