@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { motion, useMotionValue, useTransform } from 'framer-motion';
-import { useRouter } from 'next/router';
+import { motion, useMotionValue, useTransform } from 'framer-motion';import { getPrimaryPhotoUrl } from '../../utils/mediaHelpers';import { useRouter } from 'next/router';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faBed, 
@@ -107,27 +106,11 @@ const PropertyCard = ({ property, onSwipe, isTop = false }) => {
   };
 
   // Function to get the display image
-  const getDisplayImage = (property) => {
-    // Always use the first image in mediaArray if available
-    if (property.mediaArray && Array.isArray(property.mediaArray) && property.mediaArray.length > 0) {
-      return property.mediaArray[0];
-    }
-    // Fallback to media field
-    if (property.media) {
-      return property.media;
-    }
-    // Check original Media array structure
-    if (property.Media && Array.isArray(property.Media) && property.Media.length > 0) {
-      return property.Media[0].MediaURL || property.Media[0];
-    }
-    // Fallback to any media field that might exist
-    if (property.Media && typeof property.Media === 'string') {
-      return property.Media;
-    }
-    return '/fallback-property.jpg';
-  };
-
-  const displayImage = getDisplayImage(property);
+  // Use shared helper to get primary/preferred photo
+  const displayImage = property.media || 
+                      property.mediaArray?.[0] || 
+                      getPrimaryPhotoUrl(property.Media) || 
+                      '/fallback-property.jpg';
 
   // Static buyer agent information
   const buyerAgent = {

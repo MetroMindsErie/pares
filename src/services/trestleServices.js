@@ -1,5 +1,6 @@
 // /services/trestleService.js
 import axios from 'axios';
+import { getPrimaryPhotoUrl, getMediaUrls as getMediaUrlsFromArray } from '../utils/mediaHelpers';
 
 // Route all Trestle calls through our Next.js server proxy so:
 // 1) queries are visible in server logs, and
@@ -127,25 +128,13 @@ export const getPropertiesByFilter = async (filterQuery, top = 9, skip = 0) => {
     const properties = Array.isArray(data.value) ? data.value : [];
     return {
       properties: properties.map(property => {
-        // Sort Media array by Order, fallback to original order
-        let mediaArray = [];
-        if (property.Media && Array.isArray(property.Media) && property.Media.length > 0) {
-          mediaArray = property.Media
-            .slice()
-            .sort((a, b) => {
-              if (a.Order !== undefined && b.Order !== undefined) {
-                return a.Order - b.Order;
-              }
-              return 0;
-            })
-            .map(mediaItem => mediaItem.MediaURL)
-            .filter(url => !!url);
-        }
-        // Always set media to the first image in the array
+        // Use shared helpers to extract primary photo and all media URLs
+        const mediaArray = Array.isArray(property.Media) ? property.Media : [];
+        
         return {
           ...property,
-          media: mediaArray.length > 0 ? mediaArray[0] : '/fallback-property.jpg',
-          mediaArray: mediaArray
+          media: getPrimaryPhotoUrl(mediaArray),
+          mediaArray: getMediaUrlsFromArray(mediaArray).filter(url => url !== '/fallback-property.jpg')
         };
       }),
       nextLink: data['@odata.nextLink'] || null

@@ -69,6 +69,25 @@ function wantsDebug(req) {
 }
 
 function mapTrestlePropertyToListing(p) {
+  const mediaItems = Array.isArray(p?.Media) ? p.Media.slice() : [];
+  let primaryMedia = null;
+  if (mediaItems.length) {
+    const preferred = mediaItems.find(
+      (m) => m?.PreferredPhotoYN === true || m?.PreferredPhotoYN === 'Y' || m?.PreferredPhotoYN === 'Yes'
+    );
+    primaryMedia = preferred || mediaItems[0];
+  }
+
+  const mediaUrls = mediaItems
+    .slice()
+    .sort((a, b) => {
+      if (a?.Order !== undefined && b?.Order !== undefined) return a.Order - b.Order;
+      return 0;
+    })
+    .map((m) => m?.MediaURL)
+    .filter((url) => url && String(url).startsWith('http'));
+
+  const imageUrl = primaryMedia?.MediaURL || mediaUrls[0] || '/fallback-property.jpg';
   const unparsed = p?.UnparsedAddress ? String(p.UnparsedAddress) : '';
   const fallbackAddress = `${p?.StreetNumber || ''} ${p?.StreetName || ''}`.trim();
 
@@ -91,6 +110,8 @@ function mapTrestlePropertyToListing(p) {
     sqft: Number(p?.LivingArea ?? 0),
     lat: hasValidCoords ? lat : null,
     lng: hasValidCoords ? lng : null,
+    image_url: imageUrl,
+    media_urls: mediaUrls,
   };
 }
 
@@ -219,7 +240,17 @@ function classifyPrice(listPrice, low, high, mid) {
   return dist <= 0.2 ? 'Fair Deal' : 'Fair Deal';
 }
 
-async function fetchClosedComps({ sinceDays, subjectRaw }) {
+function computePriceBand(subjectPrice) {
+  const price = Number(subjectPrice);
+  if (!Number.isFinite(price) || price <= 0) return null;
+  // Keep comps reasonably close to subject price; widen later if needed.
+  const min = Math.max(10000, Math.round(price * 0.6));
+  const max = Math.round(price * 1.4);
+  if (min >= max) return null;
+  return { min, max };
+}
+
+async function fetchClosedComps({ sinceDays, subjectRaw, priceBand }) {
   const since = new Date();
   since.setDate(since.getDate() - sinceDays);
   const ymd = since.toISOString().slice(0, 10);
@@ -233,6 +264,8 @@ async function fetchClosedComps({ sinceDays, subjectRaw }) {
   const compFilters = [];
   compFilters.push(`StandardStatus eq 'Closed'`);
   compFilters.push(`CloseDate ge ${ymd}`);
+  if (priceBand?.min) compFilters.push(`ClosePrice ge ${priceBand.min}`);
+  if (priceBand?.max) compFilters.push(`ClosePrice le ${priceBand.max}`);
   if (county) compFilters.push(`CountyOrParish eq '${county}'`);
   if (city) compFilters.push(`contains(tolower(City), '${city}')`);
   if (typeof bedsMin === 'number') compFilters.push(`BedroomsTotal ge ${bedsMin}`);
@@ -246,6 +279,7 @@ async function fetchClosedComps({ sinceDays, subjectRaw }) {
     $top: '25',
     $select:
       'ListingKey,UnparsedAddress,StreetNumber,StreetName,City,CountyOrParish,StateOrProvince,PostalCode,PropertyType,PropertySubType,BedroomsTotal,BathroomsTotalInteger,LivingArea,Latitude,Longitude,StandardStatus,ClosePrice,ListPrice,CloseDate',
+    $expand: 'Media',
     $filter: compFilters.join(' and '),
     $orderby: 'CloseDate desc',
   });
@@ -261,7 +295,7 @@ async function fetchClosedComps({ sinceDays, subjectRaw }) {
   return { comps, closePrices };
 }
 
-async function fetchClosedCompsForMarket({ sinceDays, cityToken, county, zip }) {
+async function fetchClosedCompsForMarket({ sinceDays, cityToken, county, zip, priceBand }) {
   const since = new Date();
   since.setDate(since.getDate() - sinceDays);
   const ymd = since.toISOString().slice(0, 10);
@@ -271,6 +305,8 @@ async function fetchClosedCompsForMarket({ sinceDays, cityToken, county, zip }) 
   compFilters.push(`CloseDate ge ${ymd}`);
   compFilters.push(`ClosePrice ge 10000`);
   compFilters.push(`PropertyType eq 'Residential'`);
+  if (priceBand?.min) compFilters.push(`ClosePrice ge ${priceBand.min}`);
+  if (priceBand?.max) compFilters.push(`ClosePrice le ${priceBand.max}`);
 
   if (county) {
     // Be forgiving: users type "Erie" but feeds may store "Erie County" or vary casing.
@@ -287,6 +323,7 @@ async function fetchClosedCompsForMarket({ sinceDays, cityToken, county, zip }) 
     $top: '25',
     $select:
       'ListingKey,UnparsedAddress,StreetNumber,StreetName,City,CountyOrParish,StateOrProvince,PostalCode,PropertyType,PropertySubType,BedroomsTotal,BathroomsTotalInteger,LivingArea,Latitude,Longitude,StandardStatus,ClosePrice,ListPrice,CloseDate',
+    $expand: 'Media',
     $filter: compFilters.join(' and '),
     $orderby: 'CloseDate desc',
   });
@@ -419,17 +456,26 @@ export default async function handler(req, res) {
 
       if (subjectAnyStatus) {
         subject = mapTrestlePropertyToListing(subjectAnyStatus);
+        const priceBand = computePriceBand(subjectAnyStatus?.ListPrice ?? subjectAnyStatus?.ClosePrice);
 
         // Attempt 6mo -> 12mo using subject-based filters.
-        const sixMonth = await fetchClosedComps({ sinceDays: 183, subjectRaw: subjectAnyStatus });
+        const sixMonth = await fetchClosedComps({ sinceDays: 183, subjectRaw: subjectAnyStatus, priceBand });
         comps = sixMonth.comps;
         closePrices = sixMonth.closePrices;
 
         if (closePrices.length < 3) {
+          const twelveMonth = await fetchClosedComps({ sinceDays: 365, subjectRaw: subjectAnyStatus, priceBand });
+          comps = twelveMonth.comps;
+          closePrices = twelveMonth.closePrices;
+          expanded = true;
+        }
+
+        if (closePrices.length < 3 && priceBand) {
           const twelveMonth = await fetchClosedComps({ sinceDays: 365, subjectRaw: subjectAnyStatus });
           comps = twelveMonth.comps;
           closePrices = twelveMonth.closePrices;
           expanded = true;
+          relaxation.push('Relaxed pricing comps: widened price band to find more comps.');
         }
 
         // If subject-based comps are still too thin, fall back to market comps.
@@ -439,27 +485,36 @@ export default async function handler(req, res) {
       }
 
       if (closePrices.length < 3) {
+        const priceBand = computePriceBand(subjectAnyStatus?.ListPrice ?? subjectAnyStatus?.ClosePrice);
         // 1) Strict: county + zip
         if (zipIgnoredReason) {
           relaxation.push('ZIP code looks inconsistent with the selected county/city; ignoring ZIP to avoid pulling the wrong comps.');
         }
 
-        const sixMonth = await fetchClosedCompsForMarket({ sinceDays: 183, county: normalizedCounty, zip: zipUsed });
+        const sixMonth = await fetchClosedCompsForMarket({ sinceDays: 183, county: normalizedCounty, zip: zipUsed, priceBand });
         comps = sixMonth.comps;
         closePrices = sixMonth.closePrices;
         expanded = false;
 
         if (closePrices.length < 3) {
-          const twelveMonth = await fetchClosedCompsForMarket({ sinceDays: 365, county: normalizedCounty, zip: zipUsed });
+          const twelveMonth = await fetchClosedCompsForMarket({ sinceDays: 365, county: normalizedCounty, zip: zipUsed, priceBand });
           comps = twelveMonth.comps;
           closePrices = twelveMonth.closePrices;
           expanded = true;
         }
 
+        if (closePrices.length < 3 && priceBand) {
+          const twelveMonth = await fetchClosedCompsForMarket({ sinceDays: 365, county: normalizedCounty, zip: zipUsed });
+          comps = twelveMonth.comps;
+          closePrices = twelveMonth.closePrices;
+          expanded = true;
+          relaxation.push('Relaxed pricing comps: widened price band to find more comps.');
+        }
+
         // 2) Relax: drop zip, use county + city (if we have it)
         if (closePrices.length < 3 && cityToken) {
           relaxation.push('Relaxed pricing comps: dropped ZIP; using county + city.');
-          const twelveMonth = await fetchClosedCompsForMarket({ sinceDays: 365, county: normalizedCounty, zip: null, cityToken });
+          const twelveMonth = await fetchClosedCompsForMarket({ sinceDays: 365, county: normalizedCounty, zip: null, cityToken, priceBand });
           comps = twelveMonth.comps;
           closePrices = twelveMonth.closePrices;
           expanded = true;
@@ -468,7 +523,7 @@ export default async function handler(req, res) {
         // 3) Relax: county only
         if (closePrices.length < 3) {
           relaxation.push('Relaxed pricing comps: using county-wide comps.');
-          const twelveMonth = await fetchClosedCompsForMarket({ sinceDays: 365, county: normalizedCounty, zip: null, cityToken: null });
+          const twelveMonth = await fetchClosedCompsForMarket({ sinceDays: 365, county: normalizedCounty, zip: null, cityToken: null, priceBand });
           comps = twelveMonth.comps;
           closePrices = twelveMonth.closePrices;
           expanded = true;
@@ -623,12 +678,14 @@ export default async function handler(req, res) {
       subjectRes = await fetchTrestleOData('odata/Property', {
         $top: '1',
         $select: subjectSelect,
+        $expand: 'Media',
         $filter: byIdFilter,
       });
     } else {
       subjectRes = await fetchTrestleOData('odata/Property', {
         $top: '3',
         $select: subjectSelect,
+        $expand: 'Media',
         $filter: subjectFilter,
         $orderby: 'ModificationTimestamp desc',
       });
@@ -649,14 +706,22 @@ export default async function handler(req, res) {
 
     if (subjectRaw) {
       subject = mapTrestlePropertyToListing(subjectRaw);
+      const priceBand = computePriceBand(subjectRaw?.ListPrice ?? subjectRaw?.ClosePrice);
 
       // 2) Pull closed comps near the subject.
       // Playbook default: last 6 months; extend to 12 months if < 3 usable comps.
-      const sixMonth = await fetchClosedComps({ sinceDays: 183, subjectRaw });
+      const sixMonth = await fetchClosedComps({ sinceDays: 183, subjectRaw, priceBand });
       comps = sixMonth.comps;
       closePrices = sixMonth.closePrices;
 
       if (closePrices.length < 3) {
+        const twelveMonth = await fetchClosedComps({ sinceDays: 365, subjectRaw, priceBand });
+        comps = twelveMonth.comps;
+        closePrices = twelveMonth.closePrices;
+        expanded = true;
+      }
+
+      if (closePrices.length < 3 && priceBand) {
         const twelveMonth = await fetchClosedComps({ sinceDays: 365, subjectRaw });
         comps = twelveMonth.comps;
         closePrices = twelveMonth.closePrices;

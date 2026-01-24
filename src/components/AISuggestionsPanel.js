@@ -5,6 +5,7 @@ import { fetchLatestSuggestions, markSuggestionsConsumed, clearCachedSuggestions
 import { generatePropertySuggestions } from '../services/aiSuggestService';
 import { useAuth } from '../context/auth-context';
 import { getPropertyDetails } from '../services/trestleServices';
+import { getPrimaryPhotoUrl } from '../utils/mediaHelpers';
 
 export const AISuggestionsPanel = ({ recentSearchParams, recentProperties }) => {
   const { user } = useAuth();
@@ -88,18 +89,11 @@ export const AISuggestionsPanel = ({ recentSearchParams, recentProperties }) => 
               const propertyData = await getPropertyDetails(s.listing_id);
               console.log('Got property data for', s.listing_id, ':', propertyData);
               
-              // Extract image URL from property data (matches SavedProperties pattern)
+              // Extract image URL from property data using shared helper
               let imageUrl = '/fallback-property.jpg';
               
-              if (propertyData?.Media && Array.isArray(propertyData.Media) && propertyData.Media.length > 0) {
-                // Sort by Order and get first MediaURL
-                const sortedMedia = propertyData.Media
-                  .filter(m => m.MediaURL)
-                  .sort((a, b) => (a.Order || 0) - (b.Order || 0));
-                
-                if (sortedMedia.length > 0) {
-                  imageUrl = sortedMedia[0].MediaURL;
-                }
+              if (propertyData?.Media && Array.isArray(propertyData.Media)) {
+                imageUrl = getPrimaryPhotoUrl(propertyData.Media);
               } else if (propertyData?.mediaArray && propertyData.mediaArray.length > 0) {
                 imageUrl = propertyData.mediaArray[0];
               } else if (propertyData?.media) {

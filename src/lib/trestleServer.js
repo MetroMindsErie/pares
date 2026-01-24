@@ -1,4 +1,33 @@
-const TRESTLE_ORIGIN = 'https://api-trestle.corelogic.com';
+function getTrestleBaseUrl() {
+  // Prefer server-only vars; fall back to existing NEXT_PUBLIC_* for backward compatibility.
+  // Expected forms:
+  // - https://api.cotality.com/trestle
+  // - https://api-trestle.corelogic.com/trestle
+  const raw =
+    process.env.TRESTLE_BASE_URL ||
+    process.env.NEXT_PUBLIC_TRESTLE_BASE_URL ||
+    'https://api-trestle.corelogic.com/trestle';
+
+  return String(raw).replace(/\/+$/, '');
+}
+
+function getTrestleTokenUrl() {
+  const raw =
+    process.env.TRESTLE_TOKEN_URL ||
+    process.env.NEXT_PUBLIC_TRESTLE_TOKEN_URL ||
+    `${getTrestleBaseUrl()}/oidc/connect/token`;
+  return String(raw);
+}
+
+function getTrestleCredentials() {
+  const clientId = process.env.TRESTLE_CLIENT_ID || process.env.NEXT_PUBLIC_TRESTLE_CLIENT_ID;
+  const clientSecret = process.env.TRESTLE_CLIENT_SECRET || process.env.NEXT_PUBLIC_TRESTLE_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    throw new Error('Trestle API credentials not configured (set TRESTLE_CLIENT_ID/TRESTLE_CLIENT_SECRET)');
+  }
+  return { clientId, clientSecret };
+}
 
 export function buildTrestleODataUrl(odataPath, params = {}) {
   const cleaned = String(odataPath || '').replace(/^\/+/, '');
@@ -6,7 +35,8 @@ export function buildTrestleODataUrl(odataPath, params = {}) {
     throw new Error('Invalid odataPath (must start with odata/)');
   }
 
-  const url = new URL(`${TRESTLE_ORIGIN}/trestle/${cleaned}`);
+  const baseUrl = getTrestleBaseUrl();
+  const url = new URL(`${baseUrl}/${cleaned}`);
   Object.entries(params).forEach(([k, v]) => {
     if (v === undefined || v === null || v === '') return;
     url.searchParams.set(k, String(v));
@@ -15,16 +45,8 @@ export function buildTrestleODataUrl(odataPath, params = {}) {
 }
 
 export async function getTrestleToken() {
-  const tokenUrl =
-    process.env.NEXT_PUBLIC_TRESTLE_TOKEN_URL ||
-    'https://api-trestle.corelogic.com/trestle/oidc/connect/token';
-
-  const clientId = process.env.NEXT_PUBLIC_TRESTLE_CLIENT_ID;
-  const clientSecret = process.env.NEXT_PUBLIC_TRESTLE_CLIENT_SECRET;
-
-  if (!clientId || !clientSecret) {
-    throw new Error('Trestle API credentials not configured');
-  }
+  const tokenUrl = getTrestleTokenUrl();
+  const { clientId, clientSecret } = getTrestleCredentials();
 
   const body = new URLSearchParams({
     grant_type: 'client_credentials',

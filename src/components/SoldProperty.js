@@ -8,8 +8,10 @@ import Layout from './Layout';
 import BackToListingsButton from './BackToListingsButton';
 import BuyerAgent from './Property/BuyerAgent';
 import SavePropertyButton from './SavePropertyButton';
-import { TaxInformation, HistoryInformation } from './Property/PropertyDataTabs';
+import { TaxInformation, HistoryInformation, BuyerFinancingInfo } from './Property/PropertyDataTabs';
 import { NeighborhoodCommunity, SchoolsEducation } from './Property/PropertyDataTabs';
+import PropertyFactsAndFeatures from './Property/PropertyFactsAndFeatures';
+import ComparablePropertiesWidget from './Property/ComparablePropertiesWidget';
 import { useAuth } from '../context/auth-context';
 import { logPropertyView } from '../services/userActivityService';
 
@@ -94,11 +96,14 @@ export const SoldProperty = ({ property, taxData, historyData }) => {
           </div>
         </div>
 
+        {/* Pricing tool: nearby comparable properties */}
+        <ComparablePropertiesWidget property={property} />
+
         {/* Property Overview */}
         <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-8">
           <div className="border-b border-gray-200 mb-6">
             <nav className="-mb-px flex overflow-x-auto text-sm">
-              {['details','tax','history','neighborhood','schools'].map(id => (
+              {['details','financing','tax','history','neighborhood','schools'].map(id => (
                 <button
                   key={id}
                   onClick={()=>setActiveTab(id)}
@@ -107,6 +112,7 @@ export const SoldProperty = ({ property, taxData, historyData }) => {
                   }`}
                 >
                   {id==='details' && 'Property Details'}
+                  {id==='financing' && 'Financing'}
                   {id==='tax' && 'Tax Information'}
                   {id==='history' && 'History'}
                   {id==='neighborhood' && 'Neighborhood'}
@@ -212,8 +218,14 @@ export const SoldProperty = ({ property, taxData, historyData }) => {
                   {property.PublicRemarks || 'No description provided.'}
                 </p>
               </div>
+
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-3">Facts & Features</h3>
+                <PropertyFactsAndFeatures property={property} />
+              </div>
             </>
           )}
+          {activeTab === 'financing' && <BuyerFinancingInfo property={property} />}
           {activeTab === 'tax' && <TaxInformation taxData={taxData} />}
           {activeTab === 'history' && <HistoryInformation historyData={historyData} />}
           {activeTab === 'neighborhood' && <NeighborhoodCommunity context={ctx} />}
@@ -316,12 +328,40 @@ function SchoolPill({ label, value }) {
 }
 
 function deriveLocalContext(p) {
+  const label = (name, value) => (value ? `${name}: ${value}` : null);
+  const lotSize = p.LotSizeAcres
+    ? `${p.LotSizeAcres} acres`
+    : p.LotSizeSquareFeet
+      ? `${p.LotSizeSquareFeet} sq ft`
+      : null;
   return {
     listingKey: p.ListingKey || p.listing_key,
     subdivision: p.SubdivisionName || p.Subdivision || p.Neighborhood || null,
     communityFeatures: listFrom(p.CommunityFeatures),
     associationAmenities: listFrom(p.AssociationAmenities),
     lotFeatures: listFrom(p.LotFeatures),
+    areaFacts: [
+      label('County', p.CountyOrParish || p.county),
+      label('MLS area', p.MLSAreaMajor),
+      label('Neighborhood', p.Neighborhood),
+      label('Subdivision', p.SubdivisionName || p.Subdivision),
+      label('Zoning', p.ZoningDescription),
+      label('Property type', p.PropertyType || p.propertyType),
+      label('Year built', p.YearBuilt),
+    ].filter(Boolean),
+    utilitiesFacts: [
+      label('Water', p.WaterSource || p.waterSource),
+      label('Sewer', p.Sewer || p.sewer),
+      label('Utilities', p.Utilities || p.utilities),
+      label('Electric', p.Electric),
+    ].filter(Boolean),
+    lotFacts: [
+      label('Lot size', lotSize),
+      label('Lot dimensions', p.LotSizeDimensions),
+      label('Topography', p.Topography),
+      label('View', p.View || p.view),
+    ].filter(Boolean),
+    hoa: deriveHoa(p),
     schools: {
       district: p.SchoolDistrict || p.HighSchoolDistrict || null,
       elementary: p.ElementarySchool || null,
@@ -335,4 +375,67 @@ function listFrom(raw) {
   if (!raw) return [];
   if (Array.isArray(raw)) return raw.filter(Boolean).map(String);
   return String(raw).split(/[,;]+/).map(s => s.trim()).filter(Boolean);
+}
+
+function deriveHoa(p) {
+  const hasHoa = normalizeYesNo(p.AssociationYN);
+  
+  console.log('🏘️ HOA Debug - Raw property data:', {
+    AssociationYN: p.AssociationYN,
+    AssociationName: p.AssociationName,
+    AssociationPhone: p.AssociationPhone,
+    AssociationFee: p.AssociationFee,
+    AssociationFeeFrequency: p.AssociationFeeFrequency,
+    AssociationFeeIncludes: p.AssociationFeeIncludes,
+    AssociationName2: p.AssociationName2,
+    AssociationPhone2: p.AssociationPhone2,
+    AssociationFee2: p.AssociationFee2,
+    AssociationFee2Frequency: p.AssociationFee2Frequency,
+    AssociationName3: p.AssociationName3,
+    AssociationPhone3: p.AssociationPhone3,
+    AssociationFee3: p.AssociationFee3,
+    AssociationFee3Frequency: p.AssociationFee3Frequency,
+    AssociationAmenities: p.AssociationAmenities
+  });
+  
+  const associations = [
+    {
+      name: p.AssociationName,
+      phone: p.AssociationPhone,
+      fee: p.AssociationFee,
+      feeFrequency: p.AssociationFeeFrequency,
+      feeIncludes: listFrom(p.AssociationFeeIncludes)
+    },
+    {
+      name: p.AssociationName2,
+      phone: p.AssociationPhone2,
+      fee: p.AssociationFee2,
+      feeFrequency: p.AssociationFee2Frequency,
+    },
+    {
+      name: p.AssociationName3,
+      phone: p.AssociationPhone3,
+      fee: p.AssociationFee3,
+      feeFrequency: p.AssociationFee3Frequency,
+    }
+  ].filter(a => Object.values(a).some(Boolean));
+
+  console.log('🏘️ HOA Debug - Normalized hasHoa:', hasHoa);
+  console.log('🏘️ HOA Debug - Extracted associations:', associations);
+  console.log('🏘️ HOA Debug - Amenities:', listFrom(p.AssociationAmenities));
+
+  return {
+    hasHoa,
+    associations,
+    amenities: listFrom(p.AssociationAmenities)
+  };
+}
+
+function normalizeYesNo(value) {
+  if (value === undefined || value === null) return null;
+  if (typeof value === 'boolean') return value;
+  const str = String(value).trim().toLowerCase();
+  if (['y', 'yes', 'true', '1'].includes(str)) return true;
+  if (['n', 'no', 'false', '0'].includes(str)) return false;
+  return null;
 }

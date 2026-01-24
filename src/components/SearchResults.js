@@ -5,6 +5,7 @@ import MapWrapper from './MapWrapper';
 import Link from 'next/link';
 import Image from 'next/legacy/image';
 import { getNextProperties } from '../services/trestleServices';
+import { getPrimaryPhotoUrl, getMediaUrls } from '../utils/mediaHelpers';
 
 const SearchResults = ({
   listings,
@@ -42,12 +43,11 @@ const SearchResults = ({
       try {
         const { properties, nextLink: newNextLink } = await getNextProperties(nextLink);
         
-        // Ensure each property has the correct media structure
+        // Ensure each property has the correct media structure using shared helpers
         const processedProperties = properties.map(property => ({
           ...property,
-          media: property.media || (property.Media?.[0]?.MediaURL || '/fallback-property.jpg'),
-          mediaArray: property.mediaArray || 
-            (property.Media?.map(m => m.MediaURL).filter(url => !!url) || [])
+          media: property.media || getPrimaryPhotoUrl(property.Media),
+          mediaArray: property.mediaArray || getMediaUrls(property.Media)
         }));
 
         setAllListings(prev => [...prev, ...processedProperties]);
