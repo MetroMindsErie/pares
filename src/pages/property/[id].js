@@ -781,7 +781,10 @@ export async function getServerSideProps({ params }) {
         label('View', transformedProperty.View || transformedProperty.view),
       ].filter(Boolean),
       schools: {
-        district: transformedProperty.SchoolDistrict || transformedProperty.HighSchoolDistrict || null,
+        district: transformedProperty.HighSchoolDistrict || transformedProperty.ElementarySchoolDistrict || transformedProperty.MiddleOrJuniorSchoolDistrict || null,
+        elementaryDistrict: transformedProperty.ElementarySchoolDistrict || null,
+        middleDistrict: transformedProperty.MiddleOrJuniorSchoolDistrict || null,
+        highDistrict: transformedProperty.HighSchoolDistrict || null,
         elementary: transformedProperty.ElementarySchool || null,
         middle: transformedProperty.MiddleOrJuniorSchool || null,
         high: transformedProperty.HighSchool || null

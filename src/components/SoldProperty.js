@@ -369,7 +369,10 @@ function deriveLocalContext(p) {
     ].filter(Boolean),
     hoa: deriveHoa(p),
     schools: {
-      district: p.SchoolDistrict || p.HighSchoolDistrict || null,
+      district: p.HighSchoolDistrict || p.ElementarySchoolDistrict || p.MiddleOrJuniorSchoolDistrict || null,
+      elementaryDistrict: p.ElementarySchoolDistrict || null,
+      middleDistrict: p.MiddleOrJuniorSchoolDistrict || null,
+      highDistrict: p.HighSchoolDistrict || null,
       elementary: p.ElementarySchool || null,
       middle: p.MiddleOrJuniorSchool || null,
       high: p.HighSchool || null

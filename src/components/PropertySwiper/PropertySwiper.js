@@ -190,7 +190,7 @@ const PropertySwiper = ({
 
   if (loading && currentCards.length === 0) {
     return (
-      <div className={`relative w-full ${isMobile ? 'h-[70vh]' : 'h-[600px]'} max-w-md mx-auto`}>
+      <div className={`relative w-full ${isMobile ? 'h-[70vh]' : 'h-[600px]'} max-w-md sm:max-w-xl mx-auto px-3 sm:px-0`}>
         <LoadingCard />
       </div>
     );
@@ -198,7 +198,7 @@ const PropertySwiper = ({
 
   if (currentCards.length === 0 && !loading) {
     return (
-      <div className={`relative w-full ${isMobile ? 'h-[70vh]' : 'h-[600px]'} max-w-md mx-auto`}>
+      <div className={`relative w-full ${isMobile ? 'h-[70vh]' : 'h-[600px]'} max-w-md sm:max-w-xl mx-auto px-3 sm:px-0`}>
         <EmptyState onReset={() => {
           setSwipedProperties(new Set());
           setCurrentIndex(0);
@@ -208,7 +208,7 @@ const PropertySwiper = ({
   }
 
   return (
-    <div className={`relative w-full ${isMobile ? 'h-[70vh]' : 'h-[600px]'} max-w-md mx-auto`}>
+    <div className={`relative w-full ${isMobile ? 'h-[70vh]' : 'h-[600px]'} max-w-md sm:max-w-xl mx-auto px-3 sm:px-0`}>
       <AnimatePresence>
         {currentCards.map((property, index) => (
           <PropertyCard

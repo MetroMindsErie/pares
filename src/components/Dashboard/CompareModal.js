@@ -164,6 +164,13 @@ export default function CompareModal({ open = false, onClose = () => {}, propert
   }, [open]);
 
   useEffect(() => {
+    if (!open) return;
+    if (typeof window !== 'undefined' && window.innerWidth < 640) {
+      setViewMode('cards');
+    }
+  }, [open]);
+
+  useEffect(() => {
     const onKey = (e) => {
       if (e.key === 'Escape') onClose();
     };
@@ -396,15 +403,15 @@ export default function CompareModal({ open = false, onClose = () => {}, propert
   ];
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="compare-modal-title" className="fixed inset-0 z-50 flex items-start justify-center p-4 sm:p-6">
+    <div role="dialog" aria-modal="true" aria-labelledby="compare-modal-title" className="fixed inset-0 z-50 flex items-start justify-center p-2 sm:p-6">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden />
-      <div ref={modalRef} className="relative w-full max-w-[1280px] max-h-[90vh] overflow-auto bg-white rounded-xl shadow-[0_6px_18px_rgba(0,0,0,0.08)] ring-1 ring-black/8">
-        <header className="flex items-center justify-between p-4 border-b sticky top-0 bg-white z-10">
+      <div ref={modalRef} className="relative w-full max-w-[1280px] h-[95vh] sm:max-h-[90vh] overflow-auto bg-white rounded-xl shadow-[0_6px_18px_rgba(0,0,0,0.08)] ring-1 ring-black/8">
+        <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border-b sticky top-0 bg-white z-10">
           <div className="flex items-center gap-3">
             <h2 id="compare-modal-title" className="text-lg font-semibold text-gray-900">Compare properties</h2>
             <div className="text-sm text-gray-600">({selectedProps.length} selected)</div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button onClick={saveSnapshot} className="px-2 py-1 rounded-md text-sm text-gray-700 hover:bg-gray-100">Save snapshot</button>
             <button onClick={shareLink} className="px-2 py-1 rounded-md text-sm text-gray-700 hover:bg-gray-100">Share</button>
             <button onClick={printView} className="px-2 py-1 rounded-md text-sm text-gray-700 hover:bg-gray-100">Print</button>
@@ -414,9 +421,9 @@ export default function CompareModal({ open = false, onClose = () => {}, propert
 
         {/* Summary carousel */}
         <div className="p-4 border-b">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
             <div className="text-sm font-medium text-gray-800">Summary</div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button onClick={() => setViewMode(viewMode === 'table' ? 'cards' : 'table')} className="px-2 py-1 rounded-md bg-gray-100 text-sm">
                 View: {viewMode === 'table' ? 'Table' : 'Cards'}
               </button>
@@ -428,7 +435,7 @@ export default function CompareModal({ open = false, onClose = () => {}, propert
             {selectedProps.map((p) => {
               const photos = getPhotos(p);
               return (
-                <div key={getId(p)} className="w-56 min-w-[14rem] bg-white rounded-lg shadow-sm p-2 ring-1 ring-black/5">
+                <div key={getId(p)} className="w-48 min-w-[12rem] sm:w-56 sm:min-w-[14rem] bg-white rounded-lg shadow-sm p-2 ring-1 ring-black/5">
                   <div className="h-32 rounded-md overflow-hidden mb-2 bg-gray-100">
                     {photos[0] ? <img src={photos[0]} loading="lazy" alt={`${getAddress(p)} - ${getPrice(p) || ''}`} className="w-full h-full object-cover" /> : <div className="h-full flex items-center justify-center text-gray-400">No image</div>}
                   </div>
@@ -443,45 +450,81 @@ export default function CompareModal({ open = false, onClose = () => {}, propert
 
         {/* Comparison grid */}
         <div className="p-4">
-          {SECTIONS.map((section) => (
-            <section key={section.title} className="mb-6">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">{section.title}</h3>
-              <div className="overflow-auto">
-                <div className="min-w-full grid" style={{ gridTemplateColumns: `200px repeat(${selectedProps.length}, minmax(220px, 1fr))` }}>
-                  {/* attribute column (sticky when scrolling horizontally) */}
-                  <div className="bg-gray-50 p-3 border-r sticky left-0 z-10">
-                    <div className="text-xs text-gray-500">Attribute</div>
-                    {section.fields.map(f => <div key={f.key} className="py-3 text-sm text-gray-600 border-t">{f.label}</div>)}
+          {viewMode === 'cards' ? (
+            <div className="space-y-6">
+              {SECTIONS.map((section) => (
+                <section key={section.title} className="mb-6">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">{section.title}</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {selectedProps.map((p) => (
+                      <div key={`${section.title}-${getId(p)}`} className="border rounded-lg p-3 bg-white">
+                        <div className="text-sm font-semibold text-gray-900 truncate">{getAddress(p)}</div>
+                        <div className="text-xs text-gray-500 mb-2">
+                          {format(getBeds(p))} bd • {format(getBaths(p))} ba • {format(getSqft(p))} ft²
+                        </div>
+                        <div className="space-y-2">
+                          {section.fields.map((f) => {
+                            const raw = f.getter(p);
+                            const value = Array.isArray(raw)
+                              ? (raw.length ? raw.join(', ') : '—')
+                              : (raw === null || raw === undefined || raw === '' ? '—' : String(raw));
+                            return (
+                              <div key={f.key} className="flex items-start justify-between gap-3 text-sm">
+                                <span className="text-gray-500">{f.label}</span>
+                                <span className="text-gray-900 text-right">{value}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
                   </div>
+                </section>
+              ))}
+            </div>
+          ) : (
+            <>
+              {SECTIONS.map((section) => (
+                <section key={section.title} className="mb-6">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">{section.title}</h3>
+                  <div className="overflow-auto">
+                    <div className="min-w-full grid" style={{ gridTemplateColumns: `160px repeat(${selectedProps.length}, minmax(200px, 1fr))` }}>
+                      {/* attribute column (sticky when scrolling horizontally) */}
+                      <div className="bg-gray-50 p-3 border-r sticky left-0 z-10">
+                        <div className="text-xs text-gray-500">Attribute</div>
+                        {section.fields.map(f => <div key={f.key} className="py-3 text-sm text-gray-600 border-t">{f.label}</div>)}
+                      </div>
 
-                  {/* property columns */}
-                  {selectedProps.map((p) => (
-                    <div key={getId(p)} className="p-3 border-l">
-                      <div className="text-xs text-gray-500 mb-2">Value</div>
-                      {section.fields.map((f) => {
-                        const raw = f.getter(p);
-                        return (
-                          <div key={f.key} className="py-3 text-sm text-gray-800 border-t">
-                            {Array.isArray(raw) ? (raw.length ? raw.join(', ') : '—') : (raw === null || raw === undefined || raw === '' ? '—' : String(raw))}
-                          </div>
-                        );
-                      })}
+                      {/* property columns */}
+                      {selectedProps.map((p) => (
+                        <div key={getId(p)} className="p-3 border-l">
+                          <div className="text-xs text-gray-500 mb-2">Value</div>
+                          {section.fields.map((f) => {
+                            const raw = f.getter(p);
+                            return (
+                              <div key={f.key} className="py-3 text-sm text-gray-800 border-t">
+                                {Array.isArray(raw) ? (raw.length ? raw.join(', ') : '—') : (raw === null || raw === undefined || raw === '' ? '—' : String(raw))}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
-            </section>
-          ))}
+                  </div>
+                </section>
+              ))}
+            </>
+          )}
         </div>
 
         {/* Footer with simple mortgage snippet */}
         <footer className="p-4 border-t bg-white sticky bottom-0">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="text-sm text-gray-600">Estimated monthly (sample)</div>
               <div className="text-lg font-semibold text-gray-900">$1,234/mo</div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button onClick={() => alert('Request tour — open contact flow')} className="px-4 py-2 bg-teal-500 text-white rounded-md shadow-sm">Request tour</button>
               <button onClick={() => alert('Message agent — open message flow')} className="px-4 py-2 border rounded-md">Message agent</button>
             </div>

@@ -11,7 +11,7 @@ import {
   faEyeSlash 
 } from '@fortawesome/free-solid-svg-icons';
 
-const PropertyCard = ({ property, onSwipe, isTop = false }) => {
+const PropertyCard = ({ property, onSwipe, isTop = false, isMobile = false }) => {
   const router = useRouter();
   const [exitDirection, setExitDirection] = useState(null);
   const x = useMotionValue(0);
@@ -139,9 +139,9 @@ const PropertyCard = ({ property, onSwipe, isTop = false }) => {
       transition={{ duration: 0.3 }}
       whileTap={{ scale: 0.95 }}
     >
-      <div className="bg-white rounded-2xl shadow-2xl overflow-hidden h-full flex flex-col">
+      <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden h-full flex flex-col">
         {/* Property Image */}
-        <div className="relative h-1/2 overflow-hidden">
+        <div className="relative h-[45%] sm:h-1/2 overflow-hidden">
           <img
             src={displayImage || '/properties.jpg'}
             alt={property.UnparsedAddress || 'Property'}
@@ -150,26 +150,26 @@ const PropertyCard = ({ property, onSwipe, isTop = false }) => {
           />
           
           {/* Price Overlay */}
-          <div className="absolute bottom-4 left-4 bg-black bg-opacity-70 text-white px-3 py-2 rounded-lg">
-            <p className="text-2xl font-bold">{formatPrice(property.ListPrice)}</p>
+          <div className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4 bg-black bg-opacity-70 text-white px-3 py-2 rounded-lg">
+            <p className="text-xl sm:text-2xl font-bold">{formatPrice(property.ListPrice)}</p>
           </div>
 
           {/* Status Badge */}
           {property.StandardStatus === 'Closed' && (
-            <div className="absolute top-4 right-4 bg-red-600 text-white px-3 py-1 rounded-full text-sm font-medium">
+            <div className="absolute top-3 right-3 sm:top-4 sm:right-4 bg-red-600 text-white px-3 py-1 rounded-full text-xs sm:text-sm font-medium">
               Sold
             </div>
           )}
         </div>
 
         {/* Property Details */}
-        <div className="flex-1 p-6 flex flex-col">
+        <div className="flex-1 p-4 sm:p-6 flex flex-col">
           <div className="flex-1">
-            <h2 className="text-xl font-bold text-gray-900 mb-2">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">
               {property.UnparsedAddress || 'Address not available'}
             </h2>
             
-            <div className="flex items-center gap-4 mb-4 text-gray-600">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-4 text-gray-600 text-xs sm:text-sm">
               <div className="flex items-center">
                 <FontAwesomeIcon icon={faBed} className="mr-2 text-blue-500" />
                 <span>{property.BedroomsTotal || 'N/A'} beds</span>
@@ -184,43 +184,43 @@ const PropertyCard = ({ property, onSwipe, isTop = false }) => {
               </div>
             </div>
 
-            <p className="text-gray-700 text-sm line-clamp-3">
+            <p className="text-gray-700 text-xs sm:text-sm line-clamp-3">
               {property.PublicRemarks || 'No description available.'}
             </p>
           </div>
 
           {/* Action Buttons */}
-          <div className="grid grid-cols-4 gap-3 mt-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mt-4 sm:mt-6">
             <button
               onClick={() => handleActionClick('left')}
-              className="flex flex-col items-center justify-center p-3 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+              className="flex flex-col items-center justify-center p-2 sm:p-3 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
             >
-              <FontAwesomeIcon icon={faTimes} className="text-gray-600 text-xl mb-1" />
-              <span className="text-xs text-gray-600">Pass</span>
+              <FontAwesomeIcon icon={faTimes} className="text-gray-600 text-lg sm:text-xl mb-1" />
+              <span className="text-[10px] sm:text-xs text-gray-600">Pass</span>
             </button>
             
             <button
               onClick={() => handleActionClick('down')}
-              className="flex flex-col items-center justify-center p-3 bg-red-100 hover:bg-red-200 rounded-xl transition-colors"
+              className="flex flex-col items-center justify-center p-2 sm:p-3 bg-red-100 hover:bg-red-200 rounded-xl transition-colors"
             >
-              <FontAwesomeIcon icon={faEyeSlash} className="text-red-600 text-xl mb-1" />
-              <span className="text-xs text-red-600">Hide</span>
+              <FontAwesomeIcon icon={faEyeSlash} className="text-red-600 text-lg sm:text-xl mb-1" />
+              <span className="text-[10px] sm:text-xs text-red-600">Hide</span>
             </button>
             
             <button
               onClick={() => handleActionClick('right')}
-              className="flex flex-col items-center justify-center p-3 bg-green-100 hover:bg-green-200 rounded-xl transition-colors"
+              className="flex flex-col items-center justify-center p-2 sm:p-3 bg-green-100 hover:bg-green-200 rounded-xl transition-colors"
             >
-              <FontAwesomeIcon icon={faHeart} className="text-green-600 text-xl mb-1" />
-              <span className="text-xs text-green-600">Like</span>
+              <FontAwesomeIcon icon={faHeart} className="text-green-600 text-lg sm:text-xl mb-1" />
+              <span className="text-[10px] sm:text-xs text-green-600">Like</span>
             </button>
             
             <button
               onClick={() => handleActionClick('up')}
-              className="flex flex-col items-center justify-center p-3 bg-blue-100 hover:bg-blue-200 rounded-xl transition-colors"
+              className="flex flex-col items-center justify-center p-2 sm:p-3 bg-blue-100 hover:bg-blue-200 rounded-xl transition-colors"
             >
-              <FontAwesomeIcon icon={faPhone} className="text-blue-600 text-xl mb-1" />
-              <span className="text-xs text-blue-600">Connect</span>
+              <FontAwesomeIcon icon={faPhone} className="text-blue-600 text-lg sm:text-xl mb-1" />
+              <span className="text-[10px] sm:text-xs text-blue-600">Connect</span>
             </button>
           </div>
         </div>
@@ -230,7 +230,7 @@ const PropertyCard = ({ property, onSwipe, isTop = false }) => {
       {isTop && (
         <>
           <motion.div
-            className="absolute top-1/2 left-8 transform -translate-y-1/2 bg-gray-500 text-white px-4 py-2 rounded-lg font-bold text-lg"
+            className="absolute top-1/2 left-4 sm:left-8 transform -translate-y-1/2 bg-gray-500 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg font-bold text-sm sm:text-lg"
             style={{
               opacity: leftIndicatorOpacity
             }}
@@ -239,7 +239,7 @@ const PropertyCard = ({ property, onSwipe, isTop = false }) => {
           </motion.div>
           
           <motion.div
-            className="absolute top-1/2 right-8 transform -translate-y-1/2 bg-green-500 text-white px-4 py-2 rounded-lg font-bold text-lg"
+            className="absolute top-1/2 right-4 sm:right-8 transform -translate-y-1/2 bg-green-500 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg font-bold text-sm sm:text-lg"
             style={{
               opacity: rightIndicatorOpacity
             }}
@@ -248,7 +248,7 @@ const PropertyCard = ({ property, onSwipe, isTop = false }) => {
           </motion.div>
           
           <motion.div
-            className="absolute top-8 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white px-4 py-2 rounded-lg font-bold text-lg"
+            className="absolute top-4 sm:top-8 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg font-bold text-sm sm:text-lg"
             style={{
               opacity: topIndicatorOpacity
             }}
@@ -257,7 +257,7 @@ const PropertyCard = ({ property, onSwipe, isTop = false }) => {
           </motion.div>
           
           <motion.div
-            className="absolute bottom-8 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-lg font-bold text-lg"
+            className="absolute bottom-4 sm:bottom-8 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg font-bold text-sm sm:text-lg"
             style={{
               opacity: bottomIndicatorOpacity
             }}
