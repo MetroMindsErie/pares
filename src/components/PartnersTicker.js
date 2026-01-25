@@ -24,14 +24,18 @@ const PartnersTicker = ({ logos = null }) => {
     <div className="partners-ticker" role="presentation" aria-hidden="true">
       <div className="partners-track" aria-hidden="true">
         {duplicated.map((src, i) => (
-          // alt intentionally empty for decorative logos; add alt text if logos are meaningful
-          <img key={`t1-${i}`} src={src} alt="" className="partners-logo" />
+          <div key={`t1-${i}`} className="partners-logo-card">
+            {/* alt intentionally empty for decorative logos; add alt text if logos are meaningful */}
+            <img src={src} alt="" className="partners-logo-img" />
+          </div>
         ))}
       </div>
 
       {/* <div className="partners-track partners-track--alt" aria-hidden="true">
         {duplicated.map((src, i) => (
-          <img key={`t2-${i}`} src={src} alt="" className="partners-logo" />
+          <div key={`t2-${i}`} className="partners-logo-card">
+            <img src={src} alt="" className="partners-logo-img" />
+          </div>
         ))}
       </div> */}
     </div>

@@ -695,16 +695,27 @@ html, body, #__next {
   opacity: 0.98;
 }
 
-/* Logo styling — larger, lighter drop shadow */
-.partners-logo {
+/* Logo styling — rounded card + rounded image */
+.partners-logo-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 10px 24px rgba(16, 24, 40, 0.12), 0 2px 6px rgba(16, 24, 40, 0.08);
+  overflow: hidden;
+}
+
+.partners-logo-img {
   height: 64px;
   width: auto;
   object-fit: contain;
   display: block;
   opacity: 1;
-  filter: drop-shadow(0 6px 14px rgba(16,24,40,0.08));
-  border-radius: 8px;
-  padding: 6px;
+  border-radius: 10px;
+  filter: drop-shadow(0 4px 10px rgba(16,24,40,0.08));
 }
 
 /* Mobile / small devices: slightly smaller logos & tighter spacing */
@@ -726,9 +737,13 @@ html, body, #__next {
     gap: 18px;
     animation-duration: 14s;
   }
-  .partners-logo {
+  .partners-logo-card {
+    padding: 6px;
+    border-radius: 12px;
+  }
+  .partners-logo-img {
     height: 40px;
-    padding: 4px;
+    border-radius: 8px;
   }
 }
 
@@ -742,9 +757,13 @@ html, body, #__next {
     gap: 44px;
     animation-duration: 20s;
   }
-  .partners-logo {
+  .partners-logo-card {
+    padding: 10px;
+    border-radius: 16px;
+  }
+  .partners-logo-img {
     height: 72px;
-    padding: 8px;
+    border-radius: 12px;
   }
 }
 
@@ -755,7 +774,7 @@ html, body, #__next {
 }
 
 /* gentle float on logos to add subtle life */
-.partners-logo {
+.partners-logo-card {
   animation: partners-float 6s ease-in-out infinite;
 }
 
