@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import Head from 'next/head';
 import { SoldProperty } from '../../components/SoldProperty';
 import PropertyView from '../../components/Property/PropertyView';
-import axios from 'axios';
 import BuyerAgent from '../../components/Property/BuyerAgent';
 import { PendingProperty } from '../../components/PendingProperty';
 import { ActiveProperty } from '../../components/ActiveProperty';
+import { fetchTrestleOData } from '../../lib/trestleServer';
+import { getMediaUrls } from '../../utils/mediaHelpers';
 
 // Extract tax information from Trestle property data
 const extractTaxData = (property) => {
@@ -85,7 +86,7 @@ const extractTaxData = (property) => {
     };
   } catch (error) {
     console.error('Error extracting tax data:', error);
-    return getMockTaxData();
+    return null;
   }
 };
 
@@ -201,12 +202,23 @@ const extractHistoryData = (property) => {
     };
   } catch (error) {
     console.error('Error extracting history data:', error);
-    return getMockHistoryData();
+    return { listingHistory: [], saleHistory: [] };
   }
 };
 
 // Tax Information Component
 const TaxInformation = ({ taxData }) => {
+  if (!taxData) {
+    return (
+      <div className="bg-white p-6 rounded-lg shadow-sm border">
+        <h2 className="text-2xl font-bold mb-6 text-gray-900">Tax Information</h2>
+        <div className="text-center py-8 text-gray-500">
+          <p>Tax information is not available for this property.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border">
       <h2 className="text-2xl font-bold mb-6 text-gray-900">Tax Information</h2>
@@ -376,6 +388,17 @@ const TaxInformation = ({ taxData }) => {
 
 // History Information Component  
 const HistoryInformation = ({ historyData }) => {
+  if (!historyData || (!historyData.listingHistory?.length && !historyData.saleHistory?.length)) {
+    return (
+      <div className="bg-white p-6 rounded-lg shadow-sm border">
+        <h2 className="text-2xl font-bold mb-6 text-gray-900">Property History</h2>
+        <div className="text-center py-8 text-gray-500">
+          <p>Property history is not available.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border">
       <h2 className="text-2xl font-bold mb-6 text-gray-900">Property History</h2>
@@ -617,50 +640,27 @@ export async function getServerSideProps({ params }) {
   const { id } = params;
   
   try {
-    // Get Trestle access token
-    const tokenResponse = await axios.post(
-      'https://api-trestle.corelogic.com/trestle/oidc/connect/token',
-      new URLSearchParams({
-        grant_type: 'client_credentials',
-        scope: 'api',
-        client_id: process.env.NEXT_PUBLIC_TRESTLE_CLIENT_ID,
-        client_secret: process.env.NEXT_PUBLIC_TRESTLE_CLIENT_SECRET,
-      }),
-      {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      }
-    );
+    // Defensive OData escaping (ListingKey is a string)
+    const safeId = String(id).replace(/'/g, "''");
 
-    const token = tokenResponse.data.access_token;
+    // Fetch property details and expand Media in a single call
+    const trestle = await fetchTrestleOData('odata/Property', {
+      $filter: `ListingKey eq '${safeId}'`,
+      $top: '1',
+      $expand: 'Media'
+    });
 
-    // Fetch property and media data
-    const [propertyResponse, mediaResponse] = await Promise.all([
-      axios.get(
-        `https://api-trestle.corelogic.com/trestle/odata/Property?$filter=ListingKey eq '${params.id}'`,
-        { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } }
-      ),
-      axios.get(
-        `https://api-trestle.corelogic.com/trestle/odata/Media?$filter=ResourceRecordKey eq '${params.id}'&$orderby=Order`,
-        { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } }
-      )
-    ]);
-
-    if (!propertyResponse.data.value?.length) {
+    const value = Array.isArray(trestle?.json?.value) ? trestle.json.value : [];
+    if (!value.length) {
       return { notFound: true };
     }
     
-    const rawProperty = propertyResponse.data.value[0];
+    const rawProperty = value[0];
     const isSold = rawProperty.StandardStatus?.toLowerCase() === 'closed';
 
-    // Create media URLs array
-    const mediaUrls = (mediaResponse?.data?.value || [])
-      .map(media => media.MediaURL)
-      .filter(url => url && url.startsWith('http'));
-
-    // Add fallback if no images
-    if (!mediaUrls.length) {
-      mediaUrls.push('/fallback-property.jpg');
-    }
+    // Create media URLs array using shared helper (ensures preferred photo is first)
+    const mediaFromExpand = Array.isArray(rawProperty?.Media) ? rawProperty.Media : [];
+    const mediaUrls = getMediaUrls(mediaFromExpand);
 
     // Include both original and transformed property data
     const transformedProperty = {
@@ -733,8 +733,8 @@ export async function getServerSideProps({ params }) {
     try {
       taxData = extractTaxData(transformedProperty);
     } catch (error) {
-      console.error('Failed to extract tax data, using mock data:', error);
-      taxData = getMockTaxData();
+      console.error('Failed to extract tax data:', error);
+      taxData = null;
     }
 
     // Extract history data with fallback
@@ -742,75 +742,52 @@ export async function getServerSideProps({ params }) {
     try {
       historyData = extractHistoryData(transformedProperty);
     } catch (error) {
-      console.error('Failed to extract history data, using mock data:', error);
-      historyData = getMockHistoryData();
+      console.error('Failed to extract history data:', error);
+      historyData = { listingHistory: [], saleHistory: [] };
     }
 
-    // Fetch local context (neighborhood + schools) with same token
-    try {
-      const { data: ctxResp } = await axios.get(
-        `https://api-trestle.corelogic.com/trestle/odata/Property`,
-        {
-          params: {
-            $filter: `ListingKey eq '${params.id}'`,
-            $select: [
-              'ListingKey',
-              'SubdivisionName',
-              'Subdivision',
-              'Neighborhood',
-              'CommunityFeatures',
-              'AssociationAmenities',
-              'LotFeatures',
-              'ElementarySchool',
-              'MiddleOrJuniorSchool',
-              'HighSchool',
-              'SchoolDistrict',
-              'HighSchoolDistrict',
-              'TaxAnnualAmount'
-            ].join(',')
-          },
-          headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
-        }
-      );
-
-      const ctxValue = Array.isArray(ctxResp?.value) ? ctxResp.value[0] : null;
-      if (ctxValue) {
-        transformedProperty._localContext = {
-          listingKey: ctxValue.ListingKey,
-          subdivision: ctxValue.SubdivisionName || ctxValue.Subdivision || ctxValue.Neighborhood || null,
-          communityFeatures: splitListSafe(ctxValue.CommunityFeatures),
-          associationAmenities: splitListSafe(ctxValue.AssociationAmenities),
-          lotFeatures: splitListSafe(ctxValue.LotFeatures),
-          schools: {
-            district: ctxValue.SchoolDistrict || ctxValue.HighSchoolDistrict || null,
-            elementary: ctxValue.ElementarySchool || null,
-            middle: ctxValue.MiddleOrJuniorSchool || null,
-            high: ctxValue.HighSchool || null
-          },
-          taxAnnualAmount: ctxValue.TaxAnnualAmount || null
-        };
-      }
-    } catch (e) {
-      console.warn('Local context fetch failed:', e?.response?.status || e.message);
-    }
-
-    // Fallback: derive context from already-fetched property if API returned nothing
-    if (!transformedProperty._localContext) {
-      transformedProperty._localContext = {
-        listingKey: transformedProperty.ListingKey || params.id,
-        subdivision: transformedProperty.SubdivisionName || transformedProperty.Subdivision || transformedProperty.Neighborhood || null,
-        communityFeatures: splitListSafe(transformedProperty.CommunityFeatures),
-        associationAmenities: splitListSafe(transformedProperty.AssociationAmenities),
-        lotFeatures: splitListSafe(transformedProperty.LotFeatures),
-        schools: {
-          district: transformedProperty.SchoolDistrict || transformedProperty.HighSchoolDistrict || null,
-          elementary: transformedProperty.ElementarySchool || null,
-          middle: transformedProperty.MiddleOrJuniorSchool || null,
-          high: transformedProperty.HighSchool || null
-        },
-        taxAnnualAmount: transformedProperty.TaxAnnualAmount || null
-      };
-    }
+    // Local context: derive directly from the property payload
+    const label = (name, value) => (value ? `${name}: ${value}` : null);
+    const lotSize = transformedProperty.LotSizeAcres
+      ? `${transformedProperty.LotSizeAcres} acres`
+      : transformedProperty.LotSizeSquareFeet
+        ? `${transformedProperty.LotSizeSquareFeet} sq ft`
+        : null;
+    transformedProperty._localContext = {
+      listingKey: transformedProperty.ListingKey || params.id,
+      subdivision: transformedProperty.SubdivisionName || transformedProperty.Subdivision || transformedProperty.Neighborhood || null,
+      communityFeatures: splitListSafe(transformedProperty.CommunityFeatures),
+      associationAmenities: splitListSafe(transformedProperty.AssociationAmenities),
+      lotFeatures: splitListSafe(transformedProperty.LotFeatures),
+      areaFacts: [
+        label('County', transformedProperty.CountyOrParish || transformedProperty.county),
+        label('MLS area', transformedProperty.MLSAreaMajor),
+        label('Neighborhood', transformedProperty.Neighborhood),
+        label('Subdivision', transformedProperty.SubdivisionName || transformedProperty.Subdivision),
+        label('Zoning', transformedProperty.ZoningDescription),
+        label('Property type', transformedProperty.PropertyType || transformedProperty.propertyType),
+        label('Year built', transformedProperty.YearBuilt),
+      ].filter(Boolean),
+      utilitiesFacts: [
+        label('Water', transformedProperty.WaterSource || transformedProperty.waterSource),
+        label('Sewer', transformedProperty.Sewer || transformedProperty.sewer),
+        label('Utilities', transformedProperty.Utilities || transformedProperty.utilities),
+        label('Electric', transformedProperty.Electric),
+      ].filter(Boolean),
+      lotFacts: [
+        label('Lot size', lotSize),
+        label('Lot dimensions', transformedProperty.LotSizeDimensions),
+        label('Topography', transformedProperty.Topography),
+        label('View', transformedProperty.View || transformedProperty.view),
+      ].filter(Boolean),
+      schools: {
+        district: transformedProperty.SchoolDistrict || transformedProperty.HighSchoolDistrict || null,
+        elementary: transformedProperty.ElementarySchool || null,
+        middle: transformedProperty.MiddleOrJuniorSchool || null,
+        high: transformedProperty.HighSchool || null
+      },
+      taxAnnualAmount: transformedProperty.TaxAnnualAmount || null
+    };
 
     return {
       props: {
@@ -839,8 +816,8 @@ export async function getServerSideProps({ params }) {
           }
         },
         isSold: false,
-        taxData: getMockTaxData(),
-        historyData: getMockHistoryData()
+        taxData: null,
+        historyData: null
       }
     };
   }

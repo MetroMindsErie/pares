@@ -10,6 +10,7 @@ import {
 } from '../../utils/PropertyUtils';
 import SavePropertyButton from '../SavePropertyButton';
 import { fetchLocalContext } from '../../services/localContextService';
+import { logPropertyView } from '../../services/userActivityService';
 
 
 const PropertyView = ({ propertyData, mlsData }) => {
@@ -180,6 +181,13 @@ const PropertyView = ({ propertyData, mlsData }) => {
     run();
     return () => { cancelled = true; };
   }, [propertyData?.ListingKey]);
+
+  // Log view after local context + role checks resolved
+  useEffect(() => {
+    if (!isLoading && !contextLoading && user?.id && propertyData?.ListingKey) {
+      logPropertyView(user.id, propertyData);
+    }
+  }, [isLoading, contextLoading, user?.id, propertyData?.ListingKey]);
 
   // Show loading state or the appropriate property template
   if (isLoading || contextLoading) {

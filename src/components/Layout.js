@@ -1,48 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useRouter } from 'next/router';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import Head from 'next/head';
-import { supabase } from '../utils/supabaseClient';
+import { useAuth } from '../context/auth-context';
 
 const Layout = ({ children }) => {
-  const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(null);
   const router = useRouter();
 
-  useEffect(() => {
-    // Check for existing session on component mount
-    const getInitialSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setUser(session?.user || null);
-      } catch (error) {
-        console.error('Error getting session:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    getInitialSession();
-
-    // Set up auth listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-
-        setUser(session?.user || null);
-        setLoading(false);
-      }
-    );
-
-    // Cleanup
-    return () => {
-      subscription?.unsubscribe();
-    };
-  }, []);
+  const { user, isAuthenticated, authChecked, logout } = useAuth();
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
+      await logout();
       router.push('/login');
     } catch (error) {
       console.error('Error logging out:', error);
@@ -69,14 +39,14 @@ const Layout = ({ children }) => {
       </Head>
       
       <Navbar 
-        isAuthenticated={!!user}
+        isAuthenticated={!!isAuthenticated}
         user={user}
         onLogout={handleLogout}
         onLogin={handleLogin}
         onRegister={handleRegister}
       />
       
-      {loading ? <div>Loading...</div> : children}
+      {!authChecked ? <div>Loading...</div> : children}
       
       <Footer />
     </div>

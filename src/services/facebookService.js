@@ -21,7 +21,7 @@ export const getFacebookToken = async (userId, options = {}) => {
       .select('access_token')
       .eq('user_id', userId)
       .eq('provider', 'facebook')
-      .single();
+      .maybeSingle();
 
     if (providerData?.access_token) {
       return { accessToken: providerData.access_token };
@@ -1031,7 +1031,7 @@ export const checkFacebookConnection = async (userId) => {
       .select('id')
       .eq('user_id', userId)
       .eq('provider', 'facebook')
-      .single();
+      .maybeSingle();
 
     if (providerData) {
       return true;

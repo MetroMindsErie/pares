@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import Head from 'next/head';
 import { useAuth } from '../context/auth-context';
 import WelcomeBanner from '../components/Dashboard/WelcomeBanner';
 import StatsCard from '../components/Dashboard/StatsCard';
@@ -7,11 +8,14 @@ import supabase from '../lib/supabase-setup';
 import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import { checkFacebookConnection } from '../services/facebookService';
+import { AIAssistantPanel } from '../components/AIAssistantPanel';
+import { getUserActivity } from '../utils/activityStorage';
 
 export default function DashboardPage() {
-  const { user, isAuthenticated, loading, authChecked } = useAuth();
+  const { user, loading: authLoading } = useAuth(); // ensure proper destructure
   const [profile, setProfile] = useState(null);
   const [activities, setActivities] = useState([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(true);
   const [localLoading, setLocalLoading] = useState(true);
   const [hasFacebookConnection, setHasFacebookConnection] = useState(false);
   const [userId, setUserId] = useState(null);
@@ -24,7 +28,6 @@ export default function DashboardPage() {
   
   // Use refs to track if effects have run to prevent loops
   const profileFetchedRef = useRef(false);
-  const activitiesFetchedRef = useRef(false);
   const cleanupDoneRef = useRef(false);
 
   // Stop potential infinite loops by clearing URL params
@@ -136,37 +139,102 @@ export default function DashboardPage() {
     fetchUserProfile();
   }, [userId, user, fbConnectionChecked]);
 
-  // Fetch activities only once - updated to show recent property saves
+  function formatTime(ts) {
+    try {
+      return new Date(ts).toLocaleString();
+    } catch {
+      return '';
+    }
+  }
+
+  function buildActivityKey(prefix, id) {
+    return `${prefix}:${String(id || '')}`;
+  }
+
+  // Fetch activities (saved properties + swipe actions) and merge with local AI activity.
   useEffect(() => {
-    if (activitiesFetchedRef.current) return;
-    
     const fetchRecentActivities = async () => {
       if (!userId) return;
-      
+
+      setActivitiesLoading(true);
+
       try {
-        const { data: savedProps, error } = await supabase
+        const [{ data: savedProps, error: savedErr }, { data: swipes, error: swipesErr }] = await Promise.all([
+          supabase
           .from('saved_properties')
           .select('*')
           .eq('user_id', userId)
           .order('saved_at', { ascending: false })
-          .limit(5);
+          .limit(10),
+          supabase
+            .from('property_swipes')
+            .select('id, property_id, swipe_direction, property_data, created_at')
+            .eq('user_id', userId)
+            .in('swipe_direction', ['right', 'up'])
+            .order('created_at', { ascending: false })
+            .limit(10),
+        ]);
 
-        if (error) throw error;
+        if (savedErr) throw savedErr;
+        if (swipesErr) throw swipesErr;
 
-        const formattedActivities = savedProps.map(prop => ({
-          title: `Saved ${prop.address}`,
-          time: new Date(prop.saved_at).toLocaleString(),
+        const savedItems = (savedProps || []).map((prop) => ({
+          key: buildActivityKey('saved', prop.id || prop.listing_key || prop.address),
+          type: 'property_saved',
           icon: '❤️',
-          type: 'property_saved'
+          title: `Saved: ${prop.address || 'Property'}`,
+          time: formatTime(prop.saved_at),
+          ts: Date.parse(prop.saved_at),
+          href: prop.listing_key ? `/property/${encodeURIComponent(String(prop.listing_key))}` : null,
         }));
 
-        setActivities(formattedActivities);
+        const swipeItems = (swipes || []).map((s) => {
+          const dir = String(s.swipe_direction || '');
+          const icon = dir === 'up' ? '🤝' : '❤️';
+          const label = dir === 'up' ? 'Connected' : 'Liked';
+          const addr = s?.property_data?.UnparsedAddress || s?.property_data?.address || s?.property_data?.StreetAddress || '';
+          const listingKey = s?.property_data?.ListingKey || s?.property_id;
+          return {
+            key: buildActivityKey('swipe', s.id || listingKey),
+            type: dir === 'up' ? 'property_connection' : 'property_like',
+            icon,
+            title: `${label}: ${addr || 'Property'}`,
+            time: formatTime(s.created_at),
+            ts: Date.parse(s.created_at),
+            href: listingKey ? `/property/${encodeURIComponent(String(listingKey))}` : null,
+          };
+        });
+
+        const aiItems = (getUserActivity(userId) || []).map((it) => {
+          const t = String(it.type || '');
+          const icon = t === 'cma_pricing' ? '💰' : t === 'ai_search' ? '🤖' : '•';
+          const subtitle = t === 'cma_pricing'
+            ? [it?.meta?.county, it?.meta?.zip].filter(Boolean).join(' • ')
+            : null;
+          return {
+            key: buildActivityKey('ai', `${it.ts}:${t}`),
+            type: t,
+            icon,
+            title: it.title || 'AI activity',
+            time: formatTime(it.ts),
+            ts: it.ts,
+            subtitle,
+            href: null,
+          };
+        });
+
+        const merged = [...aiItems, ...swipeItems, ...savedItems]
+          .filter((a) => Number.isFinite(a.ts))
+          .sort((a, b) => (b.ts || 0) - (a.ts || 0))
+          .slice(0, 12);
+
+        setActivities(merged);
       } catch (err) {
         console.error('Error fetching activities:', err);
         setActivities([]);
+      } finally {
+        setActivitiesLoading(false);
       }
-      
-      activitiesFetchedRef.current = true;
     };
 
     fetchRecentActivities();
@@ -250,134 +318,133 @@ export default function DashboardPage() {
     return '/default-avatar.png';
   };
 
-  // Simplified loading check
-  const isLoading = loading || (localLoading && !profile);
-
-  if (isLoading) {
+  // Remove isLoading (was undefined). Use authLoading only.
+  if (authLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex justify-center items-center">
-        <div className="flex flex-col items-center">
-          <div className="animate-spin h-10 w-10 border-4 border-blue-500 rounded-full border-t-transparent"></div>
-          <p className="mt-4 text-gray-600">Loading your dashboard...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-gray-600">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-gray-700">
+          Please log in to view your dashboard.
         </div>
       </div>
     );
   }
 
   return (
-    <Layout>
-      {/* Hero section with background image */}
-      <div className="relative bg-cover bg-center h-40 sm:h-48 md:h-64" 
-           style={{ 
-             backgroundImage: 'url("/dashboard-hero.jpg")',
-             backgroundBlendMode: 'overlay',
-             backgroundColor: 'rgba(0,0,0,0.5)'
-           }}>
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-900/70 to-transparent"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
-          {profile && (
-            <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 md:gap-6 text-center sm:text-left">
-              <img
-                src={getProfilePicture()}
-                alt={`${profile.first_name}'s profile`}
-                className="h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 rounded-full border-4 border-white/20 shadow-xl object-cover"
-                referrerPolicy="no-referrer"
-                crossOrigin="anonymous"
-                onError={(e) => {
-                  e.target.src = '/default-avatar.png';
-                }}
-              />
-              <div className="text-white">
-                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">
-                  Welcome back, {profile.first_name}!
-                </h1>
-                <p className="mt-1 sm:mt-2 text-blue-100 text-xs sm:text-sm md:text-base">
-                  Here's what's happening with your saved properties
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Main content */}
-      {/* ensure on mobile the content sits below the hero to avoid overlap; keep negative pull on sm+ */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 sm:-mt-10">
-         {/* Stats Cards */}
-         <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-3 mb-6 sm:mb-8">
-           <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 transform hover:scale-105 transition-transform duration-200">
-             <StatsCard
-               title="Saved Properties"
-               value={savedProperties.length.toString()}
-               change={0}
-               icon="heart"
-             />
-           </div>
-         </div>
-
-        {/* Quick Actions and Recent Activity */}
-        <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-3 mb-6 sm:mb-8">
-          {/* Quick Actions */}
-          <div className="bg-gradient-to-br from-white to-blue-50 rounded-lg shadow-lg p-4 sm:p-6 border border-blue-100">
-            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-blue-900">Quick Actions</h3>
-            <div className="space-y-2 sm:space-y-3">
-              <button
-                onClick={() => {
-                  // Clear any cached search results
-                  if (typeof window !== 'undefined') {
-                    sessionStorage.removeItem('searchResults');
-                    sessionStorage.removeItem('searchParams');
-                    localStorage.removeItem('lastSearchResults');
-                    localStorage.removeItem('lastSearchParams');
-                    sessionStorage.setItem('scrollToTop', 'true');
-                  }
-                  
-                  // Navigate to home
-                  window.location.href = '/';
-                }}
-                className="w-full text-left px-3 sm:px-4 py-2.5 sm:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 sm:gap-3 text-sm sm:text-base"
-              >
-                <span className="p-1.5 sm:p-2 bg-blue-500 rounded-full text-sm">🏠</span>
-                Browse Properties
-              </button>
-              <button
-                onClick={() => router.push('/saved-properties')}
-                className="w-full text-left px-3 sm:px-4 py-2.5 sm:py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 sm:gap-3 text-sm sm:text-base"
-              >
-                <span className="p-1.5 sm:p-2 bg-green-500 rounded-full text-sm">❤️</span>
-                View Saved Properties ({savedProperties.length})
-              </button>
-              <button
-                onClick={() => router.push('/create-profile')}
-                className="w-full text-left px-3 sm:px-4 py-2.5 sm:py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors flex items-center gap-2 sm:gap-3 text-sm sm:text-base"
-              >
-                <span className="p-1.5 sm:p-2 bg-gray-300 rounded-full text-sm">⚙️</span>
-                Profile Settings
-              </button>
-            </div>
-          </div>
-          
-          {/* Recent Activity */}
-          <div className="md:col-span-2 bg-gradient-to-br from-white to-blue-50 rounded-lg shadow-lg p-6 border border-blue-100">
-            <h3 className="text-lg font-semibold mb-4 text-blue-900">Recent Activity</h3>
-            {activities.length > 0 ? (
-              <div className="space-y-4">
-                {activities.map((activity, index) => (
-                  <div key={index} className="flex items-center gap-4 p-3 bg-white rounded-lg shadow-sm">
-                    <span className="text-2xl">{activity.icon}</span>
-                    <div className="flex-1">
-                      <p className="text-gray-800">{activity.title}</p>
-                      <p className="text-sm text-gray-500">{activity.time}</p>
-                    </div>
+    <>
+      <Head>
+        <title>User Dashboard | Personalized Property Suggestions</title>
+      </Head>
+      <Layout>
+        <main className="pt-16 min-h-screen bg-gray-50 dark:bg-gray-950">
+          {/* Hero section */}
+          <div
+            className="relative bg-cover bg-center h-40 sm:h-48 md:h-64"
+            style={{
+              backgroundImage: 'url("/paresfinal.jpg")',
+              backgroundBlendMode: 'overlay',
+              backgroundColor: 'rgba(0,0,0,0.5)',
+            }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-900/70 to-transparent"></div>
+            <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
+              {profile && (
+                <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 md:gap-6 text-center sm:text-left">
+                  <img
+                    src={getProfilePicture()}
+                    alt={`${profile.first_name}'s profile`}
+                    className="h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 rounded-full border-4 border-white/20 shadow-xl object-cover"
+                    referrerPolicy="no-referrer"
+                    crossOrigin="anonymous"
+                    onError={(e) => {
+                      e.target.src = '/default-avatar.png';
+                    }}
+                  />
+                  <div className="text-white">
+                    <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">
+                      Welcome back, {profile.first_name}!
+                    </h1>
+                    <p className="mt-1 sm:mt-2 text-blue-100 text-xs sm:text-sm md:text-base">
+                      Here's what's happening with your saved properties
+                    </p>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-center text-gray-500 py-4">No recent activities</p>
-            )}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      </div>
-    </Layout>
+
+          {/* Main content */}
+          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-3 mb-6 sm:mb-8">
+              <StatsCard
+                title="Saved Properties"
+                value={savedProperties.length.toString()}
+                change={0}
+                icon="heart"
+              />
+              <StatsCard
+                title="Liked"
+                value={String(propertyStats.liked || 0)}
+                change={0}
+                icon="heart"
+              />
+              <StatsCard
+                title="Connections"
+                value={String(propertyStats.connections || 0)}
+                change={0}
+                icon="handshake"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-3 mb-6 sm:mb-8">
+              <div className="md:col-span-2">
+                <AIAssistantPanel />
+              </div>
+              <div className="space-y-6">
+                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-5">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Quick Actions</h3>
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => {
+                        if (typeof window !== 'undefined') {
+                          sessionStorage.removeItem('searchResults');
+                          sessionStorage.removeItem('searchParams');
+                          localStorage.removeItem('lastSearchResults');
+                          localStorage.removeItem('lastSearchParams');
+                          sessionStorage.setItem('scrollToTop', 'true');
+                        }
+                        window.location.href = '/';
+                      }}
+                      className="w-full px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm"
+                    >
+                      Browse Properties
+                    </button>
+                    <button
+                      onClick={() => router.push('/saved-properties')}
+                      className="w-full px-4 py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-sm"
+                    >
+                      View Saved Properties ({savedProperties.length})
+                    </button>
+                    <button
+                      onClick={() => router.push('/create-profile')}
+                      className="w-full px-4 py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-sm"
+                    >
+                      Profile Settings
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </Layout>
+    </>
    );
  }

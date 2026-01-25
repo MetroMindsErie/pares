@@ -1,10 +1,3 @@
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-// Get directory name in ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -23,13 +16,6 @@ const nextConfig = {
   
   // Tell Next.js not to attempt to render these paths at build time
   excludeDefaultMomentLocales: true, // Reduce bundle size
-  
-  // Disable automatic static optimization for auth pages
-  unstable_excludeFiles: [
-    '**/src/pages/login.js',
-    '**/src/pages/register.js',
-    '**/src/pages/create-profile.js'
-  ],
   webpack: (config) => {
     // Disable persistent caching to avoid large buffer allocations
     config.cache = false;
@@ -80,5 +66,4 @@ const nextConfig = {
   },
 };
 
-// Use ES module export
 export default nextConfig;
