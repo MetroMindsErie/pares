@@ -11,6 +11,47 @@ let sessionCache = {
 const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
 /**
+ * Save liked property to saved_properties table for compare tool
+ */
+const saveLikedPropertyToSavedProperties = async (userId, propertyData) => {
+  try {
+    // Check if already saved
+    const { data: existing } = await supabase
+      .from('saved_properties')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('property_id', propertyData.ListingKey)
+      .maybeSingle();
+
+    if (existing) {
+      // Already saved, no need to insert again
+      return;
+    }
+
+    // Insert into saved_properties
+    const { error } = await supabase
+      .from('saved_properties')
+      .insert({
+        user_id: userId,
+        property_id: propertyData.ListingKey,
+        listing_key: propertyData.ListingKey,
+        address: propertyData.UnparsedAddress,
+        price: propertyData.ListPrice,
+        image_url: propertyData.media || '/fallback-property.jpg',
+        saved_at: new Date().toISOString()
+      });
+
+    if (error) {
+      console.error('Error saving to saved_properties:', error);
+      // Don't throw - this is a secondary save, we don't want to break the swipe action
+    }
+  } catch (error) {
+    console.error('Error in saveLikedPropertyToSavedProperties:', error);
+    // Don't throw - this is a secondary save
+  }
+};
+
+/**
  * Clean and minimize property data for storage
  */
 const cleanPropertyData = (property) => {
@@ -167,6 +208,11 @@ export const saveSwipeAction = async (userId, swipeAction) => {
         throw error;
       }
 
+      // If swiped right (liked), also save to saved_properties for compare tool
+      if (swipeAction.direction === 'right') {
+        await saveLikedPropertyToSavedProperties(userId, cleanedPropertyData);
+      }
+
       return data;
     } else {
 
@@ -185,6 +231,11 @@ export const saveSwipeAction = async (userId, swipeAction) => {
       if (error) {
         console.error('Insert error:', error);
         throw error;
+      }
+
+      // If swiped right (liked), also save to saved_properties for compare tool
+      if (swipeAction.direction === 'right') {
+        await saveLikedPropertyToSavedProperties(userId, cleanedPropertyData);
       }
 
       return data;

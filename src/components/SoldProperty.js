@@ -57,7 +57,7 @@ export const SoldProperty = ({ property, taxData, historyData }) => {
         
         {/* Buyer Agent Section */}
         <div className="mb-8 pt-4">
-          <h2 className="text-xl font-semibold mb-4 text-gray-900">Your Buyer Agent</h2>
+          <h2 className="text-xl font-semibold mb-4 text-gray-900">Your Real Estate Professional</h2>
           <BuyerAgent />
         </div>
 

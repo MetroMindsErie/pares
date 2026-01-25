@@ -54,7 +54,7 @@ export const PendingProperty = ({ property, taxData, historyData }) => {
         </div>
         
          <div className="mb-8">
-          <h2 className="text-xl mt-6 font-semibold mb-4 text-gray-900">Your Buyer Agent</h2>
+          <h2 className="text-xl mt-6 font-semibold mb-4 text-gray-900">Your Real Estate Professional</h2>
           <BuyerAgent />
         </div>
         {/* Back button */}

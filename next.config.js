@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
+  reactStrictMode: false,
   // Clean up experimental section
   experimental: {},
   // Fix hydration issues by enabling more strict React behaviors

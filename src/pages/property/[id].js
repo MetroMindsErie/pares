@@ -604,7 +604,7 @@ const PropertyDetailWithTabs = ({ property, isSold, taxData, historyData }) => {
 
         {/* Buyer Agent Section - Always visible */}
         <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4 text-gray-900">Your Buyer Agent</h2>
+          <h2 className="text-xl font-semibold mb-4 text-gray-900">Your Real Estate Professional</h2>
           <BuyerAgent />
         </div>
 

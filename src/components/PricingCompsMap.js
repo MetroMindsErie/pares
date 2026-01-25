@@ -262,7 +262,12 @@ export default function PricingCompsMap({ subject, comps }) {
     <div className="mt-4">
       <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Map</div>
       <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-        <MapContainer center={center} zoom={initialZoom} style={{ height: 360, width: '100%' }} scrollWheelZoom={false}>
+        <MapContainer 
+          center={center} 
+          zoom={initialZoom} 
+          style={{ height: 360, width: '100%' }} 
+          scrollWheelZoom={false}
+        >
           <TileLayer
             attribution="&copy; OpenStreetMap contributors"
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

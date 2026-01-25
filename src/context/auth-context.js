@@ -226,8 +226,17 @@ export const AuthProvider = ({ children }) => {
     
     try {
       const { default: supabaseClient } = await import('../utils/supabaseClient');
-      const origin = window.location.origin;
-      const redirectUrl = `${origin}/auth/callback`;
+      
+      // Use current window origin to support local development
+      // This will be http://localhost:3001 in dev or your production URL in prod
+      const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+      const redirectUrl = `${currentOrigin}/auth/callback`;
+      
+      console.log('🔐 Auth Provider Login:', {
+        provider,
+        redirectUrl,
+        isDevelopment: currentOrigin.includes('localhost')
+      });
       
       const { data, error } = await supabaseClient.auth.signInWithOAuth({
         provider,

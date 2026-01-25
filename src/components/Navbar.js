@@ -11,8 +11,7 @@ export default function Navbar() {
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
   const [isCryptoInvestor, setIsCryptoInvestor] = useState(false);
-  const [walletConnected, setWalletConnected] = useState(false);
-  const [walletAddress, setWalletAddress] = useState('');
+  const [browseDropdownOpen, setBrowseDropdownOpen] = useState(false);
   
   // Use refs to track if useEffects have already run to prevent loops
   const roleCheckedRef = useRef(false);
@@ -35,7 +34,7 @@ export default function Navbar() {
     }
   }, [isClient, isAuthenticated, user?.id, refreshUserData, getUserRole]);
   
-  // Check wallet connection from localStorage - only run once
+  // Check role - only run once
   useEffect(() => {
     if (isClient && !roleCheckedRef.current) {
       roleCheckedRef.current = true;
@@ -43,13 +42,6 @@ export default function Navbar() {
       if (isAuthenticated && user) {
         const role = getUserRole();
         setIsCryptoInvestor(role === 'crypto_investor');
-      }
-      
-      // Check for saved wallet
-      const savedAddress = localStorage.getItem('walletAddress');
-      if (savedAddress) {
-        setWalletAddress(savedAddress);
-        setWalletConnected(true);
       }
     }
   }, [isClient, isAuthenticated, user, getUserRole]);
@@ -66,11 +58,6 @@ export default function Navbar() {
       
       // Clear any search cache immediately
       clearCachedSearchResults();
-      
-      // Clear wallet connection data
-      setWalletConnected(false);
-      setWalletAddress('');
-      localStorage.removeItem('walletAddress');
       
       // Clear other relevant caches
       for (const key in localStorage) {
@@ -110,48 +97,15 @@ export default function Navbar() {
     }
   };
 
-  // Connect to MetaMask
-  const connectWallet = async () => {
-    if (!window.ethereum) {
-      alert('MetaMask is not installed. Please install it to use this feature.');
-      return;
-    }
-
-    try {
-      // Request account access
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      
-      // Get the first account
-      const address = accounts[0];
-      setWalletAddress(address);
-      setWalletConnected(true);
-      
-      // Save to localStorage
-      localStorage.setItem('walletAddress', address);
-      
-      // Listen for account changes
-      window.ethereum.on('accountsChanged', function (accounts) {
-        if (accounts.length === 0) {
-          // User disconnected all accounts
-          setWalletConnected(false);
-          setWalletAddress('');
-          localStorage.removeItem('walletAddress');
-        } else {
-          // User switched accounts
-          setWalletAddress(accounts[0]);
-          localStorage.setItem('walletAddress', accounts[0]);
-        }
-      });
-    } catch (error) {
-      console.error('Error connecting to MetaMask:', error);
-    }
-  };
-
-  // Format wallet address for display
-  const formatAddress = (address) => {
-    if (!address) return '';
-    return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
-  };
+  // Browse Properties menu items (filtered based on current route)
+  const allBrowseMenuItems = [
+    { label: 'Home Search', href: '/', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
+    { label: 'AI Assisted Pricing', href: '/dashboard', icon: 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z' },
+    { label: 'Property Swiper', href: '/swipe', icon: 'M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01' }
+  ];
+  
+  // Filter out current page from browse menu
+  const browseMenuItems = allBrowseMenuItems.filter(item => item.href !== router.pathname);
   
   // Return early if not client-side yet to prevent hydration issues
   if (!isClient) {
@@ -225,33 +179,42 @@ export default function Navbar() {
             <div className="hidden sm:ml-6 sm:flex sm:items-center">
               {isAuthenticated ? (
                 <div className="flex items-center space-x-4">
-                  {/* MetaMask connection button for crypto investors */}
-                  {isCryptoInvestor && !walletConnected && (
+                  {/* Browse Properties Dropdown */}
+                  <div className="relative">
                     <button
-                      onClick={connectWallet}
-                      className={borderedButtonClass + " text-orange-600 hover:bg-white/6"} // consistent border + transparent bg
+                      onClick={() => setBrowseDropdownOpen(!browseDropdownOpen)}
+                      className={borderedButtonClass}
+                      onBlur={() => setTimeout(() => setBrowseDropdownOpen(false), 200)}
                     >
-                      <svg className="w-4 h-4 mr-1" viewBox="0 0 35 33" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M32.9582 1L19.8241 10.7183L22.2665 5.09944L32.9582 1Z" fill="#E2761B" stroke="#E2761B" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M2.65857 1L15.6948 10.809L13.3456 5.09944L2.65857 1Z" fill="#E4761B" stroke="#E4761B" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M28.2031 23.5314L24.7152 28.8138L32.2261 30.8426L34.3838 23.6396L28.2031 23.5314Z" fill="#E4761B" stroke="#E4761B" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M1.23291 23.6396L3.37902 30.8426L10.8899 28.8138L7.40203 23.5314L1.23291 23.6396Z" fill="#E4761B" stroke="#E4761B" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M10.4808 14.5149L8.3577 17.6507L15.8105 17.9753L15.5494 9.98901L10.4808 14.5149Z" fill="#E4761B" stroke="#E4761B" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M25.1205 14.5149L19.9684 9.8808L19.8246 17.9753L27.2659 17.6507L25.1205 14.5149Z" fill="#E4761B" stroke="#E4761B" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M10.8899 28.8138L15.3304 26.6684L11.5037 23.6828L10.8899 28.8138Z" fill="#E4761B" stroke="#E4761B" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M20.2769 26.6684L24.7152 28.8138L24.1014 23.6828L20.2769 26.6684Z" fill="#E4761B" stroke="#E4761B" strokeLinecap="round" strokeLinejoin="round"/>
+                      <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                       </svg>
-                      Connect Wallet
+                      Browse Properties
+                      <svg className={`w-4 h-4 ml-1 transition-transform ${browseDropdownOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
                     </button>
-                  )}
-                  
-                  {/* Show wallet address if connected */}
-                  {isCryptoInvestor && walletConnected && (
-                    <div className="flex items-center px-3 py-1.5 bg-gray-100 border border-gray-300 rounded">
-                      <span className="h-2 w-2 rounded-full bg-green-500 mr-2"></span>
-                      <span className="text-xs font-medium text-gray-700">{formatAddress(walletAddress)}</span>
-                    </div>
-                  )}
+                    
+                    {browseDropdownOpen && (
+                      <div className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+                        <div className="py-1">
+                          {browseMenuItems.map((item) => (
+                            <Link
+                              key={item.href}
+                              href={item.href}
+                              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                              onClick={() => setBrowseDropdownOpen(false)}
+                            >
+                              <svg className="w-5 h-5 mr-3 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
+                              </svg>
+                              {item.label}
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   
                   {authedLinks.map((link) => (
                     <Link key={link.href} href={link.href} className={borderedButtonClass}>
@@ -314,35 +277,24 @@ export default function Navbar() {
           <div className="pt-4 pb-3">
             {isAuthenticated ? (
               <div className="space-y-1 px-2">
-                {/* Mobile MetaMask connection button (flush, no divider) */}
-                {isCryptoInvestor && !walletConnected && (
-                  <button
-                    onClick={connectWallet}
-                    className="block w-full px-4 py-2 text-base font-medium rounded-md border border-gray-700 text-orange-400 bg-transparent hover:bg-gray-800 transition-colors"
-                  >
-                    <svg className="w-5 h-5 mr-2 inline-block" viewBox="0 0 35 33" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M32.9582 1L19.8241 10.7183L22.2665 5.09944L32.9582 1Z" fill="#E2761B" stroke="#E2761B" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M2.65857 1L15.6948 10.809L13.3456 5.09944L2.65857 1Z" fill="#E4761B" stroke="#E4761B" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M28.2031 23.5314L24.7152 28.8138L32.2261 30.8426L34.3838 23.6396L28.2031 23.5314Z" fill="#E4761B" stroke="#E4761B" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M1.23291 23.6396L3.37902 30.8426L10.8899 28.8138L7.40203 23.5314L1.23291 23.6396Z" fill="#E4761B" stroke="#E4761B" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M10.4808 14.5149L8.3577 17.6507L15.8105 17.9753L15.5494 9.98901L10.4808 14.5149Z" fill="#E4761B" stroke="#E4761B" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M25.1205 14.5149L19.9684 9.8808L19.8246 17.9753L27.2659 17.6507L25.1205 14.5149Z" fill="#E4761B" stroke="#E4761B" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M10.8899 28.8138L15.3304 26.6684L11.5037 23.6828L10.8899 28.8138Z" fill="#E4761B" stroke="#E4761B" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M20.2769 26.6684L24.7152 28.8138L24.1014 23.6828L20.2769 26.6684Z" fill="#E4761B" stroke="#E4761B" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    Connect MetaMask Wallet
-                  </button>
-                )}
-
-                {/* Show wallet address if connected (mobile) */}
-                {isCryptoInvestor && walletConnected && (
-                  <div className="block w-full px-4 py-2 text-base font-medium text-gray-300">
-                    <div className="flex items-center">
-                      <span className="h-2 w-2 rounded-full bg-green-500 mr-2"></span>
-                      <span>Wallet: {formatAddress(walletAddress)}</span>
-                    </div>
+                {/* Mobile Browse Properties Section */}
+                <div className="border-b border-gray-700 pb-2 mb-2">
+                  <div className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    Browse Properties
                   </div>
-                )}
+                  {browseMenuItems.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className="flex items-center px-4 py-2 text-base font-medium rounded-md text-gray-100 hover:bg-gray-800 transition-colors"
+                    >
+                      <svg className="w-5 h-5 mr-3 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
+                      </svg>
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
 
                 {authedLinks.map((link) => (
                   <Link

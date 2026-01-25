@@ -28,6 +28,10 @@ function pricingStorageKeyForUser(userId) {
   return userId ? `aiAssistant:lastPricing:v1:${userId}` : null;
 }
 
+function pricingHistoryKeyForUser(userId) {
+  return userId ? `aiAssistant:pricingHistory:v1:${userId}` : null;
+}
+
 const ASSISTANT_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
 
 const ROLE_OPTIONS = [
@@ -57,6 +61,8 @@ export function AIAssistantPanel() {
   const { user } = useAuth();
   const [tab, setTab] = useState('search');
   const [input, setInput] = useState('');
+  const [lastSearchQuery, setLastSearchQuery] = useState('');
+  const [pricingHistory, setPricingHistory] = useState([]);
   const [role, setRole] = useState('buyer');
   const [searchLoading, setSearchLoading] = useState(false);
   const [pricingLoading, setPricingLoading] = useState(false);
@@ -70,6 +76,7 @@ export function AIAssistantPanel() {
   const [pricingZip, setPricingZip] = useState('');
 
   const anyLoading = searchLoading || pricingLoading;
+  const isSearchComingSoon = true;
 
   const relaxationNotes = useMemo(() => {
     if (!Array.isArray(lastResponse?.reasoning)) return [];
@@ -99,10 +106,14 @@ export function AIAssistantPanel() {
 
     const key = storageKeyForUser(user.id);
     const pricingKey = pricingStorageKeyForUser(user.id);
+    const pricingHistoryKey = pricingHistoryKeyForUser(user.id);
     if (!key || !pricingKey) return;
 
     const searchEntry = cacheGetEntry(key, { ttlMs: ASSISTANT_CACHE_TTL_MS });
     const pricingEntry = cacheGetEntry(pricingKey, { ttlMs: ASSISTANT_CACHE_TTL_MS });
+    const pricingHistoryEntry = pricingHistoryKey
+      ? cacheGetEntry(pricingHistoryKey, { ttlMs: ASSISTANT_CACHE_TTL_MS })
+      : null;
 
     const candidates = [
       searchEntry?.data ? { kind: 'search', savedAt: searchEntry.savedAt, payload: searchEntry.data } : null,
@@ -115,6 +126,10 @@ export function AIAssistantPanel() {
       return;
     }
 
+    if (pricingHistoryEntry?.data && Array.isArray(pricingHistoryEntry.data)) {
+      setPricingHistory(pricingHistoryEntry.data.slice(0, 3));
+    }
+
     candidates.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
     const winner = candidates[0];
 
@@ -124,13 +139,16 @@ export function AIAssistantPanel() {
 
     if (winner.kind === 'search') {
       if (typeof winner.payload?.role === 'string' && winner.payload.role) setRole(winner.payload.role);
-      if (typeof winner.payload?.query === 'string' && winner.payload.query) setInput(winner.payload.query);
+      if (typeof winner.payload?.query === 'string' && winner.payload.query) {
+        setLastSearchQuery(winner.payload.query);
+        setInput('');
+      }
     }
 
     if (winner.kind === 'pricing') {
-      if (typeof winner.payload?.pricingStreet === 'string') setPricingStreet(winner.payload.pricingStreet);
-      if (typeof winner.payload?.pricingCounty === 'string') setPricingCounty(winner.payload.pricingCounty);
-      if (typeof winner.payload?.pricingZip === 'string') setPricingZip(winner.payload.pricingZip);
+      setPricingStreet('');
+      setPricingCounty('');
+      setPricingZip('');
     }
   }, [user?.id]);
 
@@ -147,11 +165,12 @@ export function AIAssistantPanel() {
   };
 
   const canSearch = useMemo(
-    () => input.trim().length > 0 && !anyLoading,
-    [input, anyLoading]
+    () => input.trim().length > 0 && !anyLoading && !isSearchComingSoon,
+    [input, anyLoading, isSearchComingSoon]
   );
 
   const onSearch = async () => {
+    if (isSearchComingSoon) return;
     if (!canSearch) return;
     setError(null);
     setSearchLoading(true);
@@ -184,7 +203,8 @@ export function AIAssistantPanel() {
 
       const json = await res.json();
       setLastResponse(json);
-
+      setLastSearchQuery(input.trim());
+      setInput('');
       if (user?.id) {
         const key = storageKeyForUser(user.id);
         if (key) {
@@ -258,7 +278,31 @@ export function AIAssistantPanel() {
 
       const json = await res.json();
       setLastResponse(json);
-
+      const newPricingItem = {
+        street: pricingStreet.trim(),
+        county: pricingCounty.trim(),
+        zip: pricingZip.trim(),
+        savedAt: new Date().toISOString(),
+      };
+      setPricingHistory((prev) => {
+        const next = [newPricingItem, ...(Array.isArray(prev) ? prev : [])]
+          .filter((item, idx, arr) =>
+            arr.findIndex((i) =>
+              i.street === item.street && i.county === item.county && i.zip === item.zip
+            ) === idx
+          )
+          .slice(0, 3);
+        if (user?.id) {
+          const pricingHistoryKey = pricingHistoryKeyForUser(user.id);
+          if (pricingHistoryKey) {
+            cacheSet(pricingHistoryKey, next, { ttlMs: ASSISTANT_CACHE_TTL_MS });
+          }
+        }
+        return next;
+      });
+      setPricingStreet('');
+      setPricingCounty('');
+      setPricingZip('');
       if (user?.id) {
         const pricingKey = pricingStorageKeyForUser(user.id);
         if (pricingKey) {
@@ -329,12 +373,15 @@ export function AIAssistantPanel() {
         <>
           {tab === 'search' ? (
             <>
+              <div className="mt-3 text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                AI Assisted Search is coming soon. Pricing (CMA) is available now.
+              </div>
               <div className="mt-3">
                 <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Role</label>
                 <select
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
-                  disabled={anyLoading}
+                  disabled={anyLoading || isSearchComingSoon}
                   className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 text-sm"
                 >
                   {ROLE_OPTIONS.map((opt) => (
@@ -345,16 +392,44 @@ export function AIAssistantPanel() {
                 </select>
               </div>
 
+              {lastSearchQuery ? (
+                <div className="mt-3 flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                  <span>Last search:</span>
+                  <button
+                    type="button"
+                    onClick={() => setInput(lastSearchQuery)}
+                    className="px-2 py-1 rounded-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-900"
+                  >
+                    {lastSearchQuery}
+                  </button>
+                </div>
+              ) : null}
+
               <div className="mt-3 flex gap-2">
-                <input
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') onSearch();
-                  }}
-                  placeholder="Try: under $250k in Erie with 3 beds"
-                  className="flex-1 px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 text-sm"
-                />
+                <div className="relative flex-1">
+                  <input
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') onSearch();
+                    }}
+                    placeholder="AI Assisted Search coming soon"
+                    disabled={isSearchComingSoon}
+                    className="w-full pr-9 px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 text-sm"
+                  />
+                  {input.trim() ? (
+                    <button
+                      type="button"
+                      onClick={() => setInput('')}
+                      className="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-600"
+                      aria-label="Clear search input"
+                    >
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  ) : null}
+                </div>
                 <button
                   onClick={onSearch}
                   disabled={!canSearch}
@@ -370,35 +445,98 @@ export function AIAssistantPanel() {
             <>
               <div className="mt-3">
                 <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Street address</label>
-                <input
-                  value={pricingStreet}
-                  onChange={(e) => setPricingStreet(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') onPricing();
-                  }}
-                  placeholder="818 Clifton Dr"
-                  className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 text-sm"
-                />
+                {pricingHistory.length > 0 ? (
+                  <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                    <span>Recent CMA:</span>
+                    {pricingHistory.map((item, index) => (
+                      <button
+                        key={`${item.street}-${item.county}-${item.zip}-${index}`}
+                        type="button"
+                        onClick={() => {
+                          setPricingStreet(item.street || '');
+                          setPricingCounty(item.county || '');
+                          setPricingZip(item.zip || '');
+                        }}
+                        className="px-2 py-1 rounded-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-900"
+                      >
+                        {(item.street || 'Address')}
+                        {item.county ? ` • ${item.county}` : ''}
+                        {item.zip ? ` ${item.zip}` : ''}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+                <div className="relative">
+                  <input
+                    value={pricingStreet}
+                    onChange={(e) => setPricingStreet(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') onPricing();
+                    }}
+                    placeholder="818 Clifton Dr"
+                    className="w-full pr-9 px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 text-sm"
+                  />
+                  {pricingStreet.trim() ? (
+                    <button
+                      type="button"
+                      onClick={() => setPricingStreet('')}
+                      className="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-600"
+                      aria-label="Clear street"
+                    >
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  ) : null}
+                </div>
               </div>
 
               <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-2">
                 <div>
                   <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">County</label>
-                  <input
-                    value={pricingCounty}
-                    onChange={(e) => setPricingCounty(e.target.value)}
-                    placeholder="Erie"
-                    className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 text-sm"
-                  />
+                  <div className="relative">
+                    <input
+                      value={pricingCounty}
+                      onChange={(e) => setPricingCounty(e.target.value)}
+                      placeholder="Erie"
+                      className="w-full pr-9 px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 text-sm"
+                    />
+                    {pricingCounty.trim() ? (
+                      <button
+                        type="button"
+                        onClick={() => setPricingCounty('')}
+                        className="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-600"
+                        aria-label="Clear county"
+                      >
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
                 <div>
                   <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">ZIP</label>
-                  <input
-                    value={pricingZip}
-                    onChange={(e) => setPricingZip(e.target.value)}
-                    placeholder="16503"
-                    className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 text-sm"
-                  />
+                  <div className="relative">
+                    <input
+                      value={pricingZip}
+                      onChange={(e) => setPricingZip(e.target.value)}
+                      placeholder="16503"
+                      className="w-full pr-9 px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 text-sm"
+                    />
+                    {pricingZip.trim() ? (
+                      <button
+                        type="button"
+                        onClick={() => setPricingZip('')}
+                        className="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-600"
+                        aria-label="Clear zip"
+                      >
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
                 <div>
                   <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">State</label>

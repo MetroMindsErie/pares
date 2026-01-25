@@ -86,13 +86,15 @@ export default function CompareModal({ open = false, onClose = () => {}, propert
     setSelectedProps(initial);
 
     // Enrich minimal saved_property rows by fetching full trestle/MLS details.
-    // If an item already contains MLS fields (BedroomsTotal, LivingArea, etc.) we skip fetching.
+    // Always fetch for saved properties since they only have minimal data (address, price, image)
     let mounted = true;
     const enrich = async () => {
       if (!properties || properties.length === 0) return;
       const toProcess = properties.slice(0, Math.min(MAX_COMPARE, properties.length));
 
+      // Check if any property is from saved_properties table (has saved_at field) or missing essential MLS data
       const needsLookup = toProcess.some(p => (
+        p.saved_at || // from saved_properties table - always needs enrichment
         !(p.BedroomsTotal || p.Bedrooms || p.LivingAreaSqFt || p.LivingArea || p.Media || p.mediaUrls)
       ));
 
@@ -104,17 +106,37 @@ export default function CompareModal({ open = false, onClose = () => {}, propert
           const listingKey = p.ListingKey || p.listing_key || p.ListingId || p.listing_id || p.property_id || p.propertyId;
           if (!listingKey) {
             // No listing key; return normalized original row
+            console.warn('CompareModal: property missing listing key', p);
             return normalizeProperty(p);
           }
 
-          try {
-            const full = await getPropertyDetails(String(listingKey));
-            // Merge full MLS record with the saved row, preferring MLS full fields
-            const merged = { ...p, ...(full || {}) };
-            return normalizeProperty(merged);
-          } catch (err) {
-            // On error, keep original minimal row
-            console.error('CompareModal: failed to fetch full property for', listingKey, err);
+          // Always fetch for saved properties (has saved_at) or properties missing essential data
+          const isSavedProperty = !!p.saved_at;
+          const hasMlsData = !!(p.BedroomsTotal || p.Bedrooms || p.LivingArea || p.Media);
+          
+          if (isSavedProperty || !hasMlsData) {
+            try {
+              console.log('CompareModal: Fetching full details for listing key:', listingKey);
+              const full = await getPropertyDetails(String(listingKey));
+              if (!full) {
+                console.warn('CompareModal: getPropertyDetails returned null/undefined for', listingKey);
+                return normalizeProperty(p);
+              }
+              // Merge full MLS record with the saved row, preferring MLS full fields
+              const merged = { ...p, ...full };
+              console.log('CompareModal: Successfully enriched property', listingKey, {
+                beds: merged.BedroomsTotal,
+                baths: merged.BathroomsTotalInteger,
+                sqft: merged.LivingArea
+              });
+              return normalizeProperty(merged);
+            } catch (err) {
+              // On error, keep original minimal row
+              console.error('CompareModal: failed to fetch full property for', listingKey, err);
+              return normalizeProperty(p);
+            }
+          } else {
+            // Already has MLS data, just normalize
             return normalizeProperty(p);
           }
         }));
@@ -218,11 +240,31 @@ export default function CompareModal({ open = false, onClose = () => {}, propert
   };
 
   const getPhotos = (p) => {
-    // Try several media/photo shapes produced by different providers (trestle/MLS, bespoke feeds)
+    let photos = [];
+    
+    // Try Media array of objects first (from Trestle API)
+    if (Array.isArray(p.Media) && p.Media.length) {
+      // Find preferred photo first
+      const preferred = p.Media.find(m => m.PreferredPhotoYN === true || m.preferredphotoyn === true);
+      const allPhotos = p.Media
+        .map(m => m.MediaURL || m.url || m.uri || m.src)
+        .filter(Boolean);
+      
+      // Put preferred photo first
+      if (preferred?.MediaURL) {
+        photos = [preferred.MediaURL, ...allPhotos.filter(url => url !== preferred.MediaURL)];
+      } else {
+        photos = allPhotos;
+      }
+      
+      if (photos.length) return photos;
+    }
+    
+    // Try several media/photo shapes produced by different providers
     const attempts = [
       () => getField(p, ['mediaUrls','media_urls','media_array','mediaArray']),
-      () => getField(p, ['media','Media','Media.MediaURL']),
-      () => getField(p, ['Media','Property.Media','Gallery']),
+      () => getField(p, ['media','Media.MediaURL']),
+      () => getField(p, ['Property.Media','Gallery']),
       () => getField(p, ['photos','images','imageUrls','image_url','imageUrl']),
       () => getField(p, ['thumb','thumbnail','thumbnail_url'])
     ];
@@ -238,11 +280,7 @@ export default function CompareModal({ open = false, onClose = () => {}, propert
         if (mapped.length) return mapped;
       }
     }
-    // Also try Media array of objects
-    if (Array.isArray(p.Media) && p.Media.length) {
-      const mapped = p.Media.map(m => m.MediaURL || m.url || m.uri || m.src).filter(Boolean);
-      if (mapped.length) return mapped;
-    }
+    
     // final fallback
     return ['/fallback-property.jpg'];
   };
@@ -277,30 +315,83 @@ export default function CompareModal({ open = false, onClose = () => {}, propert
     window.print();
   };
 
-  // attributes to show in grid grouped into sections
+  // attributes to show in grid grouped into sections - matching active/pending/sold templates
   const SECTIONS = [
-    { title: 'Basic', fields: [
+    { title: 'Basic Information', fields: [
       { key: 'address', label: 'Address', getter: getAddress },
-      { key: 'price', label: 'Price', getter: getPrice },
-      { key: 'beds', label: 'Beds', getter: getBeds },
-      { key: 'baths', label: 'Baths', getter: getBaths },
-      { key: 'sqft', label: 'Sq Ft', getter: getSqft },
+      { key: 'price', label: 'List Price', getter: (p) => {
+        const price = getPrice(p);
+        return price ? `$${Number(price).toLocaleString()}` : '—';
+      }},
+      { key: 'beds', label: 'Bedrooms', getter: getBeds },
+      { key: 'baths', label: 'Bathrooms', getter: getBaths },
+      { key: 'sqft', label: 'Living Area', getter: (p) => {
+        const sqft = getSqft(p);
+        return sqft ? `${Number(sqft).toLocaleString()} sq ft` : '—';
+      }},
+      { key: 'status', label: 'Status', getter: (p) => getField(p, ['StandardStatus','status','Status']) },
     ]},
-    { title: 'Details', fields: [
-      { key: 'lot', label: 'Lot Size', getter: getLot },
+    { title: 'Property Details', fields: [
+      { key: 'lot', label: 'Lot Size', getter: (p) => {
+        const acres = getLot(p);
+        if (acres) return `${acres} acres`;
+        const sqft = getField(p, ['LotSizeSquareFeet','lot_sqft']);
+        return sqft ? `${Number(sqft).toLocaleString()} sq ft` : '—';
+      }},
       { key: 'year', label: 'Year Built', getter: getYear },
       { key: 'dom', label: 'Days on Market', getter: getDom },
-      { key: 'type', label: 'Property Type', getter: (p) => p.property_type ?? p.type ?? '—' },
-      { key: 'parking', label: 'Parking', getter: (p) => p.parking ?? '—' },
+      { key: 'type', label: 'Property Type', getter: (p) => getField(p, ['PropertyType','property_type','type']) },
+      { key: 'stories', label: 'Stories', getter: (p) => getField(p, ['Stories','stories','StoriesTotal']) },
+      { key: 'garage', label: 'Garage', getter: (p) => getField(p, ['GarageSpaces','garage','GarageYN']) },
+      { key: 'parking', label: 'Parking Features', getter: (p) => getField(p, ['ParkingFeatures','parking','parkingFeatures']) },
     ]},
-    { title: 'Financial', fields: [
-      { key: 'hoa', label: 'HOA', getter: (p) => p.hoa_fees ?? p.hoa ?? '—' },
-      { key: 'taxes', label: 'Taxes', getter: (p) => p.taxes ?? p.tax_amount ?? '—' },
-      { key: 'last_sold', label: 'Last Sold', getter: (p) => p.last_sold_date ?? '—' },
+    { title: 'Interior Features', fields: [
+      { key: 'flooring', label: 'Flooring', getter: (p) => getField(p, ['Flooring','flooring']) },
+      { key: 'cooling', label: 'Cooling', getter: (p) => getField(p, ['Cooling','cooling']) },
+      { key: 'heating', label: 'Heating', getter: (p) => getField(p, ['Heating','heating']) },
+      { key: 'fireplace', label: 'Fireplace', getter: (p) => getField(p, ['FireplaceNumber','FireplaceYN','fireplace']) },
+      { key: 'appliances', label: 'Appliances', getter: (p) => getField(p, ['Appliances','appliances']) },
+      { key: 'interior', label: 'Interior Features', getter: (p) => getField(p, ['InteriorFeatures','interiorFeatures']) },
     ]},
-    { title: 'Neighborhood', fields: [
-      { key: 'agent', label: 'Agent', getter: (p) => p.agent_name ?? p.listing_agent ?? '—' },
-      { key: 'amenities', label: 'Amenities', getter: (p) => (p.amenities ?? p.features ?? p.tags ?? []).slice?.(0,6).join?.(', ') ?? '—' },
+    { title: 'Exterior Features', fields: [
+      { key: 'exterior', label: 'Exterior Features', getter: (p) => getField(p, ['ExteriorFeatures','exteriorFeatures']) },
+      { key: 'construction', label: 'Construction', getter: (p) => getField(p, ['ConstructionMaterials','construction']) },
+      { key: 'roof', label: 'Roof', getter: (p) => getField(p, ['Roof','RoofMaterialType','roof']) },
+      { key: 'foundation', label: 'Foundation', getter: (p) => getField(p, ['FoundationDetails','foundation']) },
+      { key: 'pool', label: 'Pool', getter: (p) => getField(p, ['PoolPrivateYN','pool','Pool']) },
+      { key: 'view', label: 'View', getter: (p) => getField(p, ['View','view']) },
+    ]},
+    { title: 'Financial & Utilities', fields: [
+      { key: 'taxes', label: 'Annual Taxes', getter: (p) => {
+        const tax = getField(p, ['TaxAnnualAmount','taxes','tax_amount']);
+        return tax ? `$${Number(tax).toLocaleString()}` : '—';
+      }},
+      { key: 'hoa', label: 'HOA Fees', getter: (p) => {
+        const hoa = getField(p, ['AssociationFee','hoa_fees','hoa']);
+        return hoa ? `$${Number(hoa).toLocaleString()}` : '—';
+      }},
+      { key: 'water', label: 'Water Source', getter: (p) => getField(p, ['WaterSource','waterSource','water']) },
+      { key: 'sewer', label: 'Sewer', getter: (p) => getField(p, ['Sewer','sewer']) },
+      { key: 'utilities', label: 'Utilities', getter: (p) => getField(p, ['Utilities','utilities']) },
+    ]},
+    { title: 'Location & Schools', fields: [
+      { key: 'city', label: 'City', getter: (p) => getField(p, ['City','city']) },
+      { key: 'county', label: 'County', getter: (p) => getField(p, ['CountyOrParish','county','County']) },
+      { key: 'zip', label: 'Zip Code', getter: (p) => getField(p, ['PostalCode','zip','postalCode']) },
+      { key: 'subdivision', label: 'Subdivision', getter: (p) => getField(p, ['SubdivisionName','Subdivision','subdivision']) },
+      { key: 'school_district', label: 'School District', getter: (p) => getField(p, ['SchoolDistrict','HighSchoolDistrict','schoolDistrict']) },
+      { key: 'high_school', label: 'High School', getter: (p) => getField(p, ['HighSchool','highSchool']) },
+      { key: 'middle_school', label: 'Middle School', getter: (p) => getField(p, ['MiddleOrJuniorSchool','middleschool','MiddleSchool']) },
+      { key: 'elementary', label: 'Elementary School', getter: (p) => getField(p, ['ElementarySchool','elementary']) },
+    ]},
+    { title: 'Listing Information', fields: [
+      { key: 'mls', label: 'MLS Number', getter: (p) => getField(p, ['ListingKey','mlsNumber','ListingId']) },
+      { key: 'list_date', label: 'List Date', getter: (p) => {
+        const date = getField(p, ['ListingContractDate','listDate','OnMarketDate']);
+        return date ? new Date(date).toLocaleDateString() : '—';
+      }},
+      { key: 'agent', label: 'Listing Agent', getter: (p) => getField(p, ['ListAgentFullName','agent_name','listing_agent']) },
+      { key: 'office', label: 'Listing Office', getter: (p) => getField(p, ['ListOfficeName','office','ListingOffice']) },
     ]},
   ];
 
