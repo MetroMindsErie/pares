@@ -24,7 +24,7 @@ export async function getPropertyById(listingKey) {
       {
         params: { 
           $filter: `ListingKey eq '${listingKey}'`,
-          $expand: 'Media,SaleHistory'  // Include sale history if available
+          $expand: 'Media'
         },
         headers: {
           Accept: 'application/json'
@@ -41,6 +41,7 @@ export async function getPropertyById(listingKey) {
 export async function getPropertyDetails(listingKey) {
   // Ensure we have a safe string and escape any single quotes for OData
   const rawKey = String(listingKey ?? '');
+  const isNumericKey = /^\d+$/.test(rawKey);
   const escapedKey = rawKey.replace(/'/g, "''"); // OData single-quote escape
 
   const token = await fetchToken().catch(err => {
@@ -55,22 +56,35 @@ export async function getPropertyDetails(listingKey) {
 
   // Build entity-path request but URL-encode the quoted key to avoid malformed URLs
   const entityQuoted = `'${escapedKey}'`;
-  const entityPath = `${API_BASE_URL}/trestle/odata/Property(${encodeURIComponent(entityQuoted)})`;
-  const filterValue = `ListingKey eq '${escapedKey}'`;
-  const listingIdFilter = `ListingId eq '${escapedKey}'`;
+  const entityPathQuoted = `${API_BASE_URL}/odata/Property(${encodeURIComponent(entityQuoted)})`;
+  const entityPathNumeric = isNumericKey ? `${API_BASE_URL}/odata/Property(${rawKey})` : null;
+  const filterValueQuoted = `ListingKey eq '${escapedKey}'`;
+  const filterValueNumeric = isNumericKey ? `ListingKey eq ${rawKey}` : null;
+  const listingIdFilterQuoted = `ListingId eq '${escapedKey}'`;
+  const listingIdFilterNumeric = isNumericKey ? `ListingId eq ${rawKey}` : null;
 
   const attempts = [
-    // 1) Entity key path (URL-encoded quoted key) - Active properties
-    async () => axios.get(entityPath, { params: { $expand: 'Media,SaleHistory' }, headers }),
-    // 2) $filter by ListingKey - Active properties
-    async () => axios.get(`${API_BASE_URL}/trestle/odata/Property`, { params: { $filter: filterValue, $expand: 'Media,SaleHistory' }, headers }),
-    // 3) $filter by ListingId (alternate field) - Active properties
-    async () => axios.get(`${API_BASE_URL}/trestle/odata/Property`, { params: { $filter: listingIdFilter, $expand: 'Media,SaleHistory' }, headers }),
-    // 4) ResidentialProperty endpoint - for closed/sold properties
-    async () => axios.get(`${API_BASE_URL}/trestle/odata/ResidentialProperty`, { params: { $filter: filterValue, $top: 1, $expand: 'Media,SaleHistory' }, headers }),
-    // 5) ResidentialProperty with ListingId
-    async () => axios.get(`${API_BASE_URL}/trestle/odata/ResidentialProperty`, { params: { $filter: listingIdFilter, $top: 1, $expand: 'Media,SaleHistory' }, headers }),
-  ];
+    // 1) Entity key path (numeric key) - Active properties
+    entityPathNumeric && (async () => axios.get(entityPathNumeric, { params: { $expand: 'Media' }, headers })),
+    // 2) Entity key path (quoted key) - Active properties
+    async () => axios.get(entityPathQuoted, { params: { $expand: 'Media' }, headers }),
+    // 3) $filter by ListingKey (numeric)
+    filterValueNumeric && (async () => axios.get(`${API_BASE_URL}/odata/Property`, { params: { $filter: filterValueNumeric, $top: 1, $expand: 'Media' }, headers })),
+    // 4) $filter by ListingKey (quoted)
+    async () => axios.get(`${API_BASE_URL}/odata/Property`, { params: { $filter: filterValueQuoted, $top: 1, $expand: 'Media' }, headers }),
+    // 5) $filter by ListingId (numeric)
+    listingIdFilterNumeric && (async () => axios.get(`${API_BASE_URL}/odata/Property`, { params: { $filter: listingIdFilterNumeric, $top: 1, $expand: 'Media' }, headers })),
+    // 6) $filter by ListingId (quoted)
+    async () => axios.get(`${API_BASE_URL}/odata/Property`, { params: { $filter: listingIdFilterQuoted, $top: 1, $expand: 'Media' }, headers }),
+    // 7) ResidentialProperty endpoint - for closed/sold properties (ListingKey numeric)
+    filterValueNumeric && (async () => axios.get(`${API_BASE_URL}/odata/ResidentialProperty`, { params: { $filter: filterValueNumeric, $top: 1, $expand: 'Media' }, headers })),
+    // 8) ResidentialProperty endpoint - for closed/sold properties (ListingKey quoted)
+    async () => axios.get(`${API_BASE_URL}/odata/ResidentialProperty`, { params: { $filter: filterValueQuoted, $top: 1, $expand: 'Media' }, headers }),
+    // 9) ResidentialProperty with ListingId numeric
+    listingIdFilterNumeric && (async () => axios.get(`${API_BASE_URL}/odata/ResidentialProperty`, { params: { $filter: listingIdFilterNumeric, $top: 1, $expand: 'Media' }, headers })),
+    // 10) ResidentialProperty with ListingId quoted
+    async () => axios.get(`${API_BASE_URL}/odata/ResidentialProperty`, { params: { $filter: listingIdFilterQuoted, $top: 1, $expand: 'Media' }, headers })
+  ].filter(Boolean);
 
   for (let i = 0; i < attempts.length; i++) {
     try {

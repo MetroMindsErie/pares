@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/auth-context';
 import supabase from '../lib/supabase-setup';
 
-const SavePropertyButton = ({ propertyId, listingKey, address, price, imageUrl }) => {
+const SavePropertyButton = ({ propertyId, listingKey, address, price, imageUrl, propertyData }) => {
   const { user } = useAuth();
   const [isSaved, setIsSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -59,18 +59,25 @@ const SavePropertyButton = ({ propertyId, listingKey, address, price, imageUrl }
         if (deleteError) throw deleteError;
         setIsSaved(false);
       } else {
-        // Add to saved properties
+        // Add to saved properties with full property data for better comparison
+        const dataToSave = {
+          user_id: user.id,
+          property_id: propertyId,
+          listing_key: listingKey,
+          address: address,
+          price: price,
+          image_url: imageUrl || '/fallback-property.jpg',
+          saved_at: new Date().toISOString()
+        };
+
+        // Store full property data as JSON if available (for accurate comparisons)
+        if (propertyData && typeof propertyData === 'object') {
+          dataToSave.property_data = propertyData;
+        }
+
         const { error: insertError } = await supabase
           .from('saved_properties')
-          .insert({
-            user_id: user.id,
-            property_id: propertyId,
-            listing_key: listingKey,
-            address: address,
-            price: price,
-            image_url: imageUrl || '/fallback-property.jpg', // Add image URL
-            saved_at: new Date().toISOString()
-          });
+          .insert(dataToSave);
 
         if (insertError) throw insertError;
         setIsSaved(true);

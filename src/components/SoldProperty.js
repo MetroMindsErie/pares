@@ -97,6 +97,7 @@ export const SoldProperty = ({ property, taxData, historyData }) => {
                 address={property.UnparsedAddress}
                 price={property.ClosePrice || property.ListPrice}
                 imageUrl={property.mediaUrls?.[0] || '/fallback-property.jpg'}
+                propertyData={property}
               />
             </div>
           </div>

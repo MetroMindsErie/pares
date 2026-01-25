@@ -103,6 +103,7 @@ export const ActiveProperty = ({ property, contextLoading, taxData, historyData 
                   address={property.UnparsedAddress}
                   price={property.ListPrice}
                   imageUrl={property.mediaUrls?.[0] || '/fallback-property.jpg'}
+                  propertyData={property}
                 />
               </div>
             </div>
