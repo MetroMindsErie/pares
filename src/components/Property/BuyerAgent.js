@@ -7,9 +7,9 @@ const BuyerAgent = ({ className = "" }) => {
     name: 'John Easter',
     email: 'easterjo106@yahoo.com',
     phone: '814-873-5810',
-    agency: 'Pennington Lines',
+    agency: 'Pennington Lines Real Estate',
     photo: '/dad.PNG',
-    title: 'Buyer Agent'
+    title: 'Real Estate Agent'
   };
 
   const handleContact = (type, value) => {
@@ -35,17 +35,9 @@ const BuyerAgent = ({ className = "" }) => {
         </div>
         
         <div className="flex-1">
-          <div className="flex items-center space-x-2 mb-2">
-            <h3 className="text-lg font-semibold text-gray-900">{buyerAgent.name}</h3>
-            <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
-              {buyerAgent.title}
-            </span>
-          </div>
-          
-          <div className="flex items-center text-gray-600 mb-2">
-            <FontAwesomeIcon icon={faBuilding} className="w-4 h-4 mr-2" />
-            <span className="text-sm">{buyerAgent.agency}</span>
-          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-1">{buyerAgent.name}</h3>
+          <p className="text-lg font-semibold text-gray-700 mb-1">{buyerAgent.title}</p>
+          <p className="text-lg font-semibold text-gray-700 mb-3">{buyerAgent.agency}</p>
           
           <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0">
             <button

@@ -7,6 +7,7 @@ import ImageGallery from './ImageGallery';
 import Layout from './Layout';
 import BackToListingsButton from './BackToListingsButton';
 import BuyerAgent from './Property/BuyerAgent';
+import CompanyHeader from './Property/CompanyHeader';
 import SavePropertyButton from './SavePropertyButton';
 import { TaxInformation, HistoryInformation } from './Property/PropertyDataTabs';
 import { NeighborhoodCommunity, SchoolsEducation } from './Property/PropertyDataTabs';
@@ -47,6 +48,11 @@ export const PendingProperty = ({ property, taxData, historyData }) => {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
+        {/* Company Header */}
+        <div className="mb-6">
+          <CompanyHeader />
+        </div>
+        
          <div className="mb-8">
           <h2 className="text-xl mt-6 font-semibold mb-4 text-gray-900">Your Buyer Agent</h2>
           <BuyerAgent />
