@@ -41,6 +41,26 @@ const ROLE_OPTIONS = [
   { value: 'realtor', label: 'Realtor' },
 ];
 
+function buildZipRange(start, end) {
+  const out = [];
+  for (let i = start; i <= end; i += 1) {
+    out.push(String(i));
+  }
+  return out;
+}
+
+const COUNTY_OPTIONS = [
+  { value: 'Erie', label: 'Erie' },
+  { value: 'Crawford', label: 'Crawford' },
+  { value: 'Warren', label: 'Warren' },
+];
+
+const COUNTY_ZIP_OPTIONS = {
+  Erie: buildZipRange(16501, 16515),
+  Crawford: ['16316', '16424', '16327', '16406', '16260', '16404', '16111'],
+  Warren: ['16365', '16371', '16345', '16350', '16347', '16351', '16313', '16340', '16312', '16329', '16352', '16402', '16405', '16416', '16420', '16436'],
+};
+
 function LoadingRow({ label }) {
   return (
     <div className="mt-3 flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
@@ -84,6 +104,11 @@ export function AIAssistantPanel() {
       .filter((r) => typeof r === 'string' && r.startsWith('Relaxed search:'))
       .slice(0, 3);
   }, [lastResponse?.reasoning]);
+
+  const pricingZipOptions = useMemo(() => {
+    const key = COUNTY_OPTIONS.find((c) => c.value === pricingCounty)?.value || '';
+    return COUNTY_ZIP_OPTIONS[key] || [];
+  }, [pricingCounty]);
 
   const pricingMapData = useMemo(() => {
     const subject = lastResponse?.subject;
@@ -494,49 +519,41 @@ export function AIAssistantPanel() {
               <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-2">
                 <div>
                   <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">County</label>
-                  <div className="relative">
-                    <input
-                      value={pricingCounty}
-                      onChange={(e) => setPricingCounty(e.target.value)}
-                      placeholder="Erie"
-                      className="w-full pr-9 px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 text-sm"
-                    />
-                    {pricingCounty.trim() ? (
-                      <button
-                        type="button"
-                        onClick={() => setPricingCounty('')}
-                        className="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-600"
-                        aria-label="Clear county"
-                      >
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    ) : null}
-                  </div>
+                  <select
+                    value={pricingCounty}
+                    onChange={(e) => {
+                      const nextCounty = e.target.value;
+                      setPricingCounty(nextCounty);
+                      if (!nextCounty) {
+                        setPricingZip('');
+                        return;
+                      }
+                      const allowed = COUNTY_ZIP_OPTIONS[nextCounty] || [];
+                      if (pricingZip && !allowed.includes(pricingZip)) {
+                        setPricingZip('');
+                      }
+                    }}
+                    className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 text-sm"
+                  >
+                    <option value="">Select county</option>
+                    {COUNTY_OPTIONS.map((c) => (
+                      <option key={c.value} value={c.value}>{c.label}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">ZIP</label>
-                  <div className="relative">
-                    <input
-                      value={pricingZip}
-                      onChange={(e) => setPricingZip(e.target.value)}
-                      placeholder="16503"
-                      className="w-full pr-9 px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 text-sm"
-                    />
-                    {pricingZip.trim() ? (
-                      <button
-                        type="button"
-                        onClick={() => setPricingZip('')}
-                        className="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-600"
-                        aria-label="Clear zip"
-                      >
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    ) : null}
-                  </div>
+                  <select
+                    value={pricingZip}
+                    onChange={(e) => setPricingZip(e.target.value)}
+                    disabled={!pricingCounty}
+                    className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 text-sm disabled:opacity-60"
+                  >
+                    <option value="">{pricingCounty ? 'Select zip' : 'Select county first'}</option>
+                    {pricingZipOptions.map((zip) => (
+                      <option key={zip} value={zip}>{zip}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">State</label>
