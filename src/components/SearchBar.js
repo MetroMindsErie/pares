@@ -7,7 +7,13 @@ import { logSearchQuery } from '../services/userActivityService';
 import { generatePropertySuggestions } from '../services/aiSuggestService';
 import { fetchLatestSuggestions } from '../lib/searchCache';
 
-const SearchBar = ({ onSearchResults }) => {
+const SearchBar = ({
+  onSearchResults,
+  onSearchStart,
+  requireSpecialCondition = false,
+  initialParams = {},
+  submitLabel = 'Search'
+}) => {
   const router = useRouter();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -15,6 +21,7 @@ const SearchBar = ({ onSearchResults }) => {
   const [searchParams, setSearchParams] = useState({
     location: '',
     status: '',
+    specialListingConditions: '',
     minPrice: '',
     maxPrice: '',
     beds: '',
@@ -23,6 +30,7 @@ const SearchBar = ({ onSearchResults }) => {
     minSqFt: '',
     maxSqFt: '',
     soldWithin: '', // Add new state for sold timeline
+    ...initialParams,
   });
 
   const handleChange = (e) => {
@@ -38,7 +46,13 @@ const SearchBar = ({ onSearchResults }) => {
     setLoading(true);
     setError(null);
     
+    // Notify parent component that search is starting
+    if (onSearchStart) {
+      onSearchStart();
+    }
+    
     try {
+
       // Filter out empty values to create a clean query object
       const query = Object.entries(searchParams)
         .filter(([_, value]) => value !== '')
@@ -57,6 +71,7 @@ const SearchBar = ({ onSearchResults }) => {
       }
       
       const { properties, nextLink } = await searchProperties(query);
+      
       logSearchQuery(user?.id, searchParams, properties?.length || 0);
       // Store last search params for dashboard regeneration
       try { localStorage.setItem('lastSearchParams', JSON.stringify(searchParams)); } catch {}
@@ -103,7 +118,7 @@ const SearchBar = ({ onSearchResults }) => {
           </div>
         </div>
         
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-7 gap-2 sm:gap-3">
           {/* Status Filter */}
           <div className="relative col-span-2 sm:col-span-1">
             <select
@@ -119,6 +134,32 @@ const SearchBar = ({ onSearchResults }) => {
               <option value="Pending">Pending</option>
               <option value="Closed">Sold</option>
               <option value="ComingSoon">Coming Soon</option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1.5 sm:px-2 text-blue-500">
+              <svg className="h-3 w-3 sm:h-4 sm:w-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                <path d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
+          </div>
+
+          {/* Special Listing Conditions */}
+          <div className="relative col-span-2 sm:col-span-1">
+            <select
+              id="specialListingConditions"
+              name="specialListingConditions"
+              value={searchParams.specialListingConditions}
+              onChange={handleChange}
+              className="w-full px-2.5 sm:px-3 md:px-4 py-2 sm:py-2.5 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-blue-500 text-gray-700 dark:text-gray-200 text-xs sm:text-sm appearance-none transition-all duration-300"
+            >
+              <option value="">Special Conditions</option>
+              <option value="Short Sale">Short Sale</option>
+              <option value="In Foreclosure">In Foreclosure</option>
+              <option value="Real Estate Owned">REO / Bank Owned</option>
+              <option value="Auction">Auction</option>
+              <option value="Probate Listing">Probate Listing</option>
+              <option value="Bankruptcy Property">Bankruptcy Property</option>
+              <option value="HUD Owned">HUD Owned</option>
+              <option value="Notice Of Default">Notice Of Default</option>
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1.5 sm:px-2 text-blue-500">
               <svg className="h-3 w-3 sm:h-4 sm:w-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
@@ -374,7 +415,7 @@ const SearchBar = ({ onSearchResults }) => {
                 <svg className="w-4 h-4 mr-2 transform group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                 </svg>
-                Search
+                {submitLabel}
               </>
             )}
           </button>

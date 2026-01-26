@@ -96,6 +96,7 @@ export default function CompareModal({ open = false, onClose = () => {}, propert
       // Check if properties need enrichment
       // Skip if property has property_data field OR has full MLS fields already
       const needsLookup = toProcess.some(p => {
+        if (p.force_enrich) return true;
         // If saved property has full property_data, no need to enrich
         if (p.property_data && typeof p.property_data === 'object') {
           return false;
@@ -153,8 +154,9 @@ export default function CompareModal({ open = false, onClose = () => {}, propert
           // Fetch from API for saved properties without property_data or properties missing essential data
           const isSavedProperty = !!p.saved_at;
           const hasMlsData = !!(p.BedroomsTotal || p.Bedrooms || p.LivingArea || p.Media);
+          const forceEnrich = !!p.force_enrich;
           
-          if (isSavedProperty || !hasMlsData) {
+          if (forceEnrich || isSavedProperty || !hasMlsData) {
             try {
               console.log('CompareModal: Fetching full details for listing key:', listingKey);
               const full = await getPropertyDetails(String(listingKey));

@@ -132,7 +132,7 @@ function FitOnceAcker({ subjectPoint, onAck }) {
   return null;
 }
 
-export default function PricingCompsMap({ subject, comps }) {
+export default function PricingCompsMap({ subject, comps, onToggleComp, selectedCompIds }) {
   const [geoSubject, setGeoSubject] = useState(null);
   const [geoComps, setGeoComps] = useState(() => new Map());
   const geocodeQueueRef = useRef(Promise.resolve());
@@ -322,13 +322,22 @@ export default function PricingCompsMap({ subject, comps }) {
                           {c?.sqft ? ` • ${Math.round(c.sqft).toLocaleString()} sqft` : ''}
                         </div>
                         {c?.id ? (
-                          <div className="mt-2">
+                          <div className="mt-2 flex items-center gap-3">
                             <a
                               href={`/property/${encodeURIComponent(String(c.id))}`}
                               className="text-indigo-600 hover:underline"
                             >
                               View property
                             </a>
+                            {onToggleComp ? (
+                              <button
+                                type="button"
+                                onClick={() => onToggleComp(c)}
+                                className="text-indigo-600 hover:underline"
+                              >
+                                {selectedCompIds?.has(String(c.id)) ? 'Remove' : 'Compare'}
+                              </button>
+                            ) : null}
                           </div>
                         ) : null}
                       </div>

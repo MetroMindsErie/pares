@@ -98,17 +98,33 @@ const HomePage = ({ featuredListings = [], heroContent }) => {
   }, []);
 
   // Enhanced handler for search results with caching
-  const handleSearchResults = (properties, nextLinkUrl) => {
-    ('Search results received:', properties); // Debug log
-    ('Properties count:', properties?.length); // Debug log
-    
+  const handleSearchResults = (propertiesOrPayload, nextLinkUrl) => {
     setIsSearching(false);
-    setSearchResults(properties);
-    setNextLink(nextLinkUrl);
+
+    // Defensive: some callers may pass `{ properties: [...] }`, `{ listings: [...] }`, etc.
+    const extracted = Array.isArray(propertiesOrPayload)
+      ? propertiesOrPayload
+      : (Array.isArray(propertiesOrPayload?.properties)
+          ? propertiesOrPayload.properties
+          : (Array.isArray(propertiesOrPayload?.listings)
+              ? propertiesOrPayload.listings
+              : (Array.isArray(propertiesOrPayload?.results)
+                  ? propertiesOrPayload.results
+                  : [])));
+
+    const effectiveNext =
+      nextLinkUrl ||
+      propertiesOrPayload?.nextLink ||
+      propertiesOrPayload?.next ||
+      propertiesOrPayload?.loadMoreUrl ||
+      null;
+
+    setSearchResults(extracted);
+    setNextLink(effectiveNext);
     
     // Cache the search results
-    if (properties && properties.length > 0) {
-      cacheSearchResults(properties);
+    if (extracted && extracted.length > 0) {
+      cacheSearchResults(extracted);
       
       setTimeout(() => {
         searchResultsRef.current?.scrollIntoView({ 

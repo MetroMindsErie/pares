@@ -5,6 +5,7 @@ import PropertyView from '../../components/Property/PropertyView';
 import BuyerAgent from '../../components/Property/BuyerAgent';
 import { PendingProperty } from '../../components/PendingProperty';
 import { ActiveProperty } from '../../components/ActiveProperty';
+import { SpecialConditionsProperty } from '../../components/SpecialConditionsProperty';
 import { fetchTrestleOData } from '../../lib/trestleServer';
 import { getMediaUrls } from '../../utils/mediaHelpers';
 
@@ -857,6 +858,18 @@ export default function PropertyDetail({ property, isSold, taxData, historyData 
 
   // Route to appropriate component based on status
   const status = property.StandardStatus;
+
+  // Special Listing Conditions template (Flags enum can serialize as string or array)
+  const rawSpecial = property.SpecialListingConditions ?? property.specialListingConditions;
+  const specialList = splitListSafe(rawSpecial)
+    .map((v) => String(v).trim())
+    .filter(Boolean)
+    .filter((v) => {
+      const lower = v.toLowerCase();
+      return lower !== 'standard' && lower !== 'none';
+    });
+  const hasSpecialConditions = specialList.length > 0;
+
   if (status === 'Closed') {
     return (
       <>
@@ -865,6 +878,16 @@ export default function PropertyDetail({ property, isSold, taxData, historyData 
           <meta name="description" content={`View detailed information for ${property.address || 'this property'} including photos, features, and pricing.`} />
         </Head>
         <SoldProperty property={property} taxData={taxData} historyData={historyData} />
+      </>
+    );
+  } else if (hasSpecialConditions) {
+    return (
+      <>
+        <Head>
+          <title>{property.address || 'Property Details'} | Erie Pennsylvania Real Estate</title>
+          <meta name="description" content={`View detailed information for ${property.address || 'this property'} including photos, features, and pricing.`} />
+        </Head>
+        <SpecialConditionsProperty property={property} taxData={taxData} historyData={historyData} />
       </>
     );
   } else if (status === 'Pending' || status === 'ActiveUnderContract') {

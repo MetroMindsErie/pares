@@ -5,6 +5,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import supabase from '../lib/supabase-setup';
 import { useAuth } from '../context/auth-context';
+import CompareModal from './Dashboard/CompareModal';
 import { clearUserActivity, pushUserActivity } from '../utils/activityStorage';
 import { cacheGetEntry, cacheRemove, cacheSet } from '../utils/clientCache';
 
@@ -94,6 +95,10 @@ export function AIAssistantPanel() {
   const [pricingStreet, setPricingStreet] = useState('');
   const [pricingCounty, setPricingCounty] = useState('');
   const [pricingZip, setPricingZip] = useState('');
+  const [isCompareOpen, setIsCompareOpen] = useState(false);
+  const [compareProps, setCompareProps] = useState([]);
+  const [selectedComps, setSelectedComps] = useState([]);
+  const [includeSubjectInCompare, setIncludeSubjectInCompare] = useState(true);
 
   const anyLoading = searchLoading || pricingLoading;
   const isSearchComingSoon = true;
@@ -110,6 +115,76 @@ export function AIAssistantPanel() {
     return COUNTY_ZIP_OPTIONS[key] || [];
   }, [pricingCounty]);
 
+  const handleCompareComp = (comp) => {
+    if (!comp?.id) return;
+    setSelectedComps((prev) => {
+      const id = String(comp.id);
+      const exists = prev.some((c) => String(c?.id) === id);
+      if (exists) return prev.filter((c) => String(c?.id) !== id);
+      return [...prev, comp];
+    });
+  };
+
+  const handleCompareSelected = () => {
+    const subject = pricingMapData?.subject || null;
+    const subjectComparable = Boolean(subject?.id);
+    if (includeSubjectInCompare && subjectComparable) {
+      if (!subject?.address || !String(subject.address).trim()) {
+        setError('Compare needs a subject address. Please try a different address.');
+        return;
+      }
+    }
+
+    const comps = Array.isArray(selectedComps) ? selectedComps : [];
+    if (comps.length < (includeSubjectInCompare && subjectComparable ? 1 : 2)) {
+      setError('Select at least two comps, or include the subject plus one comp.');
+      return;
+    }
+
+    const subjectPayload = subjectComparable ? {
+      ListingKey: String(subject.id || ''),
+      UnparsedAddress: subject.address,
+      City: subject.city,
+      StateOrProvince: subject.state,
+      PostalCode: subject.zip,
+      ListPrice: subject.price,
+      BedroomsTotal: subject.beds,
+      BathroomsTotalInteger: subject.baths,
+      LivingArea: subject.sqft,
+      mediaUrls: subject.media_urls || [],
+      force_enrich: true,
+    } : null;
+
+    const compPayloads = comps
+      .filter((c) => c?.id)
+      .map((c) => ({
+        ListingKey: String(c.id || ''),
+        UnparsedAddress: c.address,
+        City: c.city,
+        StateOrProvince: c.state,
+        PostalCode: c.zip,
+        ListPrice: c.price,
+        BedroomsTotal: c.beds,
+        BathroomsTotalInteger: c.baths,
+        LivingArea: c.sqft,
+        mediaUrls: c.media_urls || [],
+        force_enrich: true,
+      }));
+
+    const toCompare = [
+      ...(includeSubjectInCompare && subjectPayload ? [subjectPayload] : []),
+      ...compPayloads,
+    ];
+
+    if (toCompare.length < 2) {
+      setError('Compare needs at least two valid properties.');
+      return;
+    }
+
+    setCompareProps(toCompare);
+    setIsCompareOpen(true);
+  };
+
   const pricingMapData = useMemo(() => {
     const subject = lastResponse?.subject;
     const listings = lastResponse?.listings;
@@ -125,6 +200,10 @@ export function AIAssistantPanel() {
 
     return { subject, comps: listings };
   }, [lastResponse?.subject, lastResponse?.listings]);
+
+  useEffect(() => {
+    setSelectedComps([]);
+  }, [lastResponse?.listings]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -643,35 +722,85 @@ export function AIAssistantPanel() {
               ) : null}
 
               {tab === 'pricing' && pricingMapData ? (
-                <PricingCompsMap subject={pricingMapData.subject} comps={pricingMapData.comps} />
+                <PricingCompsMap
+                  subject={pricingMapData.subject}
+                  comps={pricingMapData.comps}
+                  onToggleComp={handleCompareComp}
+                  selectedCompIds={new Set(selectedComps.map((c) => String(c?.id || '')))}
+                />
               ) : null}
 
-              <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Listings</div>
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">Listings</div>
+                <button
+                  type="button"
+                  onClick={handleCompareSelected}
+                  disabled={selectedComps.length === 0}
+                  className="text-xs px-3 py-1.5 rounded-md bg-indigo-600 text-white disabled:opacity-60"
+                >
+                  Compare selected ({selectedComps.length})
+                </button>
+              </div>
+
+              {pricingMapData?.subject?.id ? (
+                <label className="mb-2 flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300">
+                  <input
+                    type="checkbox"
+                    checked={includeSubjectInCompare}
+                    onChange={(e) => setIncludeSubjectInCompare(e.target.checked)}
+                  />
+                  Include subject in comparison
+                </label>
+              ) : (
+                <div className="mb-2 text-xs text-gray-500 dark:text-gray-400">
+                  Subject is not in MLS; comparing comps only.
+                </div>
+              )}
+
               <div className="space-y-2">
                 {lastResponse.listings.map((l) => (
-                  <Link
+                  <div
                     key={l.id}
-                    href={`/property/${encodeURIComponent(l.id)}`}
-                    className="flex items-center justify-between gap-3 border border-gray-200 dark:border-gray-700 rounded-md p-3 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800"
+                    className="flex items-center justify-between gap-3 border border-gray-200 dark:border-gray-700 rounded-md p-3 bg-white dark:bg-gray-900"
                   >
-                    <div className="min-w-0">
-                      <div className="text-sm text-gray-900 dark:text-gray-100 truncate">
-                        {l.address}{l.city ? ` • ${l.city}` : ''}
+                    <label className="flex items-start gap-3 min-w-0">
+                      <input
+                        type="checkbox"
+                        checked={selectedComps.some((c) => String(c?.id) === String(l?.id))}
+                        onChange={() => handleCompareComp(l)}
+                        className="mt-1"
+                      />
+                      <div className="min-w-0">
+                        <div className="text-sm text-gray-900 dark:text-gray-100 truncate">
+                          {l.address}{l.city ? ` • ${l.city}` : ''}
+                        </div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">
+                          {l.property_type ? l.property_type : ''}
+                          {typeof l.price === 'number' ? ` • $${Number(l.price).toLocaleString()}` : ''}
+                          {typeof l.beds === 'number' ? ` • ${l.beds} bd` : ''}
+                          {typeof l.baths === 'number' ? ` • ${l.baths} ba` : ''}
+                          {l.status ? ` • ${l.status}` : ''}
+                        </div>
                       </div>
-                      <div className="text-xs text-gray-600 dark:text-gray-400">
-                        {l.property_type ? l.property_type : ''}
-                        {typeof l.price === 'number' ? ` • $${Number(l.price).toLocaleString()}` : ''}
-                        {typeof l.beds === 'number' ? ` • ${l.beds} bd` : ''}
-                        {typeof l.baths === 'number' ? ` • ${l.baths} ba` : ''}
-                        {l.status ? ` • ${l.status}` : ''}
-                      </div>
-                    </div>
-                    <div className="shrink-0 text-xs text-indigo-600 dark:text-indigo-400">View</div>
-                  </Link>
+                    </label>
+                    <Link
+                      href={`/property/${encodeURIComponent(l.id)}`}
+                      className="shrink-0 text-xs text-indigo-600 dark:text-indigo-400"
+                    >
+                      View
+                    </Link>
+                  </div>
                 ))}
               </div>
             </div>
           ) : null}
+
+          <CompareModal
+            open={isCompareOpen}
+            onClose={() => setIsCompareOpen(false)}
+            properties={compareProps}
+            allSelectedIds={compareProps.map((p) => String(p?.ListingKey || p?.listing_key || p?.id || '')).filter(Boolean)}
+          />
         </>
       )}
     </div>

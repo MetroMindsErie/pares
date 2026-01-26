@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import SearchBar from './SearchBar';
 import PartnersTicker from './PartnersTicker';
 
-const ErieBrandedHero = ({ onSearchResults }) => {
+const ErieBrandedHero = ({ onSearchResults, onSearchStart }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
   // Erie downtown images - you'll need to add these to your public folder
@@ -92,7 +92,7 @@ const ErieBrandedHero = ({ onSearchResults }) => {
       {/* add mobile padding-top so sticky navbar / ticker don't overlap the heading; remove padding on lg+ */}
       <div className="relative z-10 h-full flex items-center pt-20 lg:pt-0">
          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-          <div className="grid lg:grid-cols-2 gap-12 items-center min-h-[80vh]">
+          <div className="grid lg:grid-cols-2 lg:[grid-template-columns:1fr_1.25fr] gap-12 items-center min-h-[80vh]">
             
             {/* Left Column - Hero Text */}
             <motion.div 
@@ -154,7 +154,7 @@ const ErieBrandedHero = ({ onSearchResults }) => {
                 </div>
                 
                 {/* Enhanced Search Bar */}
-                <SearchBar onSearchResults={onSearchResults} />
+                <SearchBar onSearchResults={onSearchResults} onSearchStart={onSearchStart} />
                 
                 {/* Quick Search Options */}
                 {/* <div className="mt-6 pt-6 border-t border-gray-200">

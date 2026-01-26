@@ -339,6 +339,57 @@ const generateVariants = (input) => {
 export const searchProperties = async (searchParams) => {
   try {
     const filters = [];
+    // NOTE: Per /odata/$metadata, SpecialListingConditions is a Flags Enum:
+    // Type="Cotality.DataStandard.RESO.DD.Enums.Multi.SpecialListingConditions" IsFlags="true"
+    // Filtering must use Enum literals + `has`, not string functions.
+    const SPECIAL_LISTING_CONDITIONS_ENUM = 'Cotality.DataStandard.RESO.DD.Enums.Multi.SpecialListingConditions';
+    const specialListingEnumMap = {
+      // common aliases -> enum member identifiers
+      'REO': 'Real Estate Owned',
+      'Real Estate Owned': 'Real Estate Owned',
+      'Real Estate Owned': 'Real Estate Owned',
+
+      'Short Sale': 'Short Sale',
+      'ShortSale': 'Short Sale',
+
+      'Foreclosure': 'In Foreclosure',
+      'In Foreclosure': 'In Foreclosure',
+      'InForeclosure': 'In Foreclosure',
+
+      'Auction': 'Auction',
+
+      'Probate': 'Probate Listing',
+      'Probate Listing': 'Probate Listing',
+      'ProbateListing': 'Probate Listing',
+
+      'Bankruptcy': 'Bankruptcy Property',
+      'Bankruptcy Property': 'Bankruptcy Property',
+      'BankruptcyProperty': 'Bankruptcy Property',
+
+      'HUD': 'Hud Owned',
+      'HUD Owned': 'Hud Owned',
+      'HudOwned': 'Hud Owned',
+      'NOD': 'Notice Of Default',
+      'Notice Of Default': 'Notice Of Default',
+      'NoticeOfDefault': 'Notice Of Default',
+
+      'Standard': 'Standard',
+      'Third Party Approval': 'Third Party Approval',
+      'ThirdPartyApproval': 'Third Party Approval',
+      'Trust': 'Trust'
+    };
+
+    const resolveSpecialListingEnumMember = (rawValue) => {
+      if (!rawValue) return '';
+      const direct = specialListingEnumMap[rawValue];
+      if (direct) return direct;
+
+      const needle = String(rawValue).trim().toLowerCase();
+      const matchKey = Object.keys(specialListingEnumMap).find(
+        (k) => String(k).trim().toLowerCase() === needle
+      );
+      return matchKey ? specialListingEnumMap[matchKey] : '';
+    };
 
     // Always limit to MLS counties (MLS only contains Erie, Warren, Crawford)
     const countyClause = `(${ALLOWED_COUNTIES.map(c => `CountyOrParish eq '${odataEscape(c)}'`).join(' or ')})`;
@@ -425,6 +476,18 @@ export const searchProperties = async (searchParams) => {
     if (searchParams.propertyType) {
       filters.push(`PropertyType eq '${odataEscape(searchParams.propertyType)}'`);
     }
+    const rawSpecialCondition = searchParams.specialListingConditions
+      ? String(searchParams.specialListingConditions).trim()
+      : '';
+    const specialEnumMember = resolveSpecialListingEnumMember(rawSpecialCondition);
+
+    // Add server-side filter for Special Listing Conditions (Flags Enum)
+    if (specialEnumMember) {
+      filters.push(
+        `SpecialListingConditions has ${SPECIAL_LISTING_CONDITIONS_ENUM}'${specialEnumMember}'`
+      );
+    }
+
     if (searchParams.minSqFt) {
       filters.push(`LivingArea ge ${parseInt(searchParams.minSqFt, 10)}`);
     }
@@ -438,15 +501,11 @@ export const searchProperties = async (searchParams) => {
     // Build the filter query string
     const filterQuery = filters.length > 0 ? `$filter=${filters.join(' and ')}` : '';
 
-    console.log('Final filter query:', filterQuery || '[none]');
-
     // Reuse getPropertiesByFilter which already handles $top/$skip/$expand and media processing
     const response = await getPropertiesByFilter(filterQuery, 50, 0);
 
-    console.log('Number of properties returned:', response.properties.length);
-
     // Format and sort results for the UI (ascending price)
-    const formattedProperties = response.properties
+    let formattedProperties = response.properties
       .map(property => ({
         ...property,
         media: property.media,

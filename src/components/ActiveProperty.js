@@ -16,8 +16,48 @@ import ActiveNearbyPropertiesWidget from './Property/ActiveNearbyPropertiesWidge
 import { useAuth } from '../context/auth-context';
 import { logPropertyView } from '../services/userActivityService';
 
-export const ActiveProperty = ({ property, contextLoading, taxData, historyData }) => {
+export const ActiveProperty = ({ property, contextLoading, taxData, historyData, variant = 'active' }) => {
   const [activeTab, setActiveTab] = useState('details');
+
+  const extractSpecialListingConditions = (p) =>
+    p?.SpecialListingConditions ??
+    p?.specialListingConditions ??
+    p?.SpecialListingCondition ??
+    p?.specialListing_condition;
+
+  const normalizeConditionsToText = (value) => {
+    if (!value) return '';
+    if (Array.isArray(value)) return value.map(v => String(v || '').trim()).filter(Boolean).join(', ');
+    return String(value).trim();
+  };
+
+  const hasConditionMatch = (p, test) => {
+    const raw = normalizeConditionsToText(extractSpecialListingConditions(p));
+    if (!raw) return false;
+    const tokens = raw
+      .split(/[,;|]/)
+      .map((v) => v.trim().toLowerCase())
+      .filter(Boolean);
+    return tokens.some(test);
+  };
+
+  const isReo = hasConditionMatch(property, (t) =>
+    t.includes('real estate owned') || t === 'reo' || t.includes('bank owned')
+  );
+  const isForeclosure = hasConditionMatch(property, (t) =>
+    t.includes('foreclosure') || t.includes('in foreclosure')
+  );
+  const specialConditionsText = normalizeConditionsToText(extractSpecialListingConditions(property));
+  const specialConditionsList = specialConditionsText
+    ? specialConditionsText
+        .split(/[,;|]/)
+        .map((v) => v.trim())
+        .filter(Boolean)
+        .filter((v) => {
+          const lower = v.toLowerCase();
+          return lower !== 'standard' && lower !== 'none';
+        })
+    : [];
 
   // Format price as currency
   const formatPrice = (price) => {
@@ -44,6 +84,46 @@ export const ActiveProperty = ({ property, contextLoading, taxData, historyData 
         <div className="mb-6">
           <CompanyHeader />
         </div>
+
+        {(variant === 'special' || specialConditionsList.length > 0) && (
+          <div className="mb-8 rounded-xl border border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50 p-5 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+              <div>
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900">Special Listing Conditions</h2>
+                <p className="text-sm text-gray-700 mt-1">
+                  This listing includes special terms or status indicators. Review agent remarks and disclosures carefully.
+                </p>
+              </div>
+              {(isReo || isForeclosure) && (
+                <div className="flex gap-2">
+                  {isReo && (
+                    <span className="inline-flex items-center rounded-full bg-purple-600 px-3 py-1 text-xs font-semibold text-white">
+                      REO
+                    </span>
+                  )}
+                  {isForeclosure && (
+                    <span className="inline-flex items-center rounded-full bg-orange-600 px-3 py-1 text-xs font-semibold text-white">
+                      Foreclosure
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {specialConditionsList.length > 0 && (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {specialConditionsList.map((cond) => (
+                  <span
+                    key={cond}
+                    className="inline-flex items-center rounded-full bg-white px-3 py-1 text-xs font-semibold text-gray-900 border border-purple-200"
+                  >
+                    {cond}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         
         <div className="mb-8">
           <h2 className="text-xl mt-6 font-semibold mb-4 text-gray-900">Your Real Estate Professional</h2>
@@ -113,6 +193,61 @@ export const ActiveProperty = ({ property, contextLoading, taxData, historyData 
           <div className="inline-block bg-green-100 text-green-800 rounded-full px-3 py-1 text-sm font-medium mb-6">
             Active Listing
           </div>
+
+          {(isReo || isForeclosure) && (
+            <div className="mb-6 rounded-xl border border-orange-200 bg-orange-50 p-4">
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                {isReo && (
+                  <span className="inline-flex items-center rounded-full bg-purple-600 px-3 py-1 text-xs font-semibold text-white">
+                    REO
+                  </span>
+                )}
+                {isForeclosure && (
+                  <span className="inline-flex items-center rounded-full bg-orange-600 px-3 py-1 text-xs font-semibold text-white">
+                    Foreclosure
+                  </span>
+                )}
+                <span className="text-sm font-semibold text-gray-900">Investor Snapshot</span>
+              </div>
+
+              {specialConditionsText && (
+                <p className="text-sm text-gray-800 mb-3">
+                  <span className="font-semibold">Special conditions:</span> {specialConditionsText}
+                </p>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
+                <div className="rounded-lg bg-white p-3 border border-orange-100">
+                  <div className="text-gray-500">List price</div>
+                  <div className="font-semibold text-gray-900">{property?.ListPrice ? formatPrice(property.ListPrice) : 'N/A'}</div>
+                </div>
+                <div className="rounded-lg bg-white p-3 border border-orange-100">
+                  <div className="text-gray-500">Days on market</div>
+                  <div className="font-semibold text-gray-900">{property?.DaysOnMarket ?? property?.CumulativeDaysOnMarket ?? 'N/A'}</div>
+                </div>
+                <div className="rounded-lg bg-white p-3 border border-orange-100">
+                  <div className="text-gray-500">Tax (annual)</div>
+                  <div className="font-semibold text-gray-900">{property?.TaxAnnualAmount ? formatPrice(property.TaxAnnualAmount) : 'N/A'}</div>
+                </div>
+                <div className="rounded-lg bg-white p-3 border border-orange-100">
+                  <div className="text-gray-500">Sq ft</div>
+                  <div className="font-semibold text-gray-900">{property?.LivingArea ? property.LivingArea.toLocaleString() : 'N/A'}</div>
+                </div>
+                <div className="rounded-lg bg-white p-3 border border-orange-100">
+                  <div className="text-gray-500">Year built</div>
+                  <div className="font-semibold text-gray-900">{property?.YearBuilt || 'N/A'}</div>
+                </div>
+                <div className="rounded-lg bg-white p-3 border border-orange-100">
+                  <div className="text-gray-500">Occupancy</div>
+                  <div className="font-semibold text-gray-900">{property?.OccupantType || property?.OwnerOccupiedYN || 'N/A'}</div>
+                </div>
+              </div>
+
+              <p className="mt-3 text-xs text-gray-600">
+                Tip: REO/foreclosure listings often require extra due diligence (title, condition, timelines).
+              </p>
+            </div>
+          )}
 
           {/* Tabs */}
           <div className="border-b border-gray-200 mb-6">
@@ -245,7 +380,8 @@ ActiveProperty.propTypes = {
   property: PropTypes.object.isRequired,
   taxData: PropTypes.object,
   historyData: PropTypes.object,
-  contextLoading: PropTypes.bool
+  contextLoading: PropTypes.bool,
+  variant: PropTypes.oneOf(['active', 'special'])
 };
 
 // helper to derive context from property if SSR/client fetch not available
