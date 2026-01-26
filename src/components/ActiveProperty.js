@@ -41,11 +41,30 @@ export const ActiveProperty = ({ property, contextLoading, taxData, historyData,
     return tokens.some(test);
   };
 
+  const humanizeSpecialCondition = (raw) => {
+    if (!raw) return '';
+    const s = String(raw).trim();
+    if (!s) return '';
+    if (/[\s-]/.test(s)) return s;
+    const withSpaces = s
+      .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+      .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2');
+    return withSpaces
+      .replace(/\bHud\b/g, 'HUD')
+      .replace(/\bVa\b/g, 'VA')
+      .replace(/\bGse\b/g, 'GSE')
+      .replace(/\bReo\b/g, 'REO')
+      .replace(/\bNod\b/g, 'NOD')
+      .replace(/\bAs Is\b/g, 'As-Is')
+      .replace(/\bPre Foreclosure\b/g, 'Pre-Foreclosure')
+      .replace(/\bNotice Of Default\b/g, 'Notice Of Default');
+  };
+
   const isReo = hasConditionMatch(property, (t) =>
-    t.includes('real estate owned') || t === 'reo' || t.includes('bank owned')
+    t.includes('real estate owned') || t.includes('realestateowned') || t === 'reo' || t.includes('bank owned')
   );
   const isForeclosure = hasConditionMatch(property, (t) =>
-    t.includes('foreclosure') || t.includes('in foreclosure')
+    t.includes('foreclosure') || t.includes('in foreclosure') || t.includes('inforeclosure')
   );
   const specialConditionsText = normalizeConditionsToText(extractSpecialListingConditions(property));
   const specialConditionsList = specialConditionsText
@@ -58,6 +77,151 @@ export const ActiveProperty = ({ property, contextLoading, taxData, historyData,
           return lower !== 'standard' && lower !== 'none';
         })
     : [];
+  const specialConditionsDisplayList = specialConditionsList
+    .map(humanizeSpecialCondition)
+    .filter(Boolean);
+
+  const normalizedSpecialTokens = specialConditionsList
+    .flatMap((v) => {
+      const raw = String(v || '').trim();
+      const display = humanizeSpecialCondition(raw);
+      return [raw, display]
+        .filter(Boolean)
+        .map((x) => String(x).toLowerCase());
+    })
+    .filter(Boolean);
+
+  const hasSpecialToken = (needle) =>
+    normalizedSpecialTokens.some((t) => t === needle || t.includes(needle));
+
+  const buildInvestorSnapshotCards = () => {
+    const cards = [];
+
+    if (hasSpecialToken('real estate owned') || hasSpecialToken('realestateowned') || hasSpecialToken('reo')) {
+      cards.push({
+        title: 'REO (Bank Owned)'
+      , items: [
+          'Expect “as-is” condition; budget for repairs and inspections.',
+          'Ask about bank addenda, deadlines, and required forms.',
+          'Confirm occupancy and utilities before inspections.'
+        ]
+      });
+    }
+
+    if (hasSpecialToken('in foreclosure') || hasSpecialToken('inforeclosure') || hasSpecialToken('foreclosure')) {
+      cards.push({
+        title: 'Foreclosure'
+      , items: [
+          'Timelines can be strict; confirm deadlines and deposit rules.',
+          'Title / lien review is critical; verify redemption/possession details.',
+          'Contingencies may be limited; verify showing/inspection access.'
+        ]
+      });
+    }
+
+    if (hasSpecialToken('hud owned') || hasSpecialToken('hudowned')) {
+      cards.push({
+        title: 'HUD Owned'
+      , items: [
+          'Check bidding periods and owner-occupant restrictions.',
+          'Confirm eligibility/financing requirements before offering.',
+          'Review HUD addenda and repair escrow rules (if applicable).'
+        ]
+      });
+    }
+
+    if (hasSpecialToken('auction')) {
+      cards.push({
+        title: 'Auction'
+      , items: [
+          'Verify auction terms, deposits, buyer premiums, and timelines.',
+          'Contingencies are often limited; know what you’re buying.',
+          'Confirm access for inspections and occupancy status.'
+        ]
+      });
+    }
+
+    if (hasSpecialToken('probate listing') || hasSpecialToken('probatelisting') || hasSpecialToken('probate')) {
+      cards.push({
+        title: 'Probate'
+      , items: [
+          'Court approval may extend timelines; plan for delays.',
+          'Confirm executor/trustee authority and required disclosures.',
+          '“As-is” sales are common; budget for repairs.'
+        ]
+      });
+    }
+
+    if (hasSpecialToken('bankruptcy property') || hasSpecialToken('bankruptcyproperty') || hasSpecialToken('bankruptcy')) {
+      cards.push({
+        title: 'Bankruptcy'
+      , items: [
+          'Sale may require court/creditor approval; expect longer timelines.',
+          'Title review is important; confirm liens and required filings.',
+          'Ask listing agent about approval process and closing constraints.'
+        ]
+      });
+    }
+
+    if (hasSpecialToken('notice of default') || hasSpecialToken('noticeofdefault') || hasSpecialToken('nod')) {
+      cards.push({
+        title: 'Notice Of Default'
+      , items: [
+          'Verify the foreclosure stage and any cure/notice timelines.',
+          'Title and payoff verification are essential.',
+          'Expect additional negotiations and documentation.'
+        ]
+      });
+    }
+
+    if (hasSpecialToken('short sale') || hasSpecialToken('shortsale')) {
+      cards.push({
+        title: 'Short Sale'
+      , items: [
+          'Lender approval required; response times can be long.',
+          'Confirm approved price and lienholder terms before committing.',
+          'Plan for extended closing windows.'
+        ]
+      });
+    }
+
+    if (hasSpecialToken('third party approval') || hasSpecialToken('thirdpartyapproval')) {
+      cards.push({
+        title: 'Third Party Approval'
+      , items: [
+          'Offer acceptance may depend on external approval (HOA, lender, court, etc.).',
+          'Confirm the approval authority and expected timeline.',
+          'Avoid tight close dates until approved.'
+        ]
+      });
+    }
+
+    if (hasSpecialToken('trust')) {
+      cards.push({
+        title: 'Trust'
+      , items: [
+          'Confirm trustee authority and required signatures.',
+          'Request any trust-related disclosures early.',
+          'Timelines may vary depending on beneficiary requirements.'
+        ]
+      });
+    }
+
+    // Always include a general diligence card when special conditions exist.
+    if (specialConditionsList.length > 0) {
+      cards.push({
+        title: 'Due Diligence'
+      , items: [
+          'Review agent remarks for special instructions and addenda.',
+          'Verify property condition, occupancy, and utilities for inspections.',
+          'Run title/lien checks and validate required disclosures.'
+        ]
+      });
+    }
+
+    // Deduplicate by title in case multiple tokens match
+    return cards.filter((c, idx) => cards.findIndex((x) => x.title === c.title) === idx);
+  };
 
   // Format price as currency
   const formatPrice = (price) => {
@@ -110,9 +274,9 @@ export const ActiveProperty = ({ property, contextLoading, taxData, historyData,
               )}
             </div>
 
-            {specialConditionsList.length > 0 && (
+            {specialConditionsDisplayList.length > 0 && (
               <div className="mt-4 flex flex-wrap gap-2">
-                {specialConditionsList.map((cond) => (
+                {specialConditionsDisplayList.map((cond) => (
                   <span
                     key={cond}
                     className="inline-flex items-center rounded-full bg-white px-3 py-1 text-xs font-semibold text-gray-900 border border-purple-200"
@@ -194,7 +358,7 @@ export const ActiveProperty = ({ property, contextLoading, taxData, historyData,
             Active Listing
           </div>
 
-          {(isReo || isForeclosure) && (
+          {specialConditionsList.length > 0 && (
             <div className="mb-6 rounded-xl border border-orange-200 bg-orange-50 p-4">
               <div className="flex flex-wrap items-center gap-2 mb-3">
                 {isReo && (
@@ -210,9 +374,9 @@ export const ActiveProperty = ({ property, contextLoading, taxData, historyData,
                 <span className="text-sm font-semibold text-gray-900">Investor Snapshot</span>
               </div>
 
-              {specialConditionsText && (
+              {specialConditionsDisplayList.length > 0 && (
                 <p className="text-sm text-gray-800 mb-3">
-                  <span className="font-semibold">Special conditions:</span> {specialConditionsText}
+                  <span className="font-semibold">Special conditions:</span> {specialConditionsDisplayList.join(', ')}
                 </p>
               )}
 
@@ -243,9 +407,24 @@ export const ActiveProperty = ({ property, contextLoading, taxData, historyData,
                 </div>
               </div>
 
-              <p className="mt-3 text-xs text-gray-600">
-                Tip: REO/foreclosure listings often require extra due diligence (title, condition, timelines).
-              </p>
+              {(() => {
+                const cards = buildInvestorSnapshotCards();
+                if (!cards.length) return null;
+                return (
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {cards.map((card) => (
+                      <div key={card.title} className="rounded-lg bg-white p-4 border border-orange-100">
+                        <div className="font-semibold text-gray-900 mb-2">{card.title}</div>
+                        <ul className="text-sm text-gray-700 space-y-1">
+                          {card.items.map((item) => (
+                            <li key={item}>• {item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           )}
 

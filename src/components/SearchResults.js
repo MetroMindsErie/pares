@@ -48,6 +48,29 @@ const normalizeConditionsToText = (value) => {
   return String(value).trim();
 };
 
+const humanizeSpecialCondition = (raw) => {
+  if (!raw) return '';
+  const s = String(raw).trim();
+  if (!s) return '';
+  if (/[\s-]/.test(s)) return s;
+
+  // Insert spaces for PascalCase/camelCase (e.g., RealEstateOwned -> Real Estate Owned)
+  const withSpaces = s
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2');
+
+  // Fix common acronyms/cases
+  return withSpaces
+    .replace(/\bHud\b/g, 'HUD')
+    .replace(/\bVa\b/g, 'VA')
+    .replace(/\bGse\b/g, 'GSE')
+    .replace(/\bReo\b/g, 'REO')
+    .replace(/\bNod\b/g, 'NOD')
+    .replace(/\bAs Is\b/g, 'As-Is')
+    .replace(/\bPre Foreclosure\b/g, 'Pre-Foreclosure')
+    .replace(/\bNotice Of Default\b/g, 'Notice Of Default');
+};
+
 const getPrimarySpecialConditionLabel = (specialText) => {
   if (!specialText) return '';
   const parts = String(specialText)
@@ -60,8 +83,10 @@ const getPrimarySpecialConditionLabel = (specialText) => {
     });
 
   if (parts.length === 0) return '';
-  if (parts.length === 1) return parts[0];
-  return `${parts[0]} +${parts.length - 1}`;
+  const displayParts = parts.map(humanizeSpecialCondition).filter(Boolean);
+  if (displayParts.length === 0) return '';
+  if (displayParts.length === 1) return displayParts[0];
+  return `${displayParts[0]} +${displayParts.length - 1}`;
 };
 
 const hasConditionMatch = (listing, test) => {

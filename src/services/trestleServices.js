@@ -345,37 +345,38 @@ export const searchProperties = async (searchParams) => {
     const SPECIAL_LISTING_CONDITIONS_ENUM = 'Cotality.DataStandard.RESO.DD.Enums.Multi.SpecialListingConditions';
     const specialListingEnumMap = {
       // common aliases -> enum member identifiers
-      'REO': 'Real Estate Owned',
-      'Real Estate Owned': 'Real Estate Owned',
-      'Real Estate Owned': 'Real Estate Owned',
+      'REO': 'RealEstateOwned',
+      'Real Estate Owned': 'RealEstateOwned',
+      'RealEstateOwned': 'RealEstateOwned',
 
-      'Short Sale': 'Short Sale',
-      'ShortSale': 'Short Sale',
+      'Short Sale': 'ShortSale',
+      'ShortSale': 'ShortSale',
 
-      'Foreclosure': 'In Foreclosure',
-      'In Foreclosure': 'In Foreclosure',
-      'InForeclosure': 'In Foreclosure',
+      'Foreclosure': 'InForeclosure',
+      'In Foreclosure': 'InForeclosure',
+      'InForeclosure': 'InForeclosure',
 
       'Auction': 'Auction',
 
-      'Probate': 'Probate Listing',
-      'Probate Listing': 'Probate Listing',
-      'ProbateListing': 'Probate Listing',
+      'Probate': 'ProbateListing',
+      'Probate Listing': 'ProbateListing',
+      'ProbateListing': 'ProbateListing',
 
-      'Bankruptcy': 'Bankruptcy Property',
-      'Bankruptcy Property': 'Bankruptcy Property',
-      'BankruptcyProperty': 'Bankruptcy Property',
+      'Bankruptcy': 'BankruptcyProperty',
+      'Bankruptcy Property': 'BankruptcyProperty',
+      'BankruptcyProperty': 'BankruptcyProperty',
 
-      'HUD': 'Hud Owned',
-      'HUD Owned': 'Hud Owned',
-      'HudOwned': 'Hud Owned',
-      'NOD': 'Notice Of Default',
-      'Notice Of Default': 'Notice Of Default',
-      'NoticeOfDefault': 'Notice Of Default',
+      'HUD': 'HudOwned',
+      'HUD Owned': 'HudOwned',
+      'HudOwned': 'HudOwned',
+
+      'NOD': 'NoticeOfDefault',
+      'Notice Of Default': 'NoticeOfDefault',
+      'NoticeOfDefault': 'NoticeOfDefault',
 
       'Standard': 'Standard',
-      'Third Party Approval': 'Third Party Approval',
-      'ThirdPartyApproval': 'Third Party Approval',
+      'Third Party Approval': 'ThirdPartyApproval',
+      'ThirdPartyApproval': 'ThirdPartyApproval',
       'Trust': 'Trust'
     };
 
