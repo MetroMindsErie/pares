@@ -155,15 +155,10 @@ export const NeighborhoodCommunity = ({ context }) => {
     hoa = {},
   } = context;
   
-  console.log('🏘️ Neighborhood Tab - Full context:', context);
-  console.log('🏘️ Neighborhood Tab - HOA object:', hoa);
-  
   const hoaLines = formatHoaAssociations(hoa);
   const hoaAmenities = hoa?.amenities?.length ? hoa.amenities : associationAmenities;
   const showHoaCard = hoa?.hasHoa && (hoaLines.length || hoaAmenities.length || hoa.hasHoa);
   
-  console.log('🏘️ Neighborhood Tab - hoaLines:', hoaLines);
-  console.log('🏘️ Neighborhood Tab - showHoaCard:', showHoaCard);
   const hasNeighborhood = subdivision || communityFeatures.length || hoaAmenities.length || lotFeatures.length || areaFacts.length || utilitiesFacts.length || lotFacts.length || showHoaCard;
   if (!hasNeighborhood) {
     return <p className="text-sm text-gray-500">No neighborhood or community details available.</p>;
@@ -617,24 +612,20 @@ function Row({ label, values, alt }) {
 
 function formatHoaAssociations(hoa) {
   if (!hoa || !hoa.hasHoa) {
-    console.log('🏘️ formatHoaAssociations - No HOA or hasHoa is false:', hoa);
     return [];
   }
   const associations = hoa.associations || [];
-  console.log('🏘️ formatHoaAssociations - Processing associations:', associations);
   
   const lines = associations.map((assoc, idx) => {
     const parts = [];
     if (assoc.name) parts.push(assoc.name);
     if (assoc.phone) parts.push(`Phone: ${assoc.phone}`);
     const feeText = formatHoaFee(assoc.fee, assoc.feeFrequency);
-    console.log(`🏘️ formatHoaAssociations - Association ${idx} fee:`, assoc.fee, 'frequency:', assoc.feeFrequency, 'formatted:', feeText);
     if (feeText) parts.push(`Fee: ${feeText}`);
     if (assoc.feeIncludes?.length) parts.push(`Fee includes: ${assoc.feeIncludes.join(', ')}`);
     if (!parts.length) return null;
     const label = idx === 0 ? 'Primary HOA' : `HOA ${idx + 1}`;
     const line = `${label} • ${parts.join(' • ')}`;
-    console.log(`🏘️ formatHoaAssociations - Association ${idx} formatted line:`, line);
     return line;
   }).filter(Boolean);
 

@@ -77,7 +77,6 @@ const SearchBar = ({
       try { localStorage.setItem('lastSearchParams', JSON.stringify(searchParams)); } catch {}
       if (user?.id && properties?.length) {
         generatePropertySuggestions(user.id, searchParams, properties)
-          .then(s => console.log('AI suggestions parsed:', s))
           .catch(()=>{});
       }
       

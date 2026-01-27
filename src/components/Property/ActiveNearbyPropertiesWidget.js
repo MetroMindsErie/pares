@@ -151,7 +151,6 @@ export default function ActiveNearbyPropertiesWidget({ property }) {
             const sqft = formatNumber(item?.sqft);
             // Use image_url as primary (contains the preferred/primary photo), fallback to first media URL, then default
             const img = item?.image_url || (item?.media_urls?.[0]) || '/fallback-property.jpg';
-            console.log('🖼️ Active nearby image for', item?.address, ':', { image_url: item?.image_url, media_urls_count: item?.media_urls?.length, selected: img });
 
             return (
               <div

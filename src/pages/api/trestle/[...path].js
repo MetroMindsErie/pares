@@ -46,8 +46,8 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Log in dev by default (or if explicitly enabled)
-  const shouldLog = process.env.NODE_ENV === 'development' || process.env.TRESTLE_LOG_REQUESTS === 'true';
+  // Only log when explicitly enabled. Requests can contain addresses/PII.
+  const shouldLog = process.env.TRESTLE_LOG_REQUESTS === 'true';
   if (shouldLog) {
     const safe = new URL(upstreamUrl.toString());
     // Just in case anything sensitive slips into query (shouldn't), redact obvious keys
@@ -55,7 +55,7 @@ export default async function handler(req, res) {
       if (safe.searchParams.has(k)) safe.searchParams.set(k, redact(safe.searchParams.get(k)));
     });
 
-    console.log('[TRESTLE]', method, safe.pathname + safe.search);
+    // eslint-disable-next-line no-console
   }
 
   try {
@@ -76,7 +76,7 @@ export default async function handler(req, res) {
     res.setHeader('Cache-Control', 'no-store');
     return res.send(Buffer.from(buf));
   } catch (e) {
-    console.error('[TRESTLE] proxy failed:', e?.message || String(e));
-    return res.status(500).json({ error: 'Trestle proxy failed', details: e?.message || String(e) });
+    // Avoid leaking URLs/headers/tokens in logs. Bubble up a generic error.
+    return res.status(500).json({ error: 'Trestle proxy failed' });
   }
 }

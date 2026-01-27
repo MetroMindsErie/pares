@@ -6,13 +6,12 @@ const ALLOWED_COUNTIES = ['Erie', 'Warren', 'Crawford'];
 const ALLOWED_ROLES = new Set(['seller', 'buyer', 'investor', 'realtor']);
 
 function shouldLogAiFlow() {
-  return process.env.NODE_ENV !== 'production' || process.env.DEBUG_AI_FLOW === '1';
+  // AI search can include PII (addresses, names). Only log when explicitly enabled.
+  return process.env.DEBUG_AI_FLOW === '1';
 }
 
 function logAiFlow(traceId, ...args) {
   if (!shouldLogAiFlow()) return;
-  // eslint-disable-next-line no-console
-  console.log(`[AI_FLOW][${traceId}]`, ...args);
 }
 
 function odataEscape(val) {
@@ -330,9 +329,6 @@ export default async function handler(req, res) {
 
     // Phase A: retrieve real listings from Trestle (authoritative datasource)
     const parsed = parseBasicSearch(query);
-    console.log('[AI_PROXY] query', query);
-    console.log('[AI_PROXY] role', role);
-    console.log('[AI_PROXY] parsed', parsed);
     logAiFlow(traceId, 'parsed', parsed);
 
     // Role-specific retrieval defaults (safe, with fallback)
@@ -381,7 +377,6 @@ export default async function handler(req, res) {
       parsed.sold_within_days = roleDefaults.overrideSoldWithinDays;
     }
 
-    console.log('[AI_PROXY] role defaults', roleDefaults);
     logAiFlow(traceId, 'role defaults', roleDefaults);
     const filters = [];
 
@@ -490,7 +485,6 @@ export default async function handler(req, res) {
         $orderby: orderBy
       };
 
-      console.log('[AI_PROXY] trestle retrieve params', trestleParams);
       logAiFlow(traceId, 'trestle retrieve', { orderBy, top: 25 });
       const trestle = await fetchTrestleOData('odata/Property', trestleParams);
       const trestleValues = Array.isArray(trestle?.json?.value) ? trestle.json.value : [];
@@ -591,7 +585,6 @@ export default async function handler(req, res) {
 
     let chosen = null;
     for (const attempt of attempts) {
-      console.log('[AI_PROXY] retrieval attempt', attempt.label);
       logAiFlow(traceId, 'retrieval attempt', { label: attempt.label });
       const result = await fetchAndMap(attempt.filter);
       if (result.mappedListings.length > 0 || attempt === attempts[attempts.length - 1]) {
@@ -607,7 +600,6 @@ export default async function handler(req, res) {
     // If role-based property filter is a *preference*, top up with a relaxed query (never overrides existing matches).
     // Never top-up if the user explicitly asked for a property type (strict intent).
     if (chosen?.rolePropertyApplied && !rolePropertyStrict && mappedListings.length > 0 && mappedListings.length < 25) {
-      console.log('[AI_PROXY] role filter returned', mappedListings.length, '— topping up without role PropertyType filter');
       logAiFlow(traceId, 'top-up without role filter', { current: mappedListings.length });
       const relaxed = await fetchAndMap(chosen.baseFilter);
       const relaxedListings = relaxed.mappedListings;
@@ -621,7 +613,6 @@ export default async function handler(req, res) {
     }
 
     // Phase B: call Easters AI explanation endpoint using provided listings
-    console.log('[AI_PROXY] ->', `${ragBase}/ai/explain`, `(listings=${mappedListings.length})`);
     logAiFlow(traceId, 'upstream request', {
       url: `${ragBase}/ai/explain`,
       listings: mappedListings.length,

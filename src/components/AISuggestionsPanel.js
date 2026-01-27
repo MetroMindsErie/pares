@@ -83,11 +83,9 @@ export const AISuggestionsPanel = ({ recentSearchParams, recentProperties }) => 
         const results = await Promise.allSettled(
           top.map(async (s) => {
             try {
-              console.log('Fetching property details for listing:', s.listing_id);
               
               // Use getPropertyDetails which includes Media expansion
               const propertyData = await getPropertyDetails(s.listing_id);
-              console.log('Got property data for', s.listing_id, ':', propertyData);
               
               // Extract image URL from property data using shared helper
               let imageUrl = '/fallback-property.jpg';
@@ -100,7 +98,6 @@ export const AISuggestionsPanel = ({ recentSearchParams, recentProperties }) => 
                 imageUrl = propertyData.media;
               }
               
-              console.log('Selected imageUrl for', s.listing_id, ':', imageUrl);
               
               return { ...s, imageUrl };
             } catch (err) {
@@ -114,7 +111,6 @@ export const AISuggestionsPanel = ({ recentSearchParams, recentProperties }) => 
           r.status === 'fulfilled' ? r.value : { ...top[i], imageUrl: '/fallback-property.jpg' }
         );
         
-        console.log('Final enriched slides:', enriched);
         
         if (!cancelled) {
           setSlides(enriched);
@@ -187,7 +183,6 @@ export const AISuggestionsPanel = ({ recentSearchParams, recentProperties }) => 
               style={{ transform: `translateX(-${current * 100}%)` }}
             >
               {slides.map((s, idx) => {
-                console.log('Rendering slide', idx, 'with imageUrl:', s.imageUrl);
                 return (
                   <div
                     key={s.listing_id || idx}
@@ -198,7 +193,6 @@ export const AISuggestionsPanel = ({ recentSearchParams, recentProperties }) => 
                         src={s.imageUrl || '/fallback-property.jpg'}
                         alt={s.listing_id}
                         className="w-full h-full object-cover"
-                        onLoad={() => console.log('Image loaded successfully:', s.imageUrl)}
                         onError={(e) => { 
                           console.error('Image failed to load:', s.imageUrl);
                           e.target.src = '/fallback-property.jpg'; 

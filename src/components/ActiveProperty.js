@@ -620,24 +620,6 @@ function listFrom(raw) {
 function deriveHoa(p) {
   const hasHoa = normalizeYesNo(p.AssociationYN);
   
-  console.log('🏘️ HOA Debug - Raw property data:', {
-    AssociationYN: p.AssociationYN,
-    AssociationName: p.AssociationName,
-    AssociationPhone: p.AssociationPhone,
-    AssociationFee: p.AssociationFee,
-    AssociationFeeFrequency: p.AssociationFeeFrequency,
-    AssociationFeeIncludes: p.AssociationFeeIncludes,
-    AssociationName2: p.AssociationName2,
-    AssociationPhone2: p.AssociationPhone2,
-    AssociationFee2: p.AssociationFee2,
-    AssociationFee2Frequency: p.AssociationFee2Frequency,
-    AssociationName3: p.AssociationName3,
-    AssociationPhone3: p.AssociationPhone3,
-    AssociationFee3: p.AssociationFee3,
-    AssociationFee3Frequency: p.AssociationFee3Frequency,
-    AssociationAmenities: p.AssociationAmenities
-  });
-  
   const associations = [
     {
       name: p.AssociationName,
@@ -659,10 +641,6 @@ function deriveHoa(p) {
       feeFrequency: p.AssociationFee3Frequency,
     }
   ].filter(a => Object.values(a).some(Boolean));
-
-  console.log('🏘️ HOA Debug - Normalized hasHoa:', hasHoa);
-  console.log('🏘️ HOA Debug - Extracted associations:', associations);
-  console.log('🏘️ HOA Debug - Amenities:', listFrom(p.AssociationAmenities));
 
   return {
     hasHoa,

@@ -232,12 +232,6 @@ export const AuthProvider = ({ children }) => {
       const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
       const redirectUrl = `${currentOrigin}/auth/callback`;
       
-      console.log('🔐 Auth Provider Login:', {
-        provider,
-        redirectUrl,
-        isDevelopment: currentOrigin.includes('localhost')
-      });
-      
       const { data, error } = await supabaseClient.auth.signInWithOAuth({
         provider,
         options: {

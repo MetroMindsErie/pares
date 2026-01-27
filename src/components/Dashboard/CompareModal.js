@@ -110,7 +110,6 @@ export default function CompareModal({ open = false, onClose = () => {}, propert
       });
 
       if (!needsLookup) {
-        console.log('CompareModal: All properties have full data, skipping enrichment');
         // Use property_data if available
         const enriched = toProcess.map(p => {
           if (p.property_data && typeof p.property_data === 'object') {
@@ -130,11 +129,9 @@ export default function CompareModal({ open = false, onClose = () => {}, propert
 
       setIsEnriching(true);
       try {
-        console.log('CompareModal: Starting enrichment for', toProcess.length, 'properties');
         const enriched = await Promise.all(toProcess.map(async (p) => {
           // If property has full property_data stored, use it instead of API call
           if (p.property_data && typeof p.property_data === 'object') {
-            console.log('CompareModal: Using stored property_data for', p.listing_key || p.property_id);
             return normalizeProperty({
               ...p.property_data,
               saved_at: p.saved_at,
@@ -158,7 +155,6 @@ export default function CompareModal({ open = false, onClose = () => {}, propert
           
           if (forceEnrich || isSavedProperty || !hasMlsData) {
             try {
-              console.log('CompareModal: Fetching full details for listing key:', listingKey);
               const full = await getPropertyDetails(String(listingKey));
               if (!full) {
                 console.warn('CompareModal: getPropertyDetails returned null/undefined for', listingKey);
@@ -173,13 +169,6 @@ export default function CompareModal({ open = false, onClose = () => {}, propert
                 id: p.id,
                 user_id: p.user_id
               };
-              console.log('CompareModal: Successfully enriched property', listingKey, {
-                beds: merged.BedroomsTotal,
-                baths: merged.BathroomsTotalInteger,
-                sqft: merged.LivingArea,
-                address: merged.UnparsedAddress,
-                totalFields: Object.keys(merged).length
-              });
               return normalizeProperty(merged);
             } catch (err) {
               // On error, keep original minimal row
@@ -193,16 +182,6 @@ export default function CompareModal({ open = false, onClose = () => {}, propert
         }));
 
         if (mounted) {
-          console.log('CompareModal: Setting enriched properties', {
-            count: enriched.length,
-            sample: enriched[0] ? {
-              address: enriched[0].UnparsedAddress,
-              beds: enriched[0].BedroomsTotal,
-              baths: enriched[0].BathroomsTotalInteger,
-              sqft: enriched[0].LivingArea,
-              totalKeys: Object.keys(enriched[0]).length
-            } : null
-          });
           setSelectedProps(enriched);
           setIsEnriching(false);
         }

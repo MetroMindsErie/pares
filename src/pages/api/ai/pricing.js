@@ -54,13 +54,12 @@ function parseAddressParts(input) {
 }
 
 function shouldLogPricing() {
-  return process.env.NODE_ENV !== 'production' || process.env.DEBUG_PRICING === '1';
+  // Pricing requests often include street addresses; only log when explicitly enabled.
+  return process.env.DEBUG_PRICING === '1';
 }
 
 function logPricing(...args) {
   if (!shouldLogPricing()) return;
-  // eslint-disable-next-line no-console
-  console.log('[pricing]', ...args);
 }
 
 function wantsDebug(req) {

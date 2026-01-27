@@ -212,8 +212,6 @@ export default function ComparablePropertiesWidget({ property, variant = 'scroll
             const sqft = formatNumber(comp?.sqft);
             // Use image_url as primary (contains the preferred/primary photo), fallback to first media URL, then default
             const img = comp?.image_url || (comp?.media_urls?.[0]) || '/fallback-property.jpg';
-            console.log('🖼️ Comparable image for', comp?.address, ':', { image_url: comp?.image_url, media_urls_count: comp?.media_urls?.length, selected: img });
-
             return (
               <div
                 key={compId || comp?.address}
