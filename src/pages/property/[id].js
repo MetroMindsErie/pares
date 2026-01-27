@@ -8,6 +8,11 @@ import { ActiveProperty } from '../../components/ActiveProperty';
 import { SpecialConditionsProperty } from '../../components/SpecialConditionsProperty';
 import { fetchTrestleOData } from '../../lib/trestleServer';
 import { getMediaUrls } from '../../utils/mediaHelpers';
+import {
+  recordPropertyViewSnapshot,
+  getPropertyHistoryEvents,
+  eventsToListingHistoryRows
+} from '../../lib/propertyHistory';
 
 // Extract tax information from Trestle property data
 const extractTaxData = (property) => {
@@ -92,7 +97,8 @@ const extractTaxData = (property) => {
 };
 
 // Extract history data from Trestle property data
-const extractHistoryData = (property) => {
+// Optionally accepts relatedListings (other MLS records for the same parcel/address)
+const extractHistoryData = (property, relatedListings = []) => {
   try {
     // Format dates properly
     const formatDate = (dateString) => {
@@ -138,6 +144,88 @@ const extractHistoryData = (property) => {
       imageUrl: propertyImage
     }];
 
+    // Add an explicit earliest “Listed” row (helps users find the first date).
+    const firstListDate = property.OnMarketDate || property.ListingContractDate;
+    const lastRowBasis = property.ModificationTimestamp || property.ListingContractDate;
+    if (firstListDate && lastRowBasis && String(firstListDate) !== String(lastRowBasis)) {
+      listingHistory.push({
+        dom: '0',
+        changeType: 'Listed',
+        price: property.ListPrice ? `$${property.ListPrice.toLocaleString()}` : "$0",
+        changeDetails: '->LIST',
+        whenChanged: formatDateTime(firstListDate),
+        effDate: formatDate(firstListDate),
+        modBy: property.ListAgentMlsId || property.ListOfficeMlsId || 'AGENT',
+        propType: property.PropertyType || 'RES',
+        address: property.UnparsedAddress || 'Address not available',
+        listingId: property.ListingKey || 'Unknown',
+        imageUrl: propertyImage
+      });
+    }
+
+    // If we have related MLS records (e.g., previous listings/sales for same parcel/address),
+    // build a fuller history table.
+    if (Array.isArray(relatedListings) && relatedListings.length > 1) {
+      const statusToLabel = (st) => {
+        if (!st) return 'Listing';
+        if (st === 'Active') return 'Listed';
+        if (st === 'ActiveUnderContract') return 'Under Contract';
+        if (st === 'Pending') return 'Pending';
+        if (st === 'Closed') return 'Sold';
+        return String(st);
+      };
+
+      const statusToCode = (st) => {
+        if (!st) return 'LIST';
+        if (st === 'Active') return 'ACT';
+        if (st === 'ActiveUnderContract') return 'AUC';
+        if (st === 'Pending') return 'PEND';
+        if (st === 'Closed') return 'SOLD';
+        return String(st).toUpperCase().slice(0, 6);
+      };
+
+      const derived = relatedListings
+        .filter(Boolean)
+        .map((p) => {
+          const st = p.StandardStatus || p.Status;
+          const effectivePrice = (st === 'Closed' ? (p.ClosePrice ?? p.ListPrice) : p.ListPrice) ?? 0;
+          const when = p.ModificationTimestamp || p.StatusChangeTimestamp || p.PriceChangeTimestamp || p.ListingContractDate || p.CloseDate;
+          const eff = p.ListingContractDate || p.OnMarketDate || p.CloseDate;
+          return {
+            dom: (p.DaysOnMarket ?? p.CumulativeDaysOnMarket ?? 0).toString(),
+            changeType: statusToLabel(st),
+            price: effectivePrice ? `$${Number(effectivePrice).toLocaleString()}` : '$0',
+            changeDetails: `->${statusToCode(st)}`,
+            whenChanged: formatDateTime(when),
+            effDate: formatDate(eff),
+            modBy: p.ListAgentMlsId || p.ListOfficeMlsId || 'AGENT',
+            propType: p.PropertyType || 'RES',
+            address: p.UnparsedAddress || property.UnparsedAddress || 'Address not available',
+            listingId: p.ListingKey || p.ListingId || 'Unknown',
+            imageUrl: propertyImage
+          };
+        });
+
+      // Deduplicate and sort newest-first
+      const seen = new Set();
+      const merged = [...derived, ...listingHistory]
+        .filter((h) => {
+          const k = `${h.listingId}|${h.whenChanged}|${h.price}|${h.changeType}`;
+          if (seen.has(k)) return false;
+          seen.add(k);
+          return true;
+        })
+        .sort((a, b) => {
+          const da = new Date(a.whenChanged).getTime();
+          const db = new Date(b.whenChanged).getTime();
+          if (!Number.isFinite(da) || !Number.isFinite(db)) return 0;
+          return db - da;
+        });
+
+      listingHistory.length = 0;
+      listingHistory.push(...merged);
+    }
+
     // Add additional listing history entries if we have price changes or status changes
     if (property.OriginalListPrice && property.OriginalListPrice !== property.ListPrice) {
       listingHistory.unshift({
@@ -178,6 +266,19 @@ const extractHistoryData = (property) => {
       });
     }
 
+    // Also treat any related MLS records with CloseDate/ClosePrice as sales history
+    if (Array.isArray(relatedListings) && relatedListings.length) {
+      relatedListings.forEach((p) => {
+        if (p?.CloseDate && p?.ClosePrice) {
+          saleHistory.push({
+            recDate: formatDate(p.CloseDate),
+            saleDate: formatDate(p.CloseDate),
+            salePrice: `$${Number(p.ClosePrice).toLocaleString()}`,
+          });
+        }
+      });
+    }
+
     // Alternative: Check for individual historical sale fields
     if (property.PriorSalePrice && property.PriorSaleDate) {
       saleHistory.push({
@@ -197,9 +298,26 @@ const extractHistoryData = (property) => {
       });
     }
 
+    // Deduplicate sales by date+price (newest first) AFTER all sources are added.
+    const saleSeen = new Set();
+    const dedupedSales = saleHistory
+      .filter(Boolean)
+      .filter((s) => {
+        const k = `${s.saleDate}|${s.salePrice}`;
+        if (saleSeen.has(k)) return false;
+        saleSeen.add(k);
+        return true;
+      })
+      .sort((a, b) => {
+        const da = new Date(a.saleDate).getTime();
+        const db = new Date(b.saleDate).getTime();
+        if (!Number.isFinite(da) || !Number.isFinite(db)) return 0;
+        return db - da;
+      });
+
     return {
       listingHistory,
-      saleHistory,
+      saleHistory: dedupedSales,
     };
   } catch (error) {
     console.error('Error extracting history data:', error);
@@ -729,6 +847,65 @@ export async function getServerSideProps({ params }) {
       })
     };
 
+    // Option B: record a snapshot when a user views a property and build an event timeline.
+    // This fails silently if Supabase isn't configured or migrations haven't been applied.
+    try {
+      await recordPropertyViewSnapshot(transformedProperty);
+    } catch (e) {
+      console.warn('Failed to record property view snapshot:', e?.message || e);
+    }
+
+    // Fetch related records to build a fuller history (when possible).
+    // Trestle OData does not expose per-change audit rows for a single ListingKey, but it may
+    // contain multiple MLS records for the same parcel/address across time.
+    let relatedListings = [];
+    try {
+      const escapeOdataString = (v) => String(v ?? '').replace(/'/g, "''");
+      const parcel = transformedProperty.ParcelNumber || transformedProperty.TaxParcelId || transformedProperty.TaxId;
+      const address = transformedProperty.UnparsedAddress;
+
+      let filter = '';
+      if (parcel) {
+        filter = `ParcelNumber eq '${escapeOdataString(parcel)}'`;
+      } else if (address) {
+        filter = `UnparsedAddress eq '${escapeOdataString(address)}'`;
+      }
+
+      if (filter) {
+        const related = await fetchTrestleOData('odata/Property', {
+          $filter: filter,
+          $top: '200',
+          $orderby: 'ModificationTimestamp desc',
+          $select: [
+            'ListingKey',
+            'ListingId',
+            'StandardStatus',
+            'ListPrice',
+            'ClosePrice',
+            'CloseDate',
+            'ListingContractDate',
+            'OnMarketDate',
+            'ModificationTimestamp',
+            'StatusChangeTimestamp',
+            'PriceChangeTimestamp',
+            'DaysOnMarket',
+            'CumulativeDaysOnMarket',
+            'PropertyType',
+            'UnparsedAddress',
+            'ListAgentMlsId',
+            'ListOfficeMlsId',
+            'ParcelNumber'
+          ].join(',')
+        });
+
+        const list = Array.isArray(related?.json?.value) ? related.json.value : [];
+        relatedListings = list;
+      }
+    } catch (e) {
+      console.warn('Failed to fetch related listings for history:', e?.message || e);
+      relatedListings = [];
+    }
+
     // Extract tax data with fallback
     let taxData;
     try {
@@ -741,10 +918,29 @@ export async function getServerSideProps({ params }) {
     // Extract history data with fallback
     let historyData;
     try {
-      historyData = extractHistoryData(transformedProperty);
+      historyData = extractHistoryData(transformedProperty, relatedListings);
     } catch (error) {
       console.error('Failed to extract history data:', error);
       historyData = { listingHistory: [], saleHistory: [] };
+    }
+
+    // Merge Supabase-derived timeline events into listingHistory.
+    try {
+      const events = await getPropertyHistoryEvents(transformedProperty.ListingKey || params.id);
+      const eventRows = eventsToListingHistoryRows(events, transformedProperty);
+      if (eventRows.length) {
+        const existing = Array.isArray(historyData?.listingHistory) ? historyData.listingHistory : [];
+        const seen = new Set();
+        const merged = [...eventRows, ...existing].filter((row) => {
+          const k = `${row?.changeType || ''}|${row?.price || ''}|${row?.changeDetails || ''}|${row?.whenChanged || ''}`;
+          if (seen.has(k)) return false;
+          seen.add(k);
+          return true;
+        });
+        historyData = { ...historyData, listingHistory: merged };
+      }
+    } catch (e) {
+      console.warn('Failed to load Supabase property history events:', e?.message || e);
     }
 
     // Local context: derive directly from the property payload
