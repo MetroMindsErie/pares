@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Layout from '../../components/Layout';
 import BuyerAgent from '../../components/Property/BuyerAgent';
+import AgentPropertiesSection from '../../components/AgentPropertiesSection';
+import { getAgentProperties } from '../../services/trestleServices';
 
 const AGENT = {
   name: 'John D. Easter',
@@ -17,6 +19,25 @@ const AGENT = {
 export default function JohnEasterAgent() {
   const [form, setForm] = useState({ name: '', email: '', message: '', propertyUrl: '' });
   const [sent, setSent] = useState(false);
+  const [agentProperties, setAgentProperties] = useState([]);
+  const [loadingProperties, setLoadingProperties] = useState(true);
+
+  useEffect(() => {
+    const loadAgentProperties = async () => {
+      try {
+        setLoadingProperties(true);
+        const properties = await getAgentProperties({ email: AGENT.email });
+        setAgentProperties(properties || []);
+      } catch (error) {
+        console.error('Error loading agent properties:', error);
+        setAgentProperties([]);
+      } finally {
+        setLoadingProperties(false);
+      }
+    };
+
+    loadAgentProperties();
+  }, []);
 
   const handleChange = (e) => setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
@@ -138,6 +159,17 @@ export default function JohnEasterAgent() {
             </div>
           </div>
         </section>
+
+        {/* Agent Properties Section */}
+        {loadingProperties ? (
+          <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin h-10 w-10 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+            </div>
+          </section>
+        ) : (
+          <AgentPropertiesSection agentName={AGENT.name} properties={agentProperties} />
+        )}
 
         {/* Secondary section with embedded BuyerAgent component for consistency */}
         <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">

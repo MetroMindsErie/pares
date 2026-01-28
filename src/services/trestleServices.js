@@ -625,4 +625,59 @@ export function mapSearchResultsToCandidates(list = []) {
     ].filter(Boolean)
   }));
 }
+
+/**
+ * Fetch all properties listed by a specific agent
+ * @param {object} options - Configuration options
+ * @param {string} options.email - Agent email (preferred filter method)
+ * @param {string} options.name - Agent full name (fallback filter method)
+ * @param {number} options.limit - Maximum number of properties to return (default: 100)
+ * @returns {Promise<Array>} Array of property objects with agent's listings
+ */
+export async function getAgentProperties(options = {}) {
+  try {
+    let filter = null;
+    
+    // Prefer email filter as it's more reliable
+    if (options.email) {
+      const escapedEmail = String(options.email).replace(/'/g, "''");
+      filter = `ListAgentEmail eq '${escapedEmail}'`;
+    } else if (options.name) {
+      const escapedName = String(options.name).replace(/'/g, "''");
+      filter = `ListAgentFullName eq '${escapedName}'`;
+    } else {
+      throw new Error('Either email or name is required');
+    }
+
+    const limit = options.limit || 100;
+
+    const response = await axios.get(`${API_BASE_URL}/odata/Property`, {
+      params: {
+        $filter: filter,
+        $top: limit,
+        $expand: 'Media',
+        $orderby: 'ModificationTimestamp desc'
+      },
+      headers: {
+        Accept: 'application/json'
+      }
+    });
+
+    const properties = Array.isArray(response.data.value) ? response.data.value : [];
+    
+    return properties.map(property => {
+      const mediaArray = Array.isArray(property.Media) ? property.Media : [];
+      
+      return {
+        ...property,
+        media: getPrimaryPhotoUrl(mediaArray),
+        mediaArray: getMediaUrlsFromArray(mediaArray).filter(url => url !== '/fallback-property.jpg')
+      };
+    });
+  } catch (error) {
+    console.error('Error fetching agent properties:', error);
+    return [];
+  }
+}
+
 // (No change needed; localContextService uses fetchToken)
