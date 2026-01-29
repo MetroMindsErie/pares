@@ -69,8 +69,8 @@ export default function JohnEasterAgent() {
         {/* Hero */}
         <section className="relative overflow-hidden">
           <div className="bg-gradient-to-r from-slate-900 to-blue-900 absolute inset-0 opacity-95" />
-          <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-20">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
+          <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-10">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
               {/* Photo & quick contact */}
               <div className="flex flex-col items-center lg:items-start">
                 <div className="rounded-full p-1 bg-gradient-to-tr from-cyan-400 to-blue-600">
@@ -105,7 +105,7 @@ export default function JohnEasterAgent() {
               </div>
 
               {/* Bio + specialties */}
-              <div className="lg:col-span-2 text-white">
+              <div className="text-white">
                 <div className="bg-white/6 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-white/6 shadow-md">
                   <h2 className="text-lg font-semibold text-white">About {AGENT.name}</h2>
                   <p className="mt-3 text-sm text-blue-100 max-w-prose leading-relaxed">
@@ -160,7 +160,7 @@ export default function JohnEasterAgent() {
           </div>
         </section>
 
-        {/* Agent Properties Section */}
+        {/* Agent Properties Section - Now Prominent */}
         {loadingProperties ? (
           <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <div className="flex justify-center items-center py-12">
