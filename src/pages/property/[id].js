@@ -1067,52 +1067,167 @@ export default function PropertyDetail({ property, isSold, taxData, historyData 
   const hasSpecialConditions = specialList.length > 0;
 
   if (status === 'Closed') {
+    const propertyImage = property.mediaUrls?.[0] || property.images?.[0] || '/fallback-property.jpg';
+    const propertyPrice = property.soldPrice || property.ClosePrice || property.price || property.ListPrice || 0;
+    const formattedPrice = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(propertyPrice);
+    const propertyDescription = property.description || property.PublicRemarks || `Sold property at ${property.address || 'this location'}`;
+    const propertyUrl = `https://www.parealestatesolutions.com/property/${property.ListingKey || property.mlsNumber}`;
+    
     return (
       <>
         <Head>
           <title>{property.address || 'Property Details'} | Erie Pennsylvania Real Estate</title>
           <meta name="description" content={`View detailed information for ${property.address || 'this property'} including photos, features, and pricing.`} />
+          
+          {/* Open Graph / Facebook */}
+          <meta property="og:type" content="website" />
+          <meta property="og:url" content={propertyUrl} />
+          <meta property="og:title" content={`${property.address || 'Property Details'} - ${formattedPrice}`} />
+          <meta property="og:description" content={propertyDescription.substring(0, 200)} />
+          <meta property="og:image" content={propertyImage} />
+          <meta property="og:image:width" content="1200" />
+          <meta property="og:image:height" content="630" />
+          <meta property="og:site_name" content="PA Real Estate Solutions" />
+          
+          {/* Twitter */}
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:url" content={propertyUrl} />
+          <meta name="twitter:title" content={`${property.address || 'Property Details'} - ${formattedPrice}`} />
+          <meta name="twitter:description" content={propertyDescription.substring(0, 200)} />
+          <meta name="twitter:image" content={propertyImage} />
         </Head>
         <SoldProperty property={property} taxData={taxData} historyData={historyData} />
       </>
     );
   } else if (hasSpecialConditions) {
+    const propertyImage = property.mediaUrls?.[0] || property.images?.[0] || '/fallback-property.jpg';
+    const propertyPrice = property.price || property.ListPrice || 0;
+    const formattedPrice = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(propertyPrice);
+    const propertyDescription = property.description || property.PublicRemarks || `Special listing at ${property.address || 'this location'}`;
+    const propertyUrl = `https://www.parealestatesolutions.com/property/${property.ListingKey || property.mlsNumber}`;
+    
     return (
       <>
         <Head>
           <title>{property.address || 'Property Details'} | Erie Pennsylvania Real Estate</title>
           <meta name="description" content={`View detailed information for ${property.address || 'this property'} including photos, features, and pricing.`} />
+          
+          {/* Open Graph / Facebook */}
+          <meta property="og:type" content="website" />
+          <meta property="og:url" content={propertyUrl} />
+          <meta property="og:title" content={`${property.address || 'Property Details'} - ${formattedPrice}`} />
+          <meta property="og:description" content={propertyDescription.substring(0, 200)} />
+          <meta property="og:image" content={propertyImage} />
+          <meta property="og:image:width" content="1200" />
+          <meta property="og:image:height" content="630" />
+          <meta property="og:site_name" content="PA Real Estate Solutions" />
+          
+          {/* Twitter */}
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:url" content={propertyUrl} />
+          <meta name="twitter:title" content={`${property.address || 'Property Details'} - ${formattedPrice}`} />
+          <meta name="twitter:description" content={propertyDescription.substring(0, 200)} />
+          <meta name="twitter:image" content={propertyImage} />
         </Head>
         <SpecialConditionsProperty property={property} taxData={taxData} historyData={historyData} />
       </>
     );
   } else if (status === 'Pending' || status === 'ActiveUnderContract') {
+    const propertyImage = property.mediaUrls?.[0] || property.images?.[0] || '/fallback-property.jpg';
+    const propertyPrice = property.price || property.ListPrice || 0;
+    const formattedPrice = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(propertyPrice);
+    const propertyDescription = property.description || property.PublicRemarks || `Pending property at ${property.address || 'this location'}`;
+    const propertyUrl = `https://www.parealestatesolutions.com/property/${property.ListingKey || property.mlsNumber}`;
+    
     return (
       <>
         <Head>
           <title>{property.address || 'Property Details'} | Erie Pennsylvania Real Estate</title>
           <meta name="description" content={`View detailed information for ${property.address || 'this property'} including photos, features, and pricing.`} />
+          
+          {/* Open Graph / Facebook */}
+          <meta property="og:type" content="website" />
+          <meta property="og:url" content={propertyUrl} />
+          <meta property="og:title" content={`${property.address || 'Property Details'} - ${formattedPrice}`} />
+          <meta property="og:description" content={propertyDescription.substring(0, 200)} />
+          <meta property="og:image" content={propertyImage} />
+          <meta property="og:image:width" content="1200" />
+          <meta property="og:image:height" content="630" />
+          <meta property="og:site_name" content="PA Real Estate Solutions" />
+          
+          {/* Twitter */}
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:url" content={propertyUrl} />
+          <meta name="twitter:title" content={`${property.address || 'Property Details'} - ${formattedPrice}`} />
+          <meta name="twitter:description" content={propertyDescription.substring(0, 200)} />
+          <meta name="twitter:image" content={propertyImage} />
         </Head>
         <PendingProperty property={property} taxData={taxData} historyData={historyData} />
       </>
     );
   } else if (status === 'Active') {
+    const propertyImage = property.mediaUrls?.[0] || property.images?.[0] || '/fallback-property.jpg';
+    const propertyPrice = property.price || property.ListPrice || 0;
+    const formattedPrice = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(propertyPrice);
+    const propertyDescription = property.description || property.PublicRemarks || `For sale at ${property.address || 'this location'}`;
+    const propertyUrl = `https://www.parealestatesolutions.com/property/${property.ListingKey || property.mlsNumber}`;
+    
     return (
       <>
         <Head>
           <title>{property.address || 'Property Details'} | Erie Pennsylvania Real Estate</title>
           <meta name="description" content={`View detailed information for ${property.address || 'this property'} including photos, features, and pricing.`} />
+          
+          {/* Open Graph / Facebook */}
+          <meta property="og:type" content="website" />
+          <meta property="og:url" content={propertyUrl} />
+          <meta property="og:title" content={`${property.address || 'Property Details'} - ${formattedPrice}`} />
+          <meta property="og:description" content={propertyDescription.substring(0, 200)} />
+          <meta property="og:image" content={propertyImage} />
+          <meta property="og:image:width" content="1200" />
+          <meta property="og:image:height" content="630" />
+          <meta property="og:site_name" content="PA Real Estate Solutions" />
+          
+          {/* Twitter */}
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:url" content={propertyUrl} />
+          <meta name="twitter:title" content={`${property.address || 'Property Details'} - ${formattedPrice}`} />
+          <meta name="twitter:description" content={propertyDescription.substring(0, 200)} />
+          <meta name="twitter:image" content={propertyImage} />
         </Head>
         <ActiveProperty property={property} taxData={taxData} historyData={historyData} />
       </>
     );
   }
   // Fallback (other statuses) use active template with tabs:
+  const propertyImage = property.mediaUrls?.[0] || property.images?.[0] || '/fallback-property.jpg';
+  const propertyPrice = property.price || property.ListPrice || 0;
+  const formattedPrice = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(propertyPrice);
+  const propertyDescription = property.description || property.PublicRemarks || `Property at ${property.address || 'this location'}`;
+  const propertyUrl = `https://www.parealestatesolutions.com/property/${property.ListingKey || property.mlsNumber}`;
+  
   return (
     <>
       <Head>
         <title>{property.address || 'Property Details'} | Erie Pennsylvania Real Estate</title>
         <meta name="description" content={`View detailed information for ${property.address || 'this property'} including photos, features, and pricing.`} />
+        
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={propertyUrl} />
+        <meta property="og:title" content={`${property.address || 'Property Details'} - ${formattedPrice}`} />
+        <meta property="og:description" content={propertyDescription.substring(0, 200)} />
+        <meta property="og:image" content={propertyImage} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:site_name" content="PA Real Estate Solutions" />
+        
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:url" content={propertyUrl} />
+        <meta name="twitter:title" content={`${property.address || 'Property Details'} - ${formattedPrice}`} />
+        <meta name="twitter:description" content={propertyDescription.substring(0, 200)} />
+        <meta name="twitter:image" content={propertyImage} />
       </Head>
       <ActiveProperty property={property} taxData={taxData} historyData={historyData} />
     </>
