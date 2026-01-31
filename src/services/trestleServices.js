@@ -475,7 +475,21 @@ export const searchProperties = async (searchParams) => {
       filters.push(`BathroomsTotalInteger ge ${parseInt(searchParams.baths, 10)}`);
     }
     if (searchParams.propertyType) {
-      filters.push(`PropertyType eq '${odataEscape(searchParams.propertyType)}'`);
+      let propertyTypeFilter = searchParams.propertyType.toLowerCase();
+      
+      // Map user-friendly property type values to Trestle enum values (no spaces)
+      if (propertyTypeFilter === 'residential') {
+        filters.push(`PropertyType eq 'Residential'`);
+      } else if (propertyTypeFilter === 'commercial') {
+        // For commercial, match both Commercial Sale and Commercial Lease
+        filters.push(`(PropertyType eq 'CommercialSale' or PropertyType eq 'CommercialLease')`);
+      } else if (propertyTypeFilter === 'land') {
+        filters.push(`PropertyType eq 'Land'`);
+      } else if (propertyTypeFilter === 'multi-family') {
+        filters.push(`PropertyType eq 'ResidentialIncome'`);
+      } else if (propertyTypeFilter === 'farm') {
+        filters.push(`PropertyType eq 'Farm'`);
+      }
     }
     const rawSpecialCondition = searchParams.specialListingConditions
       ? String(searchParams.specialListingConditions).trim()
