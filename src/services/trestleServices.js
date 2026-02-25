@@ -510,14 +510,28 @@ export const searchProperties = async (searchParams) => {
       filters.push(`LivingArea le ${parseInt(searchParams.maxSqFt, 10)}`);
     }
 
+    // MLS Area Major filter - uses contains to match the area name value (e.g., "Erie Northeast")
+    // MLSAreaMajor values in the data have format like "5 - Erie Northeast", so we search by the value portion
+    if (searchParams.mlsAreaMajor) {
+      const escapedArea = odataEscape(searchParams.mlsAreaMajor);
+      filters.push(`contains(MLSAreaMajor, '${escapedArea}')`);
+    }
+
+    // MLS Area Minor filter (if available in the data)
+    if (searchParams.mlsAreaMinor) {
+      const escapedAreaMinor = odataEscape(searchParams.mlsAreaMinor);
+      filters.push(`contains(MLSAreaMinor, '${escapedAreaMinor}')`);
+    }
+
     // Ensure county limitation is always applied (avoid returning outside-MLS results)
     filters.push(countyClause);
 
     // Build the filter query string
     const filterQuery = filters.length > 0 ? `$filter=${filters.join(' and ')}` : '';
 
-    // Reuse getPropertiesByFilter which already handles $top/$skip/$expand and media processing
-    const response = await getPropertiesByFilter(filterQuery, 50, 0);
+    // Fetch all properties without limit - use a large number to get all results
+    // The API may still paginate, but we'll return the nextLink for loading more
+    const response = await getPropertiesByFilter(filterQuery, 500, 0);
 
     // Format and sort results for the UI (ascending price)
     let formattedProperties = response.properties

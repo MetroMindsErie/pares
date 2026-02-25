@@ -1,5 +1,20 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { cacheRemove, makeUserCacheKey } from '../utils/clientCache';
+import {
+  isAuthenticated as checkIsAuthenticated,
+  hasRole as checkHasRole,
+  hasPermission as checkHasPermission,
+  isProfessional as checkIsProfessional,
+  isBasicUser as checkIsBasicUser,
+  isSuperAdmin as checkIsSuperAdmin,
+  getProfessionalType as getUserProfessionalType,
+  getSubscriptionTier as getUserSubscriptionTier,
+  getAvailableFeatures as getUserFeatures,
+  hasActiveSubscription as checkHasActiveSubscription,
+  mapLegacyRoles,
+  ROLES,
+  SUBSCRIPTION_TIERS,
+} from '../lib/authorizationUtils';
 
 const AuthContext = createContext({
   isAuthenticated: false,
@@ -10,7 +25,19 @@ const AuthContext = createContext({
   logout: async () => {},
   signup: async () => {},
   error: null,
-  getRedirectPath: () => {} // Add this new function to the context type
+  authChecked: false,
+  getRedirectPath: () => {},
+  // RBAC methods
+  hasRole: () => false,
+  hasPermission: () => false,
+  isProfessional: () => false,
+  isBasicUser: () => false,
+  isSuperAdmin: () => false,
+  getProfessionalType: () => null,
+  getSubscriptionTier: () => 'free',
+  getAvailableFeatures: () => ({}),
+  hasActiveSubscription: () => false,
+  refreshUserData: async () => {},
 });
 
 export const AuthProvider = ({ children }) => {
@@ -59,6 +86,10 @@ export const AuthProvider = ({ children }) => {
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
               hasprofile: false,
+              // RBAC defaults
+              role: ROLES.BASIC_USER,
+              subscription_tier: SUBSCRIPTION_TIERS.FREE,
+              is_active: true,
             });
           }
         } catch (err) {
@@ -428,20 +459,51 @@ export const AuthProvider = ({ children }) => {
     }
   }, [isAuthenticated, hasprofile, user]);
 
+  // RBAC helper methods using authorization utils
+  const hasRole = useCallback((role) => checkHasRole(user, role), [user]);
+  const hasPermission = useCallback((permission) => checkHasPermission(user, permission), [user]);
+  const isProfessionalUser = useCallback(() => checkIsProfessional(user), [user]);
+  const isBasicUserCheck = useCallback(() => checkIsBasicUser(user), [user]);
+  const isSuperAdminCheck = useCallback(() => checkIsSuperAdmin(user), [user]);
+  const getProfessionalType = useCallback(() => getUserProfessionalType(user), [user]);
+  const getSubscriptionTier = useCallback(() => getUserSubscriptionTier(user), [user]);
+  const getAvailableFeatures = useCallback(() => getUserFeatures(user), [user]);
+  const hasActiveSubscriptionCheck = useCallback(() => checkHasActiveSubscription(user), [user]);
+
   const value = {
+    // Existing fields
     isAuthenticated,
     user,
     loading,
     hasprofile,
     error,
     authChecked,
+    
+    // Auth methods
     login,
     loginWithProvider: (...args) => loginWithProviderRef.current(...args),
     logout,
     signup,
+    
+    // Legacy role method (for backward compatibility)
     getUserRole,
+    
+    // Data refresh
     refreshUserData,
-    getRedirectPath // Add the new function to the context value
+    
+    // Routing helper
+    getRedirectPath,
+    
+    // RBAC helper methods
+    hasRole,
+    hasPermission,
+    isProfessional: isProfessionalUser,
+    isBasicUser: isBasicUserCheck,
+    isSuperAdmin: isSuperAdminCheck,
+    getProfessionalType,
+    getSubscriptionTier,
+    getAvailableFeatures,
+    hasActiveSubscription: hasActiveSubscriptionCheck,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

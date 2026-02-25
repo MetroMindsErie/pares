@@ -142,29 +142,27 @@ const SearchResults = ({
   }, [listings, initialNextLink, nextLinkUrl, loadMoreUrl]);
 
   const loadMoreProperties = async () => {
-    if (nextLink) {
-      setLoading(true);
-      setError(null);
-      try {
-        const { properties, nextLink: newNextLink } = await getNextProperties(nextLink);
-        
-        // Ensure each property has the correct media structure using shared helpers
-        const processedProperties = properties.map(property => ({
-          ...property,
-          media: property.media || getPrimaryPhotoUrl(property.Media),
-          mediaArray: property.mediaArray || getMediaUrls(property.Media)
-        }));
+    if (!nextLink) return;
+    
+    setError(null);
+    try {
+      const { properties, nextLink: newNextLink } = await getNextProperties(nextLink);
+      
+      // Ensure each property has the correct media structure using shared helpers
+      const processedProperties = properties.map(property => ({
+        ...property,
+        media: property.media || getPrimaryPhotoUrl(property.Media),
+        mediaArray: property.mediaArray || getMediaUrls(property.Media)
+      }));
 
-        setAllListings(prev => [...prev, ...processedProperties]);
-        setNextLink(newNextLink);
-        // Reveal next page worth of items
-        setVisibleCount(prev => prev + PAGE_SIZE);
-      } catch (err) {
-        setError('Failed to load more properties');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
+      setAllListings(prev => [...prev, ...processedProperties]);
+      setNextLink(newNextLink);
+      // Reveal next page worth of items
+      setVisibleCount(prev => prev + PAGE_SIZE);
+    } catch (err) {
+      setError('Failed to load more properties');
+      console.error(err);
+      throw err; // Re-throw so handleLoadMoreClick can catch it
     }
   };
 
@@ -186,20 +184,45 @@ const SearchResults = ({
 
   // Unified handler that prefers parent-provided callbacks, else falls back to internal loader
   const handleLoadMoreClick = async () => {
-    // prefer parent's handler if they provided one
+    // Prevent double-clicks while loading
+    if (loading || externalLoading) return;
+    
+    // Check if we just need to reveal more already-loaded items
+    const hasMoreLocalItems = allListings && allListings.length > visibleCount;
+    
+    // If there are more local items to show, just reveal them
+    if (hasMoreLocalItems && !effectiveNextLink && !onLoadMore && !loadMoreProp && !onLoadMoreClick) {
+      setVisibleCount(prev => Math.min(prev + PAGE_SIZE, allListings.length));
+      return;
+    }
+    
+    // Set loading state before async operations
+    setLoading(true);
+    
     try {
+      // Prefer parent's handler if they provided one
       if (typeof onLoadMore === 'function') {
         await onLoadMore();
+        // Parent handles everything, just reveal more items
+        setVisibleCount(prev => prev + PAGE_SIZE);
       } else if (typeof loadMoreProp === 'function') {
         await loadMoreProp();
+        setVisibleCount(prev => prev + PAGE_SIZE);
       } else if (typeof onLoadMoreClick === 'function') {
         await onLoadMoreClick();
+        setVisibleCount(prev => prev + PAGE_SIZE);
       } else if (effectiveNextLink) {
+        // Use internal loader - it handles visibleCount update internally
         await loadMoreProperties();
+      } else if (hasMoreLocalItems) {
+        // Just reveal more already-loaded items
+        setVisibleCount(prev => Math.min(prev + PAGE_SIZE, allListings.length));
       }
+    } catch (err) {
+      console.error('Error loading more properties:', err);
+      setError('Failed to load more properties');
     } finally {
-      // reveal the next page of already-loaded items (if any)
-      setVisibleCount(prev => prev + PAGE_SIZE);
+      setLoading(false);
     }
   };
 
