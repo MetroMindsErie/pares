@@ -54,7 +54,7 @@ export default function PropertyMap({ listings }) {
                   <p className="text-gray-600">
                     {listing.BedroomsTotal} beds · {listing.BathroomsTotalInteger} baths
                   </p>
-                  <p className="text-xl font-bold text-blue-600">
+                  <p className="text-xl font-bold text-teal-600">
                     {listing.ListPrice ? `$${listing.ListPrice.toLocaleString()}` : 'Price not available'}
                   </p>
                   {listing.media && (
@@ -66,7 +66,7 @@ export default function PropertyMap({ listings }) {
                   )}
                   <Link 
                     href={`/property/${listing.ListingKey}`}
-                    className="mt-2 inline-block text-blue-600 hover:underline"
+                    className="mt-2 inline-block text-teal-600 hover:underline"
                   >
                     View Details →
                   </Link>

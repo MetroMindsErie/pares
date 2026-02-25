@@ -4,8 +4,8 @@ export const ActionButton = ({ children, variant = 'primary', ...props }) => (
   <button
     className={`w-full py-3 rounded-lg transition ${
       variant === 'primary'
-        ? 'bg-blue-600 text-white hover:bg-blue-700'
-        : 'border-2 border-blue-600 text-blue-600 hover:bg-blue-50'
+        ? 'bg-teal-600 text-white hover:bg-teal-700'
+        : 'border-2 border-teal-600 text-teal-600 hover:bg-teal-50'
     }`}
     {...props}
   >

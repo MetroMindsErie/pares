@@ -171,15 +171,15 @@ const PropertyCard = ({ property, onSwipe, isTop = false, isMobile = false }) =>
             
             <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-4 text-gray-600 text-xs sm:text-sm">
               <div className="flex items-center">
-                <FontAwesomeIcon icon={faBed} className="mr-2 text-blue-500" />
+                <FontAwesomeIcon icon={faBed} className="mr-2 text-teal-500" />
                 <span>{property.BedroomsTotal || 'N/A'} beds</span>
               </div>
               <div className="flex items-center">
-                <FontAwesomeIcon icon={faBath} className="mr-2 text-blue-500" />
+                <FontAwesomeIcon icon={faBath} className="mr-2 text-teal-500" />
                 <span>{property.BathroomsTotalInteger || 'N/A'} baths</span>
               </div>
               <div className="flex items-center">
-                <FontAwesomeIcon icon={faRuler} className="mr-2 text-blue-500" />
+                <FontAwesomeIcon icon={faRuler} className="mr-2 text-teal-500" />
                 <span>{property.LivingArea ? `${property.LivingArea.toLocaleString()} sqft` : 'N/A'}</span>
               </div>
             </div>
@@ -217,10 +217,10 @@ const PropertyCard = ({ property, onSwipe, isTop = false, isMobile = false }) =>
             
             <button
               onClick={() => handleActionClick('up')}
-              className="flex flex-col items-center justify-center p-2 sm:p-3 bg-blue-100 hover:bg-blue-200 rounded-xl transition-colors"
+              className="flex flex-col items-center justify-center p-2 sm:p-3 bg-teal-100 hover:bg-teal-200 rounded-xl transition-colors"
             >
-              <FontAwesomeIcon icon={faPhone} className="text-blue-600 text-lg sm:text-xl mb-1" />
-              <span className="text-[10px] sm:text-xs text-blue-600">Connect</span>
+              <FontAwesomeIcon icon={faPhone} className="text-teal-600 text-lg sm:text-xl mb-1" />
+              <span className="text-[10px] sm:text-xs text-teal-600">Connect</span>
             </button>
           </div>
         </div>
@@ -248,7 +248,7 @@ const PropertyCard = ({ property, onSwipe, isTop = false, isMobile = false }) =>
           </motion.div>
           
           <motion.div
-            className="absolute top-4 sm:top-8 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg font-bold text-sm sm:text-lg"
+            className="absolute top-4 sm:top-8 left-1/2 transform -translate-x-1/2 bg-teal-500 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg font-bold text-sm sm:text-lg"
             style={{
               opacity: topIndicatorOpacity
             }}

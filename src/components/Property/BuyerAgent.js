@@ -21,7 +21,7 @@ const BuyerAgent = ({ className = "" }) => {
   };
 
   return (
-    <div className={`bg-blue-50 border border-blue-200 rounded-lg p-6 ${className}`}>
+    <div className={`bg-teal-50 border border-teal-200 rounded-lg p-6 ${className}`}>
       <div className="flex items-center space-x-4">
         <div className="flex-shrink-0">
           <img
@@ -42,7 +42,7 @@ const BuyerAgent = ({ className = "" }) => {
           <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0">
             <button
               onClick={() => handleContact('phone', buyerAgent.phone)}
-              className="flex items-center text-sm text-blue-600 hover:text-blue-800 transition-colors"
+              className="flex items-center text-sm text-teal-600 hover:text-teal-800 transition-colors"
             >
               <FontAwesomeIcon icon={faPhone} className="w-4 h-4 mr-2" />
               {buyerAgent.phone}
@@ -50,7 +50,7 @@ const BuyerAgent = ({ className = "" }) => {
             
             <button
               onClick={() => handleContact('email', buyerAgent.email)}
-              className="flex items-center text-sm text-blue-600 hover:text-blue-800 transition-colors"
+              className="flex items-center text-sm text-teal-600 hover:text-teal-800 transition-colors"
             >
               <FontAwesomeIcon icon={faEnvelope} className="w-4 h-4 mr-2" />
               {buyerAgent.email}
@@ -61,7 +61,7 @@ const BuyerAgent = ({ className = "" }) => {
         <div className="flex-shrink-0">
           <button
             onClick={() => handleContact('phone', buyerAgent.phone)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+            className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium"
           >
             Contact Now
           </button>

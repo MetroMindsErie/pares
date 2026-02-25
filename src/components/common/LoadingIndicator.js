@@ -9,7 +9,7 @@ const LoadingIndicator = ({ text = 'Loading...', size = 'medium' }) => {
 
   return (
     <div className="flex flex-col items-center justify-center py-8">
-      <div className={`animate-spin rounded-full ${sizeClasses[size]} border-blue-500 border-t-transparent`}></div>
+      <div className={`animate-spin rounded-full ${sizeClasses[size]} border-teal-500 border-t-transparent`}></div>
       {text && <p className="mt-4 text-gray-600">{text}</p>}
     </div>
   );

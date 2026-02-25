@@ -57,10 +57,10 @@ const PropertyCollection = ({ properties, title, icon, emptyMessage, onPropertyC
   return (
     <div className="bg-white rounded-xl shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="p-6 border-b bg-gradient-to-r from-blue-50 to-indigo-50">
+      <div className="p-6 border-b bg-gradient-to-r from-teal-50 to-green-50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <FontAwesomeIcon icon={icon} className="text-2xl text-blue-600" />
+            <FontAwesomeIcon icon={icon} className="text-2xl text-teal-600" />
             <div>
               <h3 className="text-xl font-semibold text-gray-800">{title}</h3>
               <p className="text-sm text-gray-600">{properties.length} properties</p>
@@ -135,7 +135,7 @@ const PropertyCollection = ({ properties, title, icon, emptyMessage, onPropertyC
                       e.stopPropagation();
                       if (onPropertyClick) onPropertyClick(currentProperty);
                     }}
-                    className="text-blue-600 hover:text-blue-800 transition-colors"
+                    className="text-teal-600 hover:text-teal-800 transition-colors"
                   >
                     <FontAwesomeIcon icon={faExternalLinkAlt} />
                   </button>
@@ -151,15 +151,15 @@ const PropertyCollection = ({ properties, title, icon, emptyMessage, onPropertyC
 
                 <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
                   <div className="flex items-center gap-1">
-                    <FontAwesomeIcon icon={faBed} className="text-blue-500" />
+                    <FontAwesomeIcon icon={faBed} className="text-teal-500" />
                     <span>{currentProperty.BedroomsTotal || 'N/A'}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <FontAwesomeIcon icon={faBath} className="text-blue-500" />
+                    <FontAwesomeIcon icon={faBath} className="text-teal-500" />
                     <span>{currentProperty.BathroomsTotalInteger || 'N/A'}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <FontAwesomeIcon icon={faRuler} className="text-blue-500" />
+                    <FontAwesomeIcon icon={faRuler} className="text-teal-500" />
                     <span>{currentProperty.LivingArea ? `${currentProperty.LivingArea.toLocaleString()} sqft` : 'N/A'}</span>
                   </div>
                 </div>
@@ -180,7 +180,7 @@ const PropertyCollection = ({ properties, title, icon, emptyMessage, onPropertyC
                 key={index}
                 onClick={() => setCurrentIndex(index)}
                 className={`w-2 h-2 rounded-full transition-colors ${
-                  index === currentIndex ? 'bg-blue-600' : 'bg-gray-300'
+                  index === currentIndex ? 'bg-teal-600' : 'bg-gray-300'
                 }`}
               />
             ))}

@@ -5,7 +5,7 @@ const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-gradient-to-br from-slate-900 via-indigo-900 to-black text-white pt-12">
+    <footer className="bg-gradient-to-br from-slate-900 via-teal-900 to-black text-white pt-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="rounded-2xl bg-slate-800/30 backdrop-blur-md ring-1 ring-white/10 shadow-2xl overflow-hidden">
           <div className="px-6 py-8 sm:px-8 lg:px-12 lg:py-12">
@@ -13,12 +13,11 @@ const Footer = () => {
               {/* Brand / description */}
               <div className="md:col-span-5">
                 <Link href="/" className="inline-flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-gradient-to-tr from-cyan-400 to-indigo-500 shadow-lg">
-                    <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <path d="M12 2L2 7v7c0 5 4 9 10 9s10-4 10-9V7l-10-5z" fill="currentColor" />
-                    </svg>
-                  </div>
-                  <span className="text-2xl font-extrabold tracking-tight text-white">Pares</span>
+                  <img
+                    src="/pares_homes.png"
+                    alt="pares.homes"
+                    className="h-10 w-auto object-contain brightness-0 invert"
+                  />
                 </Link>
 
                 <p className="mt-4 text-sm text-slate-300 max-w-md">
@@ -32,12 +31,12 @@ const Footer = () => {
                     </svg>
                   </a>
                   <a href="#" aria-label="Twitter" className="inline-flex items-center justify-center w-10 h-10 rounded-md bg-white/5 border border-white/6 shadow hover:bg-white/6 hover:scale-105 transition">
-                    <svg className="w-5 h-5 text-cyan-400" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <svg className="w-5 h-5 text-teal-400" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                       <path d="M23 3a10.9 10.9 0 01-3.14 1.53A4.48 4.48 0 0016 3a4.5 4.5 0 00-4.47 4.47c0 .35.04.69.11 1.01A12.94 12.94 0 013 4.1s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5 0-.17 0-.34-.01-.51A7.72 7.72 0 0023 3z" />
                     </svg>
                   </a>
                   <a href="#" aria-label="LinkedIn" className="inline-flex items-center justify-center w-10 h-10 rounded-md bg-white/5 border border-white/6 shadow hover:bg-white/6 hover:scale-105 transition">
-                    <svg className="w-5 h-5 text-indigo-400" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <svg className="w-5 h-5 text-teal-400" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                       <path d="M19 3A2 2 0 0 1 21 5v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14zm-9 7H7v7h3v-7zm-1.5-3a1.5 1.5 0 1 0 .001-3.001A1.5 1.5 0 0 0 8.5 7zM17 10c-1.11 0-1.82.6-2.15 1.02V10h-3v7h3v-3c0-.8.5-2 1.74-2 1.22 0 1.26 1.09 1.26 2.06V17h3v-3.5C21 11.5 19.5 10 17 10z" />
                     </svg>
                   </a>
@@ -49,7 +48,7 @@ const Footer = () => {
                 <h4 className="text-xs font-semibold text-slate-300 uppercase tracking-wide">Explore</h4>
                 <ul className="mt-4 space-y-3 text-sm">
                   <li>
-                    <Link href="/agents/john-easter" className="inline-flex items-center px-3 py-2 rounded-full bg-white/5 text-slate-100 hover:bg-gradient-to-r hover:from-cyan-500 hover:to-indigo-500 transition">
+                    <Link href="/agents/john-easter" className="inline-flex items-center px-3 py-2 rounded-full bg-white/5 text-slate-100 hover:bg-gradient-to-r hover:from-teal-500 hover:to-green-500 transition">
                       John D. Easter Jr.
                     </Link>
                   </li>
@@ -88,11 +87,11 @@ const Footer = () => {
                       id="footer-email"
                       type="email"
                       placeholder="you@company.com"
-                      className="w-full rounded-full border border-transparent px-4 py-2 text-sm bg-slate-700 text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                      className="w-full rounded-full border border-transparent px-4 py-2 text-sm bg-slate-700 text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-400"
                     />
                     <button
                       type="submit"
-                      className="mt-0 sm:mt-0 flex-shrink-0 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-cyan-500 to-indigo-500 px-4 py-2 text-sm font-semibold text-white shadow-lg hover:brightness-105 transition"
+                      className="mt-0 sm:mt-0 flex-shrink-0 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-teal-500 to-green-500 px-4 py-2 text-sm font-semibold text-white shadow-lg hover:brightness-105 transition"
                     >
                       Subscribe
                     </button>
@@ -101,7 +100,7 @@ const Footer = () => {
 
                 <div className="mt-6">
                   <p className="text-xs text-slate-400">
-                    Or email <a href="mailto:support@parealestatesolutions.com" className="text-cyan-300 hover:underline">support@parealestatesolutions.com</a>
+                    Or email <a href="mailto:support@pares.homes" className="text-teal-300 hover:underline">support@pares.homes</a>
                   </p>
                 </div>
               </div>
@@ -110,7 +109,7 @@ const Footer = () => {
             {/* Legal */}
             <div className="mt-8 pt-6 border-t border-white/6">
               <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                <p className="text-sm text-slate-400">© {currentYear} Pares Real Estate Solutions. All rights reserved.</p>
+                <p className="text-sm text-slate-400">© {currentYear} pares.homes — Real Estate Solutions. All rights reserved.</p>
 
                 <div className="flex items-center gap-4">
                   <Link href="/privacy" className="text-sm text-slate-300 hover:text-white transition">Privacy</Link>

@@ -58,8 +58,8 @@ export default function InterestPicker({ selectedInterests = [], onChange, onBac
               onClick={() => handleInterestToggle(interest.id)}
               className={`p-3 border rounded-md cursor-pointer transition-colors ${
                 isSelected 
-                  ? 'border-blue-500 bg-blue-50' 
-                  : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+                  ? 'border-teal-500 bg-teal-50' 
+                  : 'border-gray-200 hover:border-teal-300 hover:bg-gray-50'
               }`}
               role="checkbox"
               aria-checked={isSelected}
@@ -69,7 +69,7 @@ export default function InterestPicker({ selectedInterests = [], onChange, onBac
                 <span className="text-2xl mr-2">{interest.icon}</span>
                 <span className="font-medium">{interest.name}</span>
                 {isSelected && (
-                  <div className="ml-auto bg-blue-600 rounded-full p-1">
+                  <div className="ml-auto bg-teal-600 rounded-full p-1">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
@@ -94,7 +94,7 @@ export default function InterestPicker({ selectedInterests = [], onChange, onBac
           type="button"
           onClick={handleSubmit}
           disabled={isSubmitting}
-          className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 flex items-center"
+          className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-50 flex items-center"
         >
           {isSubmitting ? (
             <>

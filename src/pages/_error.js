@@ -14,7 +14,7 @@ function ErrorPage({ statusCode }) {
         </p>
         <button 
           onClick={() => window.location.reload()} 
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          className="bg-teal-600 text-white px-4 py-2 rounded hover:bg-teal-700"
         >
           Refresh the page
         </button>

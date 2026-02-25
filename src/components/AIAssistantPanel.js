@@ -65,13 +65,13 @@ const COUNTY_ZIP_OPTIONS = {
 function LoadingRow({ label }) {
   return (
     <div className="mt-3 flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
-      <div className="h-5 w-5 rounded-full border-2 border-gray-300 dark:border-gray-700 border-t-indigo-600 animate-spin" />
+      <div className="h-5 w-5 rounded-full border-2 border-gray-300 dark:border-gray-700 border-t-teal-600 animate-spin" />
       <div className="flex items-center gap-1">
         <span>{label}</span>
         <span className="inline-flex gap-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-bounce" style={{ animationDelay: '0ms' }} />
-          <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-bounce" style={{ animationDelay: '120ms' }} />
-          <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-bounce" style={{ animationDelay: '240ms' }} />
+          <span className="w-1.5 h-1.5 rounded-full bg-teal-600 animate-bounce" style={{ animationDelay: '0ms' }} />
+          <span className="w-1.5 h-1.5 rounded-full bg-teal-600 animate-bounce" style={{ animationDelay: '120ms' }} />
+          <span className="w-1.5 h-1.5 rounded-full bg-teal-600 animate-bounce" style={{ animationDelay: '240ms' }} />
         </span>
       </div>
     </div>
@@ -453,7 +453,7 @@ export function AIAssistantPanel() {
           onClick={() => setTab('search')}
           className={
             tab === 'search'
-              ? 'px-3 py-1.5 rounded-md bg-indigo-600 text-white text-sm'
+              ? 'px-3 py-1.5 rounded-md bg-teal-600 text-white text-sm'
               : 'px-3 py-1.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm'
           }
         >
@@ -463,7 +463,7 @@ export function AIAssistantPanel() {
           onClick={() => setTab('pricing')}
           className={
             tab === 'pricing'
-              ? 'px-3 py-1.5 rounded-md bg-indigo-600 text-white text-sm'
+              ? 'px-3 py-1.5 rounded-md bg-teal-600 text-white text-sm'
               : 'px-3 py-1.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm'
           }
         >
@@ -537,7 +537,7 @@ export function AIAssistantPanel() {
                 <button
                   onClick={onSearch}
                   disabled={!canSearch}
-                  className="px-4 py-2 rounded-md bg-indigo-600 text-white text-sm disabled:opacity-60"
+                  className="px-4 py-2 rounded-md bg-teal-600 text-white text-sm disabled:opacity-60"
                 >
                   {searchLoading ? 'Searching…' : 'Search'}
                 </button>
@@ -652,7 +652,7 @@ export function AIAssistantPanel() {
                 <button
                   onClick={onPricing}
                   disabled={!pricingStreet.trim() || !pricingCounty.trim() || !pricingZip.trim() || anyLoading}
-                  className="px-4 py-2 rounded-md bg-indigo-600 text-white text-sm disabled:opacity-60"
+                  className="px-4 py-2 rounded-md bg-teal-600 text-white text-sm disabled:opacity-60"
                 >
                   {pricingLoading ? 'Analyzing…' : 'Get pricing'}
                 </button>
@@ -736,7 +736,7 @@ export function AIAssistantPanel() {
                   type="button"
                   onClick={handleCompareSelected}
                   disabled={selectedComps.length === 0}
-                  className="text-xs px-3 py-1.5 rounded-md bg-indigo-600 text-white disabled:opacity-60"
+                  className="text-xs px-3 py-1.5 rounded-md bg-teal-600 text-white disabled:opacity-60"
                 >
                   Compare selected ({selectedComps.length})
                 </button>
@@ -785,7 +785,7 @@ export function AIAssistantPanel() {
                     </label>
                     <Link
                       href={`/property/${encodeURIComponent(l.id)}`}
-                      className="shrink-0 text-xs text-indigo-600 dark:text-indigo-400"
+                      className="shrink-0 text-xs text-teal-600 dark:text-teal-400"
                     >
                       View
                     </Link>

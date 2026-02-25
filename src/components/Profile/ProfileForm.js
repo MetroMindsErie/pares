@@ -42,8 +42,8 @@ const ProfileForm = ({ onSubmit, initialData = {}, onBack, step }) => {
                       key={type.id}
                       className={`relative flex p-4 border rounded-lg cursor-pointer transition-colors
                         ${formData.profileTypeId === type.id 
-                          ? 'border-indigo-600 bg-indigo-50' 
-                          : 'border-gray-200 hover:border-indigo-300'}`}
+                          ? 'border-teal-600 bg-teal-50' 
+                          : 'border-gray-200 hover:border-teal-300'}`}
                     >
                       <input
                         type="radio"
@@ -65,7 +65,7 @@ const ProfileForm = ({ onSubmit, initialData = {}, onBack, step }) => {
                         </div>
                       </div>
                       <div className={`absolute inset-y-0 right-4 flex items-center
-                        ${formData.profileTypeId === type.id ? 'text-indigo-600' : 'text-gray-400'}`}
+                        ${formData.profileTypeId === type.id ? 'text-teal-600' : 'text-gray-400'}`}
                       >
                         <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -85,7 +85,7 @@ const ProfileForm = ({ onSubmit, initialData = {}, onBack, step }) => {
                     name="firstName"
                     value={formData.firstName}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                     required
                   />
                 </div>
@@ -96,7 +96,7 @@ const ProfileForm = ({ onSubmit, initialData = {}, onBack, step }) => {
                     name="lastName"
                     value={formData.lastName}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                     required
                   />
                 </div>
@@ -113,7 +113,7 @@ const ProfileForm = ({ onSubmit, initialData = {}, onBack, step }) => {
                   name="city"
                   value={formData.city}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                   required
                 />
               </div>
@@ -125,7 +125,7 @@ const ProfileForm = ({ onSubmit, initialData = {}, onBack, step }) => {
                   name="state"
                   value={formData.state}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                   required
                 />
               </div>
@@ -136,7 +136,7 @@ const ProfileForm = ({ onSubmit, initialData = {}, onBack, step }) => {
                   name="zipCode"
                   value={formData.zipCode}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                   required
                 />
               </div>
@@ -152,7 +152,7 @@ const ProfileForm = ({ onSubmit, initialData = {}, onBack, step }) => {
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                 />
               </div>
               <div className="space-y-2">
@@ -162,7 +162,7 @@ const ProfileForm = ({ onSubmit, initialData = {}, onBack, step }) => {
                   name="alternateEmail"
                   value={formData.alternateEmail}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                 />
               </div>
             </>
@@ -183,7 +183,7 @@ const ProfileForm = ({ onSubmit, initialData = {}, onBack, step }) => {
         )}
         <button
           type="submit"
-          className="mx-auto px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+          className="mx-auto px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
         >
           {step === 3 ? 'Next Step' : 'Continue'}
         </button>

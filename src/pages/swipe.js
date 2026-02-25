@@ -126,7 +126,7 @@ const SwipePage = () => {
         <meta name="description" content="Swipe through properties to find your perfect home in Pennsylvania" />
       </Head>
 
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
+      <div className="min-h-screen bg-gradient-to-br from-teal-50 to-green-50">
         {/* Always Visible Search Header */}
         <div className="sticky top-0 z-50 bg-white shadow-sm border-b">
           <div className="max-w-6xl mx-auto px-4 py-4">
@@ -146,7 +146,7 @@ const SwipePage = () => {
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
                     placeholder={isMobile ? "City, county, ZIP..." : "Search by city, county, or ZIP code..."}
-                    className="w-full pl-10 pr-20 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full pl-10 pr-20 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                   />
                   <FontAwesomeIcon 
                     icon={faSearch} 
@@ -155,7 +155,7 @@ const SwipePage = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-1.5 rounded-md transition-colors text-sm"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-teal-600 hover:bg-teal-700 disabled:bg-gray-400 text-white px-4 py-1.5 rounded-md transition-colors text-sm"
                   >
                     {loading ? '...' : 'Search'}
                   </button>
@@ -169,7 +169,7 @@ const SwipePage = () => {
                     <FontAwesomeIcon icon={faHeart} />
                     <span>{stats.liked}</span>
                   </div>
-                  <div className="flex items-center gap-1 text-blue-600">
+                  <div className="flex items-center gap-1 text-teal-600">
                     <FontAwesomeIcon icon={faPhone} />
                     <span>{stats.connections}</span>
                   </div>
@@ -230,7 +230,7 @@ const SwipePage = () => {
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-gray-600">Connections</span>
-                          <span className="font-medium text-blue-600">{stats.connections}</span>
+                          <span className="font-medium text-teal-600">{stats.connections}</span>
                         </div>
                       </div>
                     </div>
@@ -265,7 +265,7 @@ const SwipePage = () => {
                       </div>
                       <div className="absolute inset-0 flex items-center justify-center">
                         <div className="bg-white bg-opacity-90 rounded-lg p-4 text-center">
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto mb-2"></div>
                           <p className="text-sm text-gray-600">Finding properties...</p>
                         </div>
                       </div>

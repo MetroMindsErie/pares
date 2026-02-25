@@ -207,7 +207,7 @@ const Reels = ({ userId: propUserId, hasFacebookConnection: propHasFacebookConne
         <p className="mb-4 text-gray-600">Connect your Facebook account to import your real estate reels.</p>
         <button
           onClick={handleConnectFacebook}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300"
+          className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition duration-300"
         >
           Connect Facebook
         </button>
@@ -218,7 +218,7 @@ const Reels = ({ userId: propUserId, hasFacebookConnection: propHasFacebookConne
   if (loading) {
     return (
       <div className="p-8 text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500 mx-auto"></div>
         <p className="mt-4 text-gray-600">Loading your reels...</p>
         {!effectiveUserId && (
           <div className="mt-2 text-amber-600 text-sm">
@@ -236,7 +236,7 @@ const Reels = ({ userId: propUserId, hasFacebookConnection: propHasFacebookConne
         <div className="flex gap-3">
           <button 
             onClick={handleRefresh}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition duration-300"
+            className="px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700 transition duration-300"
             disabled={!effectiveUserId}
           >
             Try Again
@@ -281,7 +281,7 @@ const Reels = ({ userId: propUserId, hasFacebookConnection: propHasFacebookConne
         </p>
         <button
           onClick={handleRefresh}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300"
+          className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition duration-300"
           disabled={!effectiveUserId}
         >
           Refresh
@@ -307,7 +307,7 @@ const Reels = ({ userId: propUserId, hasFacebookConnection: propHasFacebookConne
       <div className="flex justify-center mt-6 mb-4">
         <button
           onClick={handleRefresh}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-300 flex items-center gap-2"
+          className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition duration-300 flex items-center gap-2"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />

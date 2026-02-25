@@ -43,7 +43,7 @@ export default function PrivacyPolicy() {
         <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Privacy Policy</h1>
-            <div className="h-1 w-24 bg-blue-600 mx-auto"></div>
+            <div className="h-1 w-24 bg-teal-600 mx-auto"></div>
           </div>
 
           <div className="prose prose-blue prose-lg max-w-none">
@@ -53,7 +53,7 @@ export default function PrivacyPolicy() {
               using our services. By using our website, you consent to the practices described here.
             </p>
 
-            <div className="bg-white shadow-md rounded-lg p-6 mb-8 border-l-4 border-blue-600">
+            <div className="bg-white shadow-md rounded-lg p-6 mb-8 border-l-4 border-teal-600">
               <h2 className="text-2xl font-semibold text-gray-800 mb-4">Data Collection</h2>
               <p className="text-gray-700">
                 We may collect basic user information such as email addresses to enable certain
@@ -63,7 +63,7 @@ export default function PrivacyPolicy() {
               </p>
             </div>
 
-            <div className="bg-white shadow-md rounded-lg p-6 mb-8 border-l-4 border-blue-600">
+            <div className="bg-white shadow-md rounded-lg p-6 mb-8 border-l-4 border-teal-600">
               <h2 className="text-2xl font-semibold text-gray-800 mb-4">Use of Data</h2>
               <p className="text-gray-700">
                 Data collected helps us personalize user experiences and facilitate secure login. We 
@@ -71,7 +71,7 @@ export default function PrivacyPolicy() {
               </p>
             </div>
 
-            <div className="bg-white shadow-md rounded-lg p-6 mb-8 border-l-4 border-blue-600">
+            <div className="bg-white shadow-md rounded-lg p-6 mb-8 border-l-4 border-teal-600">
               <h2 className="text-2xl font-semibold text-gray-800 mb-4">Cookies & Tracking</h2>
               <p className="text-gray-700">
                 We may use cookies or similar technologies to enhance user experience, 
@@ -80,16 +80,16 @@ export default function PrivacyPolicy() {
               </p>
             </div>
 
-            <div className="bg-white shadow-md rounded-lg p-6 mb-8 border-l-4 border-blue-600">
+            <div className="bg-white shadow-md rounded-lg p-6 mb-8 border-l-4 border-teal-600">
               <h2 className="text-2xl font-semibold text-gray-800 mb-4">Third-Party Services</h2>
               <p className="text-gray-700">
                 Our service may integrate with third-party providers (e.g., Facebook). Their 
                 policies govern the data they collect. We recommend reviewing their terms for 
                 full details.
               </p>
-              <div className="mt-4 p-4 bg-blue-50 rounded-md">
-                <h3 className="font-medium text-blue-800 mb-2">Facebook Integration</h3>
-                <p className="text-sm text-blue-700">
+              <div className="mt-4 p-4 bg-teal-50 rounded-md">
+                <h3 className="font-medium text-teal-800 mb-2">Facebook Integration</h3>
+                <p className="text-sm text-teal-700">
                   When you connect with Facebook, we receive information according to the permissions
                   you grant. This typically includes your public profile and email address.
                   We never post to your Facebook account without your explicit permission.
@@ -97,7 +97,7 @@ export default function PrivacyPolicy() {
               </div>
             </div>
 
-            <div className="bg-white shadow-md rounded-lg p-6 mb-8 border-l-4 border-blue-600">
+            <div className="bg-white shadow-md rounded-lg p-6 mb-8 border-l-4 border-teal-600">
               <h2 className="text-2xl font-semibold text-gray-800 mb-4">Policy Updates</h2>
               <p className="text-gray-700">
                 We may update this Policy to reflect changes. Continued use of our website 
@@ -113,7 +113,7 @@ export default function PrivacyPolicy() {
               </p>
               <a 
                 href="mailto:support@parealestatesolutions.com" 
-                className="text-blue-600 hover:text-blue-800 font-medium flex items-center"
+                className="text-teal-600 hover:text-teal-800 font-medium flex items-center"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -131,19 +131,19 @@ export default function PrivacyPolicy() {
               <div className="flex space-x-4">
                 <Link 
                   href="/" 
-                  className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                  className="text-sm text-teal-600 hover:text-teal-800 font-medium"
                 >
                   Home
                 </Link>
                 <Link 
                   href="/terms" 
-                  className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                  className="text-sm text-teal-600 hover:text-teal-800 font-medium"
                 >
                   Terms of Service
                 </Link>
                 <Link 
                   href="/contact" 
-                  className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                  className="text-sm text-teal-600 hover:text-teal-800 font-medium"
                 >
                   Contact
                 </Link>

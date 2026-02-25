@@ -11,7 +11,7 @@ const ProgressStepper = ({ steps, currentStep, onStepClick }) => {
         {/* Animated Progress Line */}
         <div className="absolute top-4 left-0 h-1 w-full -z-5">
           <motion.div
-            className="h-full bg-indigo-600 rounded-full"
+            className="h-full bg-teal-600 rounded-full"
             initial={{ width: "0%" }}
             animate={{ width: `${((currentStep - 1) / (steps.length - 1)) * 100}%` }}
             transition={{ duration: 0.3 }}
@@ -32,9 +32,9 @@ const ProgressStepper = ({ steps, currentStep, onStepClick }) => {
               disabled={currentStep < index + 1}
               className={`w-8 h-8 rounded-full flex items-center justify-center z-10
                 ${currentStep > index + 1 
-                  ? 'bg-indigo-600 text-white' 
+                  ? 'bg-teal-600 text-white' 
                   : currentStep === index + 1
-                    ? 'bg-indigo-600 text-white ring-4 ring-indigo-100'
+                    ? 'bg-teal-600 text-white ring-4 ring-teal-100'
                     : 'bg-white border-2 border-gray-300 text-gray-400'
                 } transition-all duration-200`}
             >
@@ -45,7 +45,7 @@ const ProgressStepper = ({ steps, currentStep, onStepClick }) => {
               )}
             </button>
             <span className={`absolute -bottom-6 text-sm font-medium whitespace-nowrap
-              ${currentStep === index + 1 ? 'text-indigo-600' : 'text-gray-500'}`}>
+              ${currentStep === index + 1 ? 'text-teal-600' : 'text-gray-500'}`}>
               {step.title}
             </span>
           </motion.div>

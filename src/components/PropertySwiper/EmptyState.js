@@ -22,7 +22,7 @@ const EmptyState = ({ onReset }) => {
         <div className="space-y-3 w-full max-w-xs">
           <button
             onClick={onReset}
-            className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-xl transition-colors"
+            className="w-full flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-medium py-3 px-6 rounded-xl transition-colors"
           >
             <FontAwesomeIcon icon={faRedo} />
             Reset & Start Over

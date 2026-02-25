@@ -4,6 +4,17 @@ import { useAuth } from '../context/auth-context';
 import WelcomeBanner from '../components/Dashboard/WelcomeBanner';
 import StatsCard from '../components/Dashboard/StatsCard';
 import RecentActivity from '../components/Dashboard/RecentActivity';
+import {
+  SubscriptionBadge,
+  QuickActions,
+  AgentDashboardSection,
+  BrokerDashboardSection,
+  InvestorDashboardSection,
+  LockedFeaturesPanel,
+  UpgradeCTA,
+  FeatureUsageSummary,
+} from '../components/Dashboard/RoleDashboard';
+import { OptionalFeature } from '../components/FeatureGate';
 import supabase from '../lib/supabase-setup';
 import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
@@ -353,7 +364,7 @@ export default function DashboardPage() {
               backgroundColor: 'rgba(0,0,0,0.5)',
             }}
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-900/70 to-transparent"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-teal-900/70 to-transparent"></div>
             <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
               {profile && (
                 <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 md:gap-6 text-center sm:text-left">
@@ -368,11 +379,14 @@ export default function DashboardPage() {
                     }}
                   />
                   <div className="text-white">
-                    <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">
-                      Welcome back, {profile.first_name}!
-                    </h1>
-                    <p className="mt-1 sm:mt-2 text-blue-100 text-xs sm:text-sm md:text-base">
-                      Here's what's happening with your saved properties
+                    <div className="flex items-center gap-3">
+                      <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">
+                        Welcome back, {profile.first_name}!
+                      </h1>
+                      <SubscriptionBadge />
+                    </div>
+                    <p className="mt-1 sm:mt-2 text-teal-100 text-xs sm:text-sm md:text-base">
+                      Here&apos;s what&apos;s happening with your saved properties
                     </p>
                   </div>
                 </div>
@@ -408,39 +422,26 @@ export default function DashboardPage() {
                 <AIAssistantPanel />
               </div>
               <div className="space-y-6">
-                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-5">
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Quick Actions</h3>
-                  <div className="space-y-2">
-                    <button
-                      onClick={() => {
-                        if (typeof window !== 'undefined') {
-                          sessionStorage.removeItem('searchResults');
-                          sessionStorage.removeItem('searchParams');
-                          localStorage.removeItem('lastSearchResults');
-                          localStorage.removeItem('lastSearchParams');
-                          sessionStorage.setItem('scrollToTop', 'true');
-                        }
-                        window.location.href = '/';
-                      }}
-                      className="w-full px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm"
-                    >
-                      Browse Properties
-                    </button>
-                    <button
-                      onClick={() => router.push('/saved-properties')}
-                      className="w-full px-4 py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-sm"
-                    >
-                      View Saved Properties ({savedProperties.length})
-                    </button>
-                    <button
-                      onClick={() => router.push('/create-profile')}
-                      className="w-full px-4 py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-sm"
-                    >
-                      Profile Settings
-                    </button>
-                  </div>
-                </div>
+                <QuickActions router={router} />
+                <FeatureUsageSummary />
               </div>
+            </div>
+
+            {/* Role-based dashboard sections — only show if user has access */}
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 mb-6 sm:mb-8">
+              <AgentDashboardSection />
+              <BrokerDashboardSection />
+              <InvestorDashboardSection />
+            </div>
+
+            {/* Locked features overview — shows what the user can unlock */}
+            <div className="mb-6 sm:mb-8">
+              <LockedFeaturesPanel />
+            </div>
+
+            {/* Upgrade CTA for non-premium users */}
+            <div className="mb-6 sm:mb-8">
+              <UpgradeCTA />
             </div>
           </div>
         </main>

@@ -23,8 +23,8 @@ const ProfileTypeSelector = ({ selectedType, onChange, onNext, onBack }) => {
             key={type.id}
             className={`p-4 border rounded-lg cursor-pointer transition-all ${
               selectedType === type.id
-                ? 'border-indigo-500 bg-indigo-50'
-                : 'border-gray-200 hover:border-indigo-300'
+                ? 'border-teal-500 bg-teal-50'
+                : 'border-gray-200 hover:border-teal-300'
             }`}
             onClick={() => onChange(type.id)}
           >
@@ -32,7 +32,7 @@ const ProfileTypeSelector = ({ selectedType, onChange, onNext, onBack }) => {
               <div
                 className={`w-5 h-5 rounded-full border ${
                   selectedType === type.id
-                    ? 'border-indigo-500 bg-indigo-500'
+                    ? 'border-teal-500 bg-teal-500'
                     : 'border-gray-400'
                 } mr-3 flex items-center justify-center`}
               >
@@ -61,7 +61,7 @@ const ProfileTypeSelector = ({ selectedType, onChange, onNext, onBack }) => {
           type="button"
           onClick={onNext}
           disabled={!selectedType}
-          className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed"
+          className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 disabled:bg-teal-400 disabled:cursor-not-allowed"
         >
           Continue
         </button>

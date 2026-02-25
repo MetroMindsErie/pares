@@ -56,9 +56,9 @@ function PillList({ items }) {
 }
 
 const toneStyles = {
-  indigo: {
-    bar: 'bg-indigo-500',
-    label: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  teal: {
+    bar: 'bg-teal-500',
+    label: 'bg-teal-50 text-teal-700 border-teal-200',
   },
   emerald: {
     bar: 'bg-emerald-500',
@@ -78,8 +78,8 @@ const toneStyles = {
   },
 };
 
-function Section({ title, children, tone = 'indigo' }) {
-  const styles = toneStyles[tone] || toneStyles.indigo;
+function Section({ title, children, tone = 'teal' }) {
+  const styles = toneStyles[tone] || toneStyles.teal;
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
       <div className="flex items-center gap-3 px-4 sm:px-6 pt-5">
@@ -131,7 +131,7 @@ export default function PropertyFactsAndFeatures({ property }) {
 
   return (
     <div className="space-y-5">
-      <Section title="Key facts" tone="indigo">
+      <Section title="Key facts" tone="teal">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
           <div>
             <InfoRow label="Status" value={property.StandardStatus || property.MlsStatus} />
@@ -227,7 +227,7 @@ export default function PropertyFactsAndFeatures({ property }) {
       </Section>
 
       {(community.length || amenities.length) ? (
-        <Section title="Community" tone="indigo">
+        <Section title="Community" tone="teal">
           <PillList items={community} />
           <PillList items={amenities} />
         </Section>

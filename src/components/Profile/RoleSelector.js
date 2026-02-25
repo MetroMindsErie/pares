@@ -135,7 +135,7 @@ export default function RoleSelector({ selectedRoles = [], onChange, onNext, onB
               onClick={() => handleRoleToggle(role.id)}
               className={`p-4 border rounded-lg cursor-pointer transition-all ${
                 isSelected 
-                  ? 'border-blue-500 bg-blue-50' 
+                  ? 'border-teal-500 bg-teal-50' 
                   : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
               }`}
               role="checkbox"
@@ -147,20 +147,20 @@ export default function RoleSelector({ selectedRoles = [], onChange, onNext, onB
                   <div className="flex items-center gap-2">
                     <h4 className="font-medium text-gray-900">{role.name}</h4>
                     {role.badge && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-teal-100 text-teal-800">
                         {role.badge}
                       </span>
                     )}
                   </div>
                   <p className="text-sm text-gray-500">{role.description}</p>
                   {role.professional && (
-                    <p className="text-xs text-blue-600 mt-1">
+                    <p className="text-xs text-teal-600 mt-1">
                       Upgrade to Professional plan to unlock full features
                     </p>
                   )}
                 </div>
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                  isSelected ? 'bg-blue-600' : 'bg-gray-200'
+                  isSelected ? 'bg-teal-600' : 'bg-gray-200'
                 }`}>
                   {isSelected && (
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" viewBox="0 0 20 20" fill="currentColor">
@@ -194,7 +194,7 @@ export default function RoleSelector({ selectedRoles = [], onChange, onNext, onB
         <button
           type="button"
           onClick={handleNext}
-          className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+          className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700"
         >
           Continue
         </button>

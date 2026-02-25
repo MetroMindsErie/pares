@@ -80,7 +80,7 @@ const CreateProfilePage = () => {
   if (authLoading) {
     return (
       <div className="min-h-screen flex justify-center items-center">
-        <div className="animate-spin h-10 w-10 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+        <div className="animate-spin h-10 w-10 border-4 border-teal-500 rounded-full border-t-transparent"></div>
       </div>
     );
   }
@@ -104,7 +104,7 @@ const CreateProfilePage = () => {
                 <div
                   key={i}
                   className={`w-3 h-3 rounded-full ${
-                    i <= step ? 'bg-blue-600' : 'bg-gray-300'
+                    i <= step ? 'bg-teal-600' : 'bg-gray-300'
                   }`}
                 />
               ))}

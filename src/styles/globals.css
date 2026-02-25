@@ -695,36 +695,40 @@ html, body, #__next {
   opacity: 0.98;
 }
 
-/* Logo styling — rounded card + rounded image */
+/* Logo styling — uniform fixed-size cards for consistent UX */
 .partners-logo-card {
   display: flex;
   align-items: center;
   justify-content: center;
+  /* Fixed dimensions so every card is the same size */
+  width: 100px;
+  height: 52px;
+  min-width: 100px;
+  min-height: 52px;
   padding: 8px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  box-shadow: 0 10px 24px rgba(16, 24, 40, 0.12), 0 2px 6px rgba(16, 24, 40, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  box-shadow: 0 2px 8px rgba(16, 24, 40, 0.06);
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .partners-logo-img {
-  height: 64px;
+  max-height: 100%;
+  max-width: 100%;
   width: auto;
+  height: auto;
   object-fit: contain;
   display: block;
   opacity: 1;
-  border-radius: 10px;
-  filter: drop-shadow(0 4px 10px rgba(16,24,40,0.08));
 }
 
-/* Mobile / small devices: slightly smaller logos & tighter spacing */
+/* Mobile / small devices */
 @media (max-width: 639px) {
   :root {
     --partners-height-desktop: var(--partners-height-mobile);
   }
-  /* Keep the ticker at the top of the document flow on mobile (don't offset it by navbar height)
-     and keep its z-index low so it won't cover the dashboard avatar. */
   .partners-ticker {
     position: relative;
     top: 0;
@@ -738,16 +742,26 @@ html, body, #__next {
     animation-duration: 14s;
   }
   .partners-logo-card {
+    width: 100px;
+    height: 52px;
+    min-width: 100px;
+    min-height: 52px;
     padding: 6px;
-    border-radius: 12px;
-  }
-  .partners-logo-img {
-    height: 40px;
-    border-radius: 8px;
   }
 }
 
-/* Desktop: keep the taller banner and more breathing room */
+/* Tablet */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .partners-logo-card {
+    width: 140px;
+    height: 72px;
+    min-width: 140px;
+    min-height: 72px;
+    padding: 10px;
+  }
+}
+
+/* Desktop: larger cards and more breathing room */
 @media (min-width: 1024px) {
   .partners-ticker {
     height: var(--partners-height-desktop);
@@ -758,12 +772,12 @@ html, body, #__next {
     animation-duration: 20s;
   }
   .partners-logo-card {
-    padding: 10px;
-    border-radius: 16px;
-  }
-  .partners-logo-img {
-    height: 72px;
-    border-radius: 12px;
+    width: 160px;
+    height: 80px;
+    min-width: 160px;
+    min-height: 80px;
+    padding: 12px;
+    border-radius: 14px;
   }
 }
 
@@ -771,17 +785,6 @@ html, body, #__next {
 @keyframes partners-marquee {
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }
-}
-
-/* gentle float on logos to add subtle life */
-.partners-logo-card {
-  animation: partners-float 6s ease-in-out infinite;
-}
-
-@keyframes partners-float {
-  0% { transform: translateY(0); }
-  50% { transform: translateY(-3px); }
-  100% { transform: translateY(0); }
 }
 
 /* Keep hero scroll gap intact (already present), ensure ticker sits just above hero */

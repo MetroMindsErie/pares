@@ -30,7 +30,7 @@ export const PropertyGallery = ({ media }) => {
             key={index}
             onClick={() => setActiveIndex(index)}
             className={`relative h-20 rounded-md overflow-hidden cursor-pointer transition-opacity ${
-              index === activeIndex ? 'ring-2 ring-blue-500' : 'opacity-75 hover:opacity-100'
+              index === activeIndex ? 'ring-2 ring-teal-500' : 'opacity-75 hover:opacity-100'
             }`}
           >
             <img

@@ -214,11 +214,11 @@ const PropertyView = ({ propertyData, mlsData }) => {
 
       {/* Toggle for crypto investors */}
       {userRole === 'crypto_investor' && (
-        <div className="mb-4 p-4 bg-gradient-to-r from-purple-100 to-indigo-100 rounded-lg shadow-sm">
+        <div className="mb-4 p-4 bg-gradient-to-r from-purple-100 to-teal-100 rounded-lg shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-medium text-indigo-900">Crypto Property View</h3>
-              <p className="text-sm text-indigo-700">
+              <h3 className="font-medium text-teal-900">Crypto Property View</h3>
+              <p className="text-sm text-teal-700">
                 Enable to see crypto-related property information
               </p>
             </div>
@@ -229,7 +229,7 @@ const PropertyView = ({ propertyData, mlsData }) => {
                 onChange={handleToggleCryptoView}
                 className="sr-only peer" 
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-teal-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
             </label>
           </div>
         </div>

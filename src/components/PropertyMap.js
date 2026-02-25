@@ -49,7 +49,7 @@ const PropertyMap = ({ listings,onLocationSelect }) => {
       </MapContainer>
       <button 
         onClick={() => handleSearchFromMap(mapRef.current.getCenter())}
-        className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg"
+        className="mt-2 px-4 py-2 bg-teal-600 text-white rounded-lg"
       >
         Search This Area
       </button>

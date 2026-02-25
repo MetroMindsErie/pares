@@ -49,6 +49,55 @@ export default function CreateProfile() {
     const [error, setError] = useState(null);
     const [profilePictureFetched, setProfilePictureFetched] = useState(false);
 
+    // Redirect if the user already has a completed profile AND they arrived
+    // from the auth callback (setup=true). If the user intentionally navigated
+    // here (e.g. "Profile Settings" / edit=true), let them through to edit.
+    const isSetupRedirect = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('setup');
+    const isEditMode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('edit');
+
+    useEffect(() => {
+        // Only auto-redirect when coming from auth callback, not intentional edits
+        if (isEditMode) return;
+
+        const checkExistingProfile = async () => {
+            if (!user?.id || !authChecked || loading) return;
+            
+            try {
+                const { data, error: fetchErr } = await supabase
+                    .from('users')
+                    .select('hasprofile, first_name, last_name, city')
+                    .eq('id', user.id)
+                    .maybeSingle();
+
+                if (fetchErr || !data) return;
+
+                // If hasprofile is already true, go to dashboard
+                if (data.hasprofile === true) {
+                    router.replace('/dashboard');
+                    return;
+                }
+
+                // Even if hasprofile is false, if all key profile fields exist
+                // the profile was completed previously and hasprofile was wrongly reset.
+                // Fix it and redirect.
+                if (data.first_name && data.last_name && data.city) {
+                    // Repair the corrupted flag
+                    await supabase
+                        .from('users')
+                        .update({ hasprofile: true, updated_at: new Date().toISOString() })
+                        .eq('id', user.id);
+                    
+                    router.replace('/dashboard');
+                    return;
+                }
+            } catch (err) {
+                console.error('Error checking existing profile:', err);
+            }
+        };
+
+        checkExistingProfile();
+    }, [user, authChecked, loading, router, isEditMode]);
+
     // Improved redirect logic
     useEffect(() => {
         // Only redirect if we're certain the user isn't authenticated
@@ -541,7 +590,7 @@ export default function CreateProfile() {
     if (loading) {
         return (
             <div className="min-h-screen flex justify-center items-center">
-                <div className="animate-spin h-10 w-10 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+                <div className="animate-spin h-10 w-10 border-4 border-teal-500 rounded-full border-t-transparent"></div>
             </div>
         );
     }
@@ -624,7 +673,7 @@ export default function CreateProfile() {
                                 {/* Loading State */}
                                 {isSubmitting && (
                                     <div className="absolute inset-0 bg-white/75 flex items-center justify-center">
-                                        <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent"></div>
+                                        <div className="animate-spin rounded-full h-12 w-12 border-4 border-teal-500 border-t-transparent"></div>
                                     </div>
                                 )}
                             </div>

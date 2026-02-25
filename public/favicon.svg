@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0052A5"/>
+      <stop offset="50%" stop-color="#00897B"/>
+      <stop offset="100%" stop-color="#43A047"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+  <!-- Simplified house icon -->
+  <path d="M32 12L12 28v22a2 2 0 002 2h12V38h12v14h12a2 2 0 002-2V28L32 12z" fill="white" fill-opacity="0.95"/>
+  <!-- Map pin dot -->
+  <circle cx="44" cy="22" r="6" fill="white" fill-opacity="0.9"/>
+  <circle cx="44" cy="22" r="3" fill="url(#bg)"/>
+</svg>

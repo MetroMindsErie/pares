@@ -102,17 +102,17 @@
 //               {/* Property Stats */}
 //               <div className="grid grid-cols-3 gap-4 mb-6">
 //                 <div className="text-center p-4 bg-gray-50 rounded-lg">
-//                   <FontAwesomeIcon icon={faBed} className="text-2xl text-blue-600 mb-2" />
+//                   <FontAwesomeIcon icon={faBed} className="text-2xl text-teal-600 mb-2" />
 //                   <p className="text-sm text-gray-600">Bedrooms</p>
 //                   <p className="text-lg font-semibold">{property.BedroomsTotal || 'N/A'}</p>
 //                 </div>
 //                 <div className="text-center p-4 bg-gray-50 rounded-lg">
-//                   <FontAwesomeIcon icon={faBath} className="text-2xl text-blue-600 mb-2" />
+//                   <FontAwesomeIcon icon={faBath} className="text-2xl text-teal-600 mb-2" />
 //                   <p className="text-sm text-gray-600">Bathrooms</p>
 //                   <p className="text-lg font-semibold">{property.BathroomsTotalInteger || 'N/A'}</p>
 //                 </div>
 //                 <div className="text-center p-4 bg-gray-50 rounded-lg">
-//                   <FontAwesomeIcon icon={faRuler} className="text-2xl text-blue-600 mb-2" />
+//                   <FontAwesomeIcon icon={faRuler} className="text-2xl text-teal-600 mb-2" />
 //                   <p className="text-sm text-gray-600">Square Feet</p>
 //                   <p className="text-lg font-semibold">
 //                     {property.LivingArea ? property.LivingArea.toLocaleString() : 'N/A'}
@@ -132,7 +132,7 @@
 //               <div className="flex gap-4">
 //                 <button
 //                   onClick={handleContactAgent}
-//                   className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors"
+//                   className="flex-1 flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-medium py-3 px-6 rounded-lg transition-colors"
 //                 >
 //                   <FontAwesomeIcon icon={faPhone} />
 //                   Contact Agent

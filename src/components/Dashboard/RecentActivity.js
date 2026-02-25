@@ -32,7 +32,7 @@ const RecentActivity = ({ activities, isLoading }) => {
                     </div>
                   </div>
                   {activity.href ? (
-                    <div className="shrink-0 text-xs text-indigo-600 dark:text-indigo-400">View</div>
+                    <div className="shrink-0 text-xs text-teal-600 dark:text-teal-400">View</div>
                   ) : null}
                 </div>
               );

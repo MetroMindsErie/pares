@@ -136,7 +136,7 @@ export default function FAQPage() {
 							Still need help? Visit our{' '}
 							<Link
 								href="/contact"
-								className="text-blue-600 hover:underline"
+								className="text-teal-600 hover:underline"
 							>
 								Contact
 							</Link>{' '}

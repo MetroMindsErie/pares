@@ -112,7 +112,7 @@ const PropertyDetail = ({ property, onClose }) => {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg p-8">
-          <div className="animate-spin h-10 w-10 border-4 border-blue-600 rounded-full border-t-transparent mx-auto"></div>
+          <div className="animate-spin h-10 w-10 border-4 border-teal-600 rounded-full border-t-transparent mx-auto"></div>
           <p className="text-center mt-4">Loading property view...</p>
         </div>
       </div>

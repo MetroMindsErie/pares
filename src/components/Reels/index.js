@@ -117,7 +117,7 @@ function ReelsMain({ userId: propUserId, hasFacebookConnection: propHasFacebookC
         <p className="mb-4 text-gray-600">Connect your Facebook account to import your real estate reels.</p>
         <button
           onClick={handleConnectFacebook}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300"
+          className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition duration-300"
         >
           Connect Facebook
         </button>
@@ -136,7 +136,7 @@ function ReelsMain({ userId: propUserId, hasFacebookConnection: propHasFacebookC
         <div className="flex gap-3">
           <button 
             onClick={handleRefresh}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition duration-300"
+            className="px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700 transition duration-300"
           >
             Try Again
           </button>
@@ -173,14 +173,14 @@ function ReelsMain({ userId: propUserId, hasFacebookConnection: propHasFacebookC
         <div className="flex flex-col items-center gap-4">
           <button
             onClick={handleRefresh}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300"
+            className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition duration-300"
           >
             Refresh
           </button>
           
           <button
             onClick={handleConnectFacebook}
-            className="text-blue-600 underline hover:text-blue-800"
+            className="text-teal-600 underline hover:text-teal-800"
           >
             Reconnect Facebook
           </button>
@@ -217,7 +217,7 @@ function ReelsMain({ userId: propUserId, hasFacebookConnection: propHasFacebookC
         
         <button
           onClick={handleRefresh}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-300 flex items-center gap-2"
+          className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition duration-300 flex items-center gap-2"
           disabled={loading}
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
