@@ -50,7 +50,7 @@ const SavedProperties = ({ properties, isLoading, error, onDelete, deletingIds }
                   </div>
                 </Link>
                 <div className="p-4 space-y-1">
-                  <p className="font-medium text-lg text-blue-600">
+                  <p className="font-medium text-lg text-teal-600">
                     ${property.price?.toLocaleString()}
                   </p>
                   <p className="text-gray-600 text-sm truncate">{property.address}</p>

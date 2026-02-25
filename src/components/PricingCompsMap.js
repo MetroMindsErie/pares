@@ -325,7 +325,7 @@ export default function PricingCompsMap({ subject, comps, onToggleComp, selected
                           <div className="mt-2 flex items-center gap-3">
                             <a
                               href={`/property/${encodeURIComponent(String(c.id))}`}
-                              className="text-indigo-600 hover:underline"
+                              className="text-teal-600 hover:underline"
                             >
                               View property
                             </a>
@@ -333,7 +333,7 @@ export default function PricingCompsMap({ subject, comps, onToggleComp, selected
                               <button
                                 type="button"
                                 onClick={() => onToggleComp(c)}
-                                className="text-indigo-600 hover:underline"
+                                className="text-teal-600 hover:underline"
                               >
                                 {selectedCompIds?.has(String(c.id)) ? 'Remove' : 'Compare'}
                               </button>

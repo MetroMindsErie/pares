@@ -135,22 +135,22 @@ export const SoldProperty = ({ property, taxData, historyData }) => {
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-8">
                 <div className="bg-gray-50 p-3 sm:p-4 rounded-lg text-center">
-                  <FontAwesomeIcon icon={faBed} className="text-blue-500 text-lg sm:text-xl mb-2" />
+                  <FontAwesomeIcon icon={faBed} className="text-teal-500 text-lg sm:text-xl mb-2" />
                   <p className="text-xs sm:text-sm text-gray-500">Bedrooms</p>
                   <p className="font-bold text-sm sm:text-base">{property.BedroomsTotal || 'N/A'}</p>
                 </div>
                 <div className="bg-gray-50 p-3 sm:p-4 rounded-lg text-center">
-                  <FontAwesomeIcon icon={faBath} className="text-blue-500 text-lg sm:text-xl mb-2" />
+                  <FontAwesomeIcon icon={faBath} className="text-teal-500 text-lg sm:text-xl mb-2" />
                   <p className="text-xs sm:text-sm text-gray-500">Bathrooms</p>
                   <p className="font-bold text-sm sm:text-base">{property.BathroomsTotalInteger || 'N/A'}</p>
                 </div>
                 <div className="bg-gray-50 p-3 sm:p-4 rounded-lg text-center">
-                  <FontAwesomeIcon icon={faRuler} className="text-blue-500 text-lg sm:text-xl mb-2" />
+                  <FontAwesomeIcon icon={faRuler} className="text-teal-500 text-lg sm:text-xl mb-2" />
                   <p className="text-xs sm:text-sm text-gray-500">Living Area</p>
                   <p className="font-bold text-sm sm:text-base">{property.LivingArea ? `${property.LivingArea.toLocaleString()} sq ft` : 'N/A'}</p>
                 </div>
                 <div className="bg-gray-50 p-3 sm:p-4 rounded-lg text-center">
-                  <FontAwesomeIcon icon={faCalendar} className="text-blue-500 text-lg sm:text-xl mb-2" />
+                  <FontAwesomeIcon icon={faCalendar} className="text-teal-500 text-lg sm:text-xl mb-2" />
                   <p className="text-xs sm:text-sm text-gray-500">Year Built</p>
                   <p className="font-bold text-sm sm:text-base">{property.YearBuilt || 'N/A'}</p>
                 </div>

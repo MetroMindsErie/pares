@@ -103,13 +103,13 @@ const ErieBrandedHero = ({ onSearchResults, onSearchStart }) => {
             >
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
                 <span className="block">Discover Your</span>
-                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
+                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-green-300">
                   Perfect Home
                 </span>
                 <span className="block">in Erie</span>
               </h1>
               
-              <p className="text-xl md:text-2xl text-blue-100 mb-8 leading-relaxed max-w-xl">
+              <p className="text-xl md:text-2xl text-teal-100 mb-8 leading-relaxed max-w-xl">
                 Experience premium real estate services in Pennsylvania's beautiful lakefront city. 
                 From downtown lofts to waterfront estates.
               </p>
@@ -123,15 +123,15 @@ const ErieBrandedHero = ({ onSearchResults, onSearchStart }) => {
               >
                 <div className="text-center">
                   <div className="text-2xl font-bold text-white mb-1">500+</div>
-                  <div className="text-sm text-blue-200">Active Listings</div>
+                  <div className="text-sm text-teal-200">Active Listings</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-white mb-1">98%</div>
-                  <div className="text-sm text-blue-200">Client Satisfaction</div>
+                  <div className="text-sm text-teal-200">Client Satisfaction</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-white mb-1">15+</div>
-                  <div className="text-sm text-blue-200">Years Experience</div>
+                  <div className="text-sm text-teal-200">Years Experience</div>
                 </div>
               </motion.div>
             </motion.div>
@@ -163,7 +163,7 @@ const ErieBrandedHero = ({ onSearchResults, onSearchStart }) => {
                     {['Downtown Erie', 'Waterfront', 'Millcreek', 'West Erie', 'Luxury Homes'].map((term) => (
                       <button
                         key={term}
-                        className="px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-blue-50 hover:text-blue-700 text-gray-700 rounded-full transition-colors"
+                        className="px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-teal-50 hover:text-teal-700 text-gray-700 rounded-full transition-colors"
                         onClick={() => {
                           // Trigger search with this term
                           const searchInput = document.querySelector('input[name="search"]');

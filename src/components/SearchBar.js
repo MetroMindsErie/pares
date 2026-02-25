@@ -122,14 +122,14 @@ const SearchBar = ({
   return (
     <div className="w-full backdrop-blur-lg bg-white/80 dark:bg-gray-900/80 border border-gray-100 dark:border-gray-800 rounded-xl p-3 sm:p-4 md:p-6 shadow-xl relative overflow-hidden">
       {/* Tech-inspired decorative elements */}
-      <div className="absolute -top-12 -right-12 w-40 h-40 bg-gradient-to-br from-blue-400 to-indigo-500 opacity-20 rounded-full blur-2xl"></div>
-      <div className="absolute -bottom-8 -left-8 w-40 h-40 bg-gradient-to-tr from-cyan-400 to-blue-500 opacity-20 rounded-full blur-2xl"></div>
+      <div className="absolute -top-12 -right-12 w-40 h-40 bg-gradient-to-br from-blue-400 to-teal-500 opacity-20 rounded-full blur-2xl"></div>
+      <div className="absolute -bottom-8 -left-8 w-40 h-40 bg-gradient-to-tr from-teal-400 to-green-500 opacity-20 rounded-full blur-2xl"></div>
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-50"></div>
       
       <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4 md:space-y-5 relative z-10">
         {/* Location Search */}
         <div className="relative group">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-lg blur opacity-30 group-hover:opacity-40 transition duration-300"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-teal-500 rounded-lg blur opacity-30 group-hover:opacity-40 transition duration-300"></div>
           <input
             type="text"
             id="location"
@@ -137,7 +137,7 @@ const SearchBar = ({
             value={searchParams.location}
             onChange={handleChange}
             placeholder="Enter County, ZIP Code, or Address"
-            className="w-full px-3 sm:px-4 py-2.5 sm:py-3 md:py-3.5 rounded-lg border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700 dark:text-gray-200 shadow-sm relative transition-all duration-300 text-sm sm:text-base"
+            className="w-full px-3 sm:px-4 py-2.5 sm:py-3 md:py-3.5 rounded-lg border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-700 dark:text-gray-200 shadow-sm relative transition-all duration-300 text-sm sm:text-base"
           />
           <div className="mt-1 sm:mt-1.5 text-xs text-gray-500 dark:text-gray-400 pl-1 sm:pl-2">
             Try searching for "Erie", "Warren", "Crawford" counties or enter a ZIP code
@@ -153,7 +153,7 @@ const SearchBar = ({
               name="status"
               value={searchParams.status}
               onChange={handleChange}
-              className="w-full px-3 py-2 sm:py-2.5 pr-9 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-blue-500 text-gray-700 dark:text-gray-200 text-xs sm:text-sm appearance-none transition-all duration-300 truncate"
+              className="w-full px-3 py-2 sm:py-2.5 pr-9 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-teal-500 text-gray-700 dark:text-gray-200 text-xs sm:text-sm appearance-none transition-all duration-300 truncate"
             >
               <option value="">Status</option>
               <option value="Active">Active</option>
@@ -162,7 +162,7 @@ const SearchBar = ({
               <option value="Closed">Sold</option>
               <option value="ComingSoon">Coming Soon</option>
             </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-blue-500">
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-teal-500">
               <svg className="h-4 w-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
                 <path d="M19 9l-7 7-7-7"></path>
               </svg>
@@ -176,14 +176,14 @@ const SearchBar = ({
               name="mlsAreaMajor"
               value={searchParams.mlsAreaMajor}
               onChange={handleChange}
-              className="w-full px-3 py-2 sm:py-2.5 pr-9 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-blue-500 text-gray-700 dark:text-gray-200 text-xs sm:text-sm appearance-none transition-all duration-300 truncate"
+              className="w-full px-3 py-2 sm:py-2.5 pr-9 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-teal-500 text-gray-700 dark:text-gray-200 text-xs sm:text-sm appearance-none transition-all duration-300 truncate"
             >
               <option value="">MLS Area</option>
               {mlsAreaMajorOptions.map(opt => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-blue-500">
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-teal-500">
               <svg className="h-4 w-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
                 <path d="M19 9l-7 7-7-7"></path>
               </svg>
@@ -197,7 +197,7 @@ const SearchBar = ({
               name="specialListingConditions"
               value={searchParams.specialListingConditions}
               onChange={handleChange}
-              className="w-full px-3 py-2 sm:py-2.5 pr-9 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-blue-500 text-gray-700 dark:text-gray-200 text-xs sm:text-sm appearance-none transition-all duration-300 truncate"
+              className="w-full px-3 py-2 sm:py-2.5 pr-9 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-teal-500 text-gray-700 dark:text-gray-200 text-xs sm:text-sm appearance-none transition-all duration-300 truncate"
             >
               <option value="">Conditions</option>
               <option value="Short Sale">Short Sale</option>
@@ -209,7 +209,7 @@ const SearchBar = ({
               <option value="HUD Owned">HUD Owned</option>
               <option value="Notice Of Default">Notice Of Default</option>
             </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-blue-500">
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-teal-500">
               <svg className="h-4 w-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
                 <path d="M19 9l-7 7-7-7"></path>
               </svg>
@@ -223,7 +223,7 @@ const SearchBar = ({
               name="propertyType"
               value={searchParams.propertyType}
               onChange={handleChange}
-              className="w-full px-3 py-2 sm:py-2.5 pr-9 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-blue-500 text-gray-700 dark:text-gray-200 text-xs sm:text-sm appearance-none transition-all duration-300 truncate"
+              className="w-full px-3 py-2 sm:py-2.5 pr-9 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-teal-500 text-gray-700 dark:text-gray-200 text-xs sm:text-sm appearance-none transition-all duration-300 truncate"
             >
               <option value="">Type</option>
               <option value="Residential">Residential</option>
@@ -232,7 +232,7 @@ const SearchBar = ({
               <option value="Multi-Family">Multi-Family</option>
               <option value="Farm">Farm</option>
             </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-blue-500">
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-teal-500">
               <svg className="h-4 w-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
                 <path d="M19 9l-7 7-7-7"></path>
               </svg>
@@ -249,7 +249,7 @@ const SearchBar = ({
               name="minPrice"
               value={searchParams.minPrice}
               onChange={handleChange}
-              className="w-full px-3 py-2 sm:py-2.5 pr-9 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-blue-500 text-gray-700 dark:text-gray-200 text-xs sm:text-sm appearance-none transition-all duration-300 truncate"
+              className="w-full px-3 py-2 sm:py-2.5 pr-9 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-teal-500 text-gray-700 dark:text-gray-200 text-xs sm:text-sm appearance-none transition-all duration-300 truncate"
             >
               <option value="">Min Price</option>
               <option value="100000">$100k</option>
@@ -260,7 +260,7 @@ const SearchBar = ({
               <option value="750000">$750k</option>
               <option value="1000000">$1M</option>
             </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-blue-500">
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-teal-500">
               <svg className="h-4 w-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
                 <path d="M19 9l-7 7-7-7"></path>
               </svg>
@@ -274,7 +274,7 @@ const SearchBar = ({
               name="maxPrice"
               value={searchParams.maxPrice}
               onChange={handleChange}
-              className="w-full px-3 py-2 sm:py-2.5 pr-9 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-blue-500 text-gray-700 dark:text-gray-200 text-xs sm:text-sm appearance-none transition-all duration-300 truncate"
+              className="w-full px-3 py-2 sm:py-2.5 pr-9 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-teal-500 text-gray-700 dark:text-gray-200 text-xs sm:text-sm appearance-none transition-all duration-300 truncate"
             >
               <option value="">Max Price</option>
               <option value="300000">$300k</option>
@@ -284,7 +284,7 @@ const SearchBar = ({
               <option value="1500000">$1.5M</option>
               <option value="2000000">$2M+</option>
             </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-blue-500">
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-teal-500">
               <svg className="h-4 w-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
                 <path d="M19 9l-7 7-7-7"></path>
               </svg>
@@ -298,7 +298,7 @@ const SearchBar = ({
               name="beds"
               value={searchParams.beds}
               onChange={handleChange}
-              className="w-full px-3 py-2 sm:py-2.5 pr-9 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-blue-500 text-gray-700 dark:text-gray-200 text-xs sm:text-sm appearance-none transition-all duration-300 truncate"
+              className="w-full px-3 py-2 sm:py-2.5 pr-9 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-teal-500 text-gray-700 dark:text-gray-200 text-xs sm:text-sm appearance-none transition-all duration-300 truncate"
             >
               <option value="">Bedrooms</option>
               <option value="1">1+ beds</option>
@@ -307,7 +307,7 @@ const SearchBar = ({
               <option value="4">4+ beds</option>
               <option value="5">5+ beds</option>
             </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-blue-500">
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-teal-500">
               <svg className="h-4 w-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
                 <path d="M19 9l-7 7-7-7"></path>
               </svg>
@@ -321,7 +321,7 @@ const SearchBar = ({
               name="baths"
               value={searchParams.baths}
               onChange={handleChange}
-              className="w-full px-3 py-2 sm:py-2.5 pr-9 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-blue-500 text-gray-700 dark:text-gray-200 text-xs sm:text-sm appearance-none transition-all duration-300 truncate"
+              className="w-full px-3 py-2 sm:py-2.5 pr-9 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-teal-500 text-gray-700 dark:text-gray-200 text-xs sm:text-sm appearance-none transition-all duration-300 truncate"
             >
               <option value="">Bathrooms</option>
               <option value="1">1+ baths</option>
@@ -329,7 +329,7 @@ const SearchBar = ({
               <option value="3">3+ baths</option>
               <option value="4">4+ baths</option>
             </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-blue-500">
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-teal-500">
               <svg className="h-4 w-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
                 <path d="M19 9l-7 7-7-7"></path>
               </svg>
@@ -339,9 +339,9 @@ const SearchBar = ({
         
         {/* Conditional Sold Timeline Filter - Now more prominent */}
         {searchParams.status === 'Closed' && (
-          <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
+          <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-gradient-to-r from-blue-50 to-teal-50 dark:from-blue-900/20 dark:to-teal-900/20 rounded-xl border border-teal-100 dark:border-blue-800">
             <div className="flex items-center gap-2 mb-2">
-              <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-teal-600 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -359,7 +359,7 @@ const SearchBar = ({
                 name="soldWithin"
                 value={searchParams.soldWithin}
                 onChange={handleChange}
-                className="w-full px-4 py-3 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-blue-500 text-gray-700 dark:text-gray-200 text-base font-medium appearance-none transition-all duration-300"
+                className="w-full px-4 py-3 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-teal-500 text-gray-700 dark:text-gray-200 text-base font-medium appearance-none transition-all duration-300"
               >
                 <option value="">Show sold properties from...</option>
                 <option value="7">Last 7 days</option>
@@ -369,7 +369,7 @@ const SearchBar = ({
                 <option value="365">Last 12 months</option>
                 <option value="730">Last 24 months</option>
               </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-blue-500" style={{ top: '24px' }}>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-teal-500" style={{ top: '24px' }}>
                 <svg className="h-5 w-5" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
                   <path d="M19 9l-7 7-7-7"></path>
                 </svg>
@@ -387,7 +387,7 @@ const SearchBar = ({
                   name="minSqFt"
                   value={searchParams.minSqFt}
                   onChange={handleChange}
-                  className="w-full px-3 py-2.5 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-blue-500 text-gray-700 dark:text-gray-200 text-sm appearance-none transition-all duration-300"
+                  className="w-full px-3 py-2.5 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-teal-500 text-gray-700 dark:text-gray-200 text-sm appearance-none transition-all duration-300"
                 >
                   <option value="">No Min</option>
                   <option value="500">500 sqft</option>
@@ -399,7 +399,7 @@ const SearchBar = ({
                   <option value="2500">2,500 sqft</option>
                   <option value="3000">3,000 sqft</option>
                 </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-blue-500" style={{ top: '24px' }}>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-teal-500" style={{ top: '24px' }}>
                   <svg className="h-4 w-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
                     <path d="M19 9l-7 7-7-7"></path>
                   </svg>
@@ -415,7 +415,7 @@ const SearchBar = ({
                   name="maxSqFt"
                   value={searchParams.maxSqFt}
                   onChange={handleChange}
-                  className="w-full px-3 py-2.5 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-blue-500 text-gray-700 dark:text-gray-200 text-sm appearance-none transition-all duration-300"
+                  className="w-full px-3 py-2.5 rounded-lg border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-teal-500 text-gray-700 dark:text-gray-200 text-sm appearance-none transition-all duration-300"
                 >
                   <option value="">No Max</option>
                   <option value="1000">1,000 sqft</option>
@@ -426,7 +426,7 @@ const SearchBar = ({
                   <option value="4000">4,000 sqft</option>
                   <option value="5000">5,000 sqft</option>
                 </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-blue-500" style={{ top: '24px' }}>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-teal-500" style={{ top: '24px' }}>
                   <svg className="h-4 w-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
                     <path d="M19 9l-7 7-7-7"></path>
                   </svg>
@@ -446,7 +446,7 @@ const SearchBar = ({
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium py-2.5 sm:py-3 px-3 sm:px-4 rounded-md transition-all duration-300 shadow-sm hover:shadow-lg disabled:opacity-70 flex items-center justify-center group border border-transparent hover:border-blue-400 text-sm sm:text-base min-h-[44px]"
+            className="flex-1 bg-gradient-to-r from-teal-600 to-green-600 hover:from-teal-700 hover:to-green-700 text-white font-medium py-2.5 sm:py-3 px-3 sm:px-4 rounded-md transition-all duration-300 shadow-sm hover:shadow-lg disabled:opacity-70 flex items-center justify-center group border border-transparent hover:border-blue-400 text-sm sm:text-base min-h-[44px]"
           >
             {loading ? (
               <>

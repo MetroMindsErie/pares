@@ -192,7 +192,7 @@ const AutocompleteSearch = ({ onSearch, onSuggestionSelect, loading = false }) =
           onKeyDown={handleKeyDown}
           onFocus={() => setShowSuggestions(true)}
           placeholder="Search by city, county, or ZIP code..."
-          className="w-full pl-12 pr-16 py-4 text-lg border-2 border-gray-200 rounded-2xl focus:border-blue-500 focus:outline-none transition-colors bg-white shadow-lg"
+          className="w-full pl-12 pr-16 py-4 text-lg border-2 border-gray-200 rounded-2xl focus:border-teal-500 focus:outline-none transition-colors bg-white shadow-lg"
         />
         
         <FontAwesomeIcon 
@@ -203,7 +203,7 @@ const AutocompleteSearch = ({ onSearch, onSuggestionSelect, loading = false }) =
         <button
           onClick={() => handleSearch()}
           disabled={loading}
-          className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-6 py-2 rounded-xl transition-colors flex items-center gap-2"
+          className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-teal-600 hover:bg-teal-700 disabled:bg-gray-400 text-white px-6 py-2 rounded-xl transition-colors flex items-center gap-2"
         >
           {loading ? (
             <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
@@ -225,7 +225,7 @@ const AutocompleteSearch = ({ onSearch, onSuggestionSelect, loading = false }) =
               <span className="text-sm font-medium text-gray-600">Recent Searches</span>
               <button
                 onClick={clearHistory}
-                className="text-xs text-blue-600 hover:text-blue-800"
+                className="text-xs text-teal-600 hover:text-teal-800"
               >
                 Clear
               </button>
@@ -237,13 +237,13 @@ const AutocompleteSearch = ({ onSearch, onSuggestionSelect, loading = false }) =
               key={index}
               onClick={() => selectSuggestion(suggestion)}
               className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors ${
-                index === activeSuggestion ? 'bg-blue-50 border-r-2 border-blue-500' : ''
+                index === activeSuggestion ? 'bg-teal-50 border-r-2 border-teal-500' : ''
               }`}
             >
               <FontAwesomeIcon 
                 icon={suggestion.icon} 
                 className={`text-sm ${
-                  suggestion.type === 'history' ? 'text-gray-400' : 'text-blue-500'
+                  suggestion.type === 'history' ? 'text-gray-400' : 'text-teal-500'
                 }`} 
               />
               <span className="text-gray-900">{suggestion.text}</span>

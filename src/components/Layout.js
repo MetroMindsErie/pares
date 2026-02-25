@@ -33,9 +33,10 @@ const Layout = ({ children }) => {
   return (
     <div className="min-h-screen">
       <Head>
-        <title>Pares - Real Estate Network</title>
-        <meta name="description" content="Connect and collaborate in real estate" />
-        <link rel="icon" href="/paresfinal.jpg" />
+        <title>pares.homes – Real Estate Network</title>
+        <meta name="description" content="Modern real estate search, analytics, and professional tools" />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/pares_homes.png" />
       </Head>
       
       <Navbar 

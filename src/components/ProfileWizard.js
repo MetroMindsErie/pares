@@ -13,7 +13,7 @@ const ProfileWizard = ({ steps, currentStep, setCurrentStep }) => {
               onClick={() => setCurrentStep(index + 1)}
               className={`w-8 h-8 rounded-full flex items-center justify-center 
                 ${currentStep > index + 1 ? 'bg-green-500 text-white' : 
-                currentStep === index + 1 ? 'bg-indigo-600 text-white' : 
+                currentStep === index + 1 ? 'bg-teal-600 text-white' : 
                 'bg-gray-200 text-gray-500'}`}
             >
               {currentStep > index + 1 ? (
@@ -22,7 +22,7 @@ const ProfileWizard = ({ steps, currentStep, setCurrentStep }) => {
                 index + 1
               )}
             </button>
-            <span className={`text-sm mt-2 text-center ${currentStep === index + 1 ? 'font-medium text-indigo-600' : 'text-gray-500'}`}>
+            <span className={`text-sm mt-2 text-center ${currentStep === index + 1 ? 'font-medium text-teal-600' : 'text-gray-500'}`}>
               {step.title}
             </span>
           </div>

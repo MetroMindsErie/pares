@@ -31,10 +31,10 @@ const PropertyCollection = ({ properties, title, icon, emptyMessage, onPropertyC
 
   return (
     <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-      <div className="p-6 border-b bg-gradient-to-r from-blue-50 to-indigo-50">
+      <div className="p-6 border-b bg-gradient-to-r from-teal-50 to-green-50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <FontAwesomeIcon icon={icon} className="text-2xl text-blue-600" />
+            <FontAwesomeIcon icon={icon} className="text-2xl text-teal-600" />
             <div>
               <h3 className="text-xl font-semibold text-gray-800">{title}</h3>
               <p className="text-sm text-gray-600">{properties.length} properties</p>
@@ -95,7 +95,7 @@ const PropertyCollection = ({ properties, title, icon, emptyMessage, onPropertyC
                 key={index}
                 onClick={() => setCurrentIndex(index)}
                 className={`w-2 h-2 rounded-full transition-colors ${
-                  index === currentIndex ? 'bg-blue-600' : 'bg-gray-300'
+                  index === currentIndex ? 'bg-teal-600' : 'bg-gray-300'
                 }`}
               />
             ))}
@@ -236,7 +236,7 @@ const ProfileView = ({ profile }) => {
                 <h3 className="text-sm font-medium text-gray-500">Roles</h3>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {safeRoles.map((role, index) => (
-                    <span key={index} className="px-2 py-1 text-xs bg-indigo-100 text-indigo-800 rounded-full">
+                    <span key={index} className="px-2 py-1 text-xs bg-teal-100 text-teal-800 rounded-full">
                       {role}
                     </span>
                   ))}
@@ -279,7 +279,7 @@ const ProfileView = ({ profile }) => {
 
           {loading ? (
             <div className="bg-white rounded-xl shadow-sm p-8 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto mb-4"></div>
               <p className="text-gray-600">Loading your properties...</p>
             </div>
           ) : (

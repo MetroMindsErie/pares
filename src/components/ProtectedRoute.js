@@ -24,7 +24,7 @@ import {
 function LoadingSpinner({ message = 'Loading...' }) {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
       <p className="mt-4 text-gray-600">{message}</p>
     </div>
   );
@@ -69,7 +69,7 @@ function UnauthorizedMessage({ requiredRole, requiredPermission }) {
           </button>
           <button
             onClick={() => router.push('/dashboard')}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-md hover:bg-teal-700 transition-colors"
           >
             Go to Dashboard
           </button>
@@ -118,7 +118,7 @@ function UpgradeRequired({ feature }) {
           </button>
           <button
             onClick={() => router.push('/pricing')}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-md hover:bg-teal-700 transition-colors"
           >
             View Plans
           </button>

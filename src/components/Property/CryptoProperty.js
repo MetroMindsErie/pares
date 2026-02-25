@@ -301,7 +301,7 @@ const CryptoProperty = ({ propertyData, mlsData }) => {
   if (loading || !cryptoData || !financialData) {
     return (
       <div className="flex items-center justify-center min-h-[600px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500"></div>
       </div>
     );
   }
@@ -432,7 +432,7 @@ const CryptoProperty = ({ propertyData, mlsData }) => {
             />
             
             {/* Property Specifications */}
-            <h3 className="text-xl font-semibold mb-3 text-blue-300">Property Details</h3>
+            <h3 className="text-xl font-semibold mb-3 text-teal-300">Property Details</h3>
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
                 <p className="text-gray-400 text-sm">Bedrooms</p>
@@ -453,13 +453,13 @@ const CryptoProperty = ({ propertyData, mlsData }) => {
             </div>
             
             {/* Property Description */}
-            <h3 className="text-xl font-semibold mb-2 text-blue-300">Description</h3>
+            <h3 className="text-xl font-semibold mb-2 text-teal-300">Description</h3>
             <p className="text-gray-300 text-sm">{propertyData.description || 'No description available.'}</p>
           </div>
           
           {/* Crypto Investment Metrics */}
           <div className="bg-gray-800 p-4 rounded-lg shadow-lg">
-            <h3 className="text-xl font-semibold mb-3 text-blue-300">Crypto Investment Metrics</h3>
+            <h3 className="text-xl font-semibold mb-3 text-teal-300">Crypto Investment Metrics</h3>
             <div className="space-y-4">
               <div>
                 <p className="text-gray-400 text-sm">Token Price</p>
@@ -475,7 +475,7 @@ const CryptoProperty = ({ propertyData, mlsData }) => {
               </div>
               <div>
                 <p className="text-gray-400 text-sm">Staking APY</p>
-                <p className="font-medium text-blue-400">{cryptoData.stakingApy}%</p>
+                <p className="font-medium text-teal-400">{cryptoData.stakingApy}%</p>
               </div>
               <div>
                 <p className="text-gray-400 text-sm">Gas Fees (Est.)</p>
@@ -492,7 +492,7 @@ const CryptoProperty = ({ propertyData, mlsData }) => {
         {/* Middle Column - Financial Data */}
         <div className="lg:col-span-1">
           <div className="bg-gray-800 p-4 rounded-lg shadow-lg mb-6">
-            <h3 className="text-xl font-semibold mb-3 text-blue-300">Financial Performance</h3>
+            <h3 className="text-xl font-semibold mb-3 text-teal-300">Financial Performance</h3>
             
             {/* Annual Return Chart - Now using actual Bar chart */}
             <div className="mb-6">
@@ -523,7 +523,7 @@ const CryptoProperty = ({ propertyData, mlsData }) => {
           
           {/* Key Investment Metrics */}
           <div className="bg-gray-800 p-4 rounded-lg shadow-lg">
-            <h3 className="text-xl font-semibold mb-3 text-blue-300">Key Performance Metrics</h3>
+            <h3 className="text-xl font-semibold mb-3 text-teal-300">Key Performance Metrics</h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-gray-400 text-sm">Monthly Rental Income</p>
@@ -564,14 +564,14 @@ const CryptoProperty = ({ propertyData, mlsData }) => {
         {/* Right Column - Investment Interface */}
         <div className="lg:col-span-1">
           <div className="bg-gray-800 p-4 rounded-lg shadow-lg mb-6">
-            <h3 className="text-xl font-semibold mb-3 text-blue-300">Invest in This Property</h3>
+            <h3 className="text-xl font-semibold mb-3 text-teal-300">Invest in This Property</h3>
             
             {/* Wallet Connection */}
             <div className="mb-6">
               {!walletConnected ? (
                 <button
                   onClick={connectWallet}
-                  className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50"
+                  className="w-full py-3 px-4 bg-gradient-to-r from-teal-600 to-purple-600 text-white font-medium rounded-lg hover:from-teal-700 hover:to-purple-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50"
                 >
                   Connect MetaMask Wallet
                 </button>
@@ -598,7 +598,7 @@ const CryptoProperty = ({ propertyData, mlsData }) => {
                     type="number"
                     value={investmentAmount}
                     onChange={handleInvestmentChange}
-                    className="w-full pl-8 pr-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full pl-8 pr-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
                     placeholder="0.00"
                     min="0"
                   />
@@ -617,7 +617,7 @@ const CryptoProperty = ({ propertyData, mlsData }) => {
                 <select
                   value={selectedStablecoin}
                   onChange={handleStablecoinChange}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
                 >
                   {stablecoins.map(coin => (
                     <option key={coin.id} value={coin.id}>{coin.name}</option>
@@ -641,19 +641,19 @@ const CryptoProperty = ({ propertyData, mlsData }) => {
           
           {/* Legal Information */}
           <div className="bg-gray-800 p-4 rounded-lg shadow-lg">
-            <h3 className="text-xl font-semibold mb-3 text-blue-300">Legal & Regulatory</h3>
+            <h3 className="text-xl font-semibold mb-3 text-teal-300">Legal & Regulatory</h3>
             <div className="space-y-3 text-sm text-gray-300">
               <p>
-                <span className="font-medium text-blue-300">Tokenization Structure:</span> This property is tokenized through a SEC-compliant security token offering.
+                <span className="font-medium text-teal-300">Tokenization Structure:</span> This property is tokenized through a SEC-compliant security token offering.
               </p>
               <p>
-                <span className="font-medium text-blue-300">Ownership Rights:</span> Token holders receive fractional ownership rights proportional to their token amount.
+                <span className="font-medium text-teal-300">Ownership Rights:</span> Token holders receive fractional ownership rights proportional to their token amount.
               </p>
               <p>
-                <span className="font-medium text-blue-300">Dividends:</span> Rental income is distributed monthly to token holders in proportion to ownership.
+                <span className="font-medium text-teal-300">Dividends:</span> Rental income is distributed monthly to token holders in proportion to ownership.
               </p>
               <p>
-                <span className="font-medium text-blue-300">Governance:</span> Token holders have voting rights on major property decisions.
+                <span className="font-medium text-teal-300">Governance:</span> Token holders have voting rights on major property decisions.
               </p>
               <p className="text-xs text-gray-400 mt-2">
                 This offering is available to accredited investors only. Please review the full legal documentation before investing. Cryptocurrency investments involve risks and may not be suitable for all investors.

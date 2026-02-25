@@ -232,13 +232,13 @@ export default function ComparablePropertiesWidget({ property, variant = 'scroll
                 <div className={isSide ? '' : 'p-3'}>
                   <div className="text-sm font-semibold text-gray-900 truncate">{comp?.address || 'Address unavailable'}</div>
                   <div className="text-xs text-gray-500">{comp?.city || ''}{comp?.zip ? `, ${comp.zip}` : ''}</div>
-                  <div className="mt-2 text-sm font-semibold text-blue-700">{formatPrice(comp?.price)}</div>
+                  <div className="mt-2 text-sm font-semibold text-teal-700">{formatPrice(comp?.price)}</div>
                   <div className="text-xs text-gray-600">{beds} bd • {baths} ba • {sqft} sq ft</div>
                   <div className="text-xs text-gray-500">Status: {comp?.status || '—'}</div>
                   {compId ? (
                     <Link
                       href={`/property/${compId}`}
-                      className="inline-flex items-center mt-2 text-xs text-blue-600 hover:text-blue-700"
+                      className="inline-flex items-center mt-2 text-xs text-teal-600 hover:text-teal-700"
                     >
                       View details
                     </Link>

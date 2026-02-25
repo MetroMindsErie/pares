@@ -126,11 +126,12 @@ export default function Navbar() {
   ];
   
   // single shared style: thin blue border, transparent background — matches Pares logo border
-  const borderedButtonClass = "inline-flex items-center h-10 leading-none px-4 py-2 border border-blue-200 text-sm font-medium rounded-md text-blue-600 bg-transparent hover:bg-white/5 transition-colors";
+  const borderedButtonClass = "inline-flex items-center h-10 leading-none px-4 py-2 border border-teal-200 text-sm font-medium rounded-md text-teal-700 bg-transparent hover:bg-white/5 transition-colors";
 
   const authedLinks = [
     { href: '/dashboard', label: 'Dashboard' },
     { href: '/saved-properties', label: 'Saved Properties' },
+    { href: '/pricing', label: 'Pricing' },
   ];
   
   return (
@@ -145,12 +146,15 @@ export default function Navbar() {
             {/* Left side - Logo and navigation links */}
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
-                {/* add thin blue border and slight padding so logo remains visible on transparent navbar */}
                 <Link
                   href="/"
-                  className="font-serif text-2xl text-blue-700 hover:text-blue-900 transition duration-300 px-3 py-1 rounded-md border border-blue-200"
+                  className="flex items-center gap-2 px-2 py-1 rounded-md hover:opacity-90 transition duration-300"
                 >
-                  Pares
+                  <img
+                    src="/pares_homes.png"
+                    alt="pares.homes"
+                    className="h-32 w-auto object-contain"
+                  />
                 </Link>
               </div>
               <div className="hidden sm:ml-6 sm:flex sm:items-center sm:space-x-8">
@@ -164,7 +168,7 @@ export default function Navbar() {
                         ? borderedButtonClass
                         : `inline-flex items-center px-1 pt-1 border-b-2 ${
                             router.pathname === link.href
-                              ? 'border-blue-500 text-gray-900'
+                              ? 'border-teal-500 text-gray-900'
                               : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                           } text-sm font-medium`
                     }
@@ -205,7 +209,7 @@ export default function Navbar() {
                               className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                               onClick={() => setBrowseDropdownOpen(false)}
                             >
-                              <svg className="w-5 h-5 mr-3 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <svg className="w-5 h-5 mr-3 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
                               </svg>
                               {item.label}
@@ -227,6 +231,9 @@ export default function Navbar() {
                 </div>
               ) : (
                 <div className="space-x-4">
+                  <Link href="/pricing" className={borderedButtonClass}>
+                    Pricing
+                  </Link>
                   <Link href="/login" className={borderedButtonClass}>
                     Log in
                   </Link>
@@ -288,7 +295,7 @@ export default function Navbar() {
                       href={item.href}
                       className="flex items-center px-4 py-2 text-base font-medium rounded-md text-gray-100 hover:bg-gray-800 transition-colors"
                     >
-                      <svg className="w-5 h-5 mr-3 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-5 h-5 mr-3 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
                       </svg>
                       {item.label}
@@ -315,6 +322,9 @@ export default function Navbar() {
               </div>
             ) : (
               <div className="space-y-1 px-2">
+                <Link href="/pricing" className="block w-full px-4 py-2 text-base font-medium rounded-md text-gray-100 hover:bg-gray-800 transition-colors">
+                  Pricing
+                </Link>
                 <Link href="/login" className="block w-full px-4 py-2 text-base font-medium rounded-md text-gray-100 hover:bg-gray-800 transition-colors">
                   Log in
                 </Link>

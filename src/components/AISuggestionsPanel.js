@@ -136,10 +136,10 @@ export const AISuggestionsPanel = ({ recentSearchParams, recentProperties }) => 
           </p>
         </div>
         <div className="flex gap-2">
-          <button onClick={loadSuggestions} disabled={loading} className="text-xs px-3 py-1.5 rounded-md bg-blue-600 text-white disabled:opacity-60">
+          <button onClick={loadSuggestions} disabled={loading} className="text-xs px-3 py-1.5 rounded-md bg-teal-600 text-white disabled:opacity-60">
             Refresh
           </button>
-          <button onClick={regenerate} disabled={loading} className="text-xs px-3 py-1.5 rounded-md bg-indigo-600 text-white disabled:opacity-60">
+          <button onClick={regenerate} disabled={loading} className="text-xs px-3 py-1.5 rounded-md bg-teal-600 text-white disabled:opacity-60">
             Regenerate
           </button>
           <button onClick={markRead} disabled={markedRead || loading} className="text-xs px-3 py-1.5 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-300 disabled:opacity-50">
@@ -161,7 +161,7 @@ export const AISuggestionsPanel = ({ recentSearchParams, recentProperties }) => 
             No suggestions yet. Perform a property search to generate personalized results.
           </p>
           {recentProperties?.length ? (
-            <button onClick={regenerate} className="mt-4 px-4 py-2 text-sm bg-indigo-600 text-white rounded-md">
+            <button onClick={regenerate} className="mt-4 px-4 py-2 text-sm bg-teal-600 text-white rounded-md">
               Generate From Recent Search
             </button>
           ) : null}
@@ -239,7 +239,7 @@ export const AISuggestionsPanel = ({ recentSearchParams, recentProperties }) => 
                 <button
                   key={i}
                   onClick={() => setCurrent(i)}
-                  className={`h-2.5 w-2.5 rounded-full ${i === current ? 'bg-blue-600' : 'bg-white/80 dark:bg-gray-600'}`}
+                  className={`h-2.5 w-2.5 rounded-full ${i === current ? 'bg-teal-600' : 'bg-white/80 dark:bg-gray-600'}`}
                   aria-label={`Go to slide ${i + 1}`}
                 />
               ))}
@@ -248,7 +248,7 @@ export const AISuggestionsPanel = ({ recentSearchParams, recentProperties }) => 
             {/* Loading overlay while enriching images */}
             {imagesLoading && (
               <div className="absolute inset-0 bg-white/40 dark:bg-black/30 backdrop-blur-sm flex items-center justify-center">
-                <div className="animate-spin h-6 w-6 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+                <div className="animate-spin h-6 w-6 border-2 border-teal-600 border-t-transparent rounded-full"></div>
               </div>
             )}
           </div>
@@ -257,7 +257,7 @@ export const AISuggestionsPanel = ({ recentSearchParams, recentProperties }) => 
           <div className="mt-4 text-right">
             <Link
               href={`/property/${slides[current]?.listing_id}`}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+              className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 text-sm"
             >
               View Property
             </Link>

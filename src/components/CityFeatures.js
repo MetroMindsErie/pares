@@ -7,7 +7,7 @@ const CityFeatures = () => {
       id: 'lakefront',
       title: 'Lakefront Living',
       desc: 'Stunning Lake Erie views and recreational access — waterfront homes, parks and trails.',
-      color: 'from-cyan-400 to-blue-600',
+      color: 'from-teal-400 to-green-500',
       icon: (
         <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M3 12c2-4 6-7 9-7s7 3 9 7-2 7-9 7S3 16 3 12z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -29,7 +29,7 @@ const CityFeatures = () => {
       id: 'affordable',
       title: 'Affordable Market',
       desc: 'High value and strong investment potential compared to larger metros.',
-      color: 'from-purple-300 to-indigo-500',
+      color: 'from-purple-300 to-teal-500',
       icon: (
         <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M12 8v8M8 12h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -51,7 +51,7 @@ const CityFeatures = () => {
       id: 'transport',
       title: 'Accessible Transport',
       desc: 'Quick regional connections, easy commutes and growing infrastructure projects.',
-      color: 'from-sky-300 to-cyan-500',
+      color: 'from-teal-300 to-green-500',
       icon: (
         <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M3 12h18M7 6v12M17 6v12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -124,7 +124,7 @@ const CityFeatures = () => {
             <div className="flex flex-wrap gap-3 items-center">
               <a
                 href="#"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-medium shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-gradient-to-r from-teal-600 to-green-600 text-white text-sm font-medium shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition"
                 aria-label="Explore neighborhoods"
               >
                 Explore Neighborhoods

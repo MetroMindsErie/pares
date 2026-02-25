@@ -94,7 +94,7 @@ const AgentPropertiesSection = ({ agentName, properties = [] }) => {
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
             >
               <option value="all">All Properties ({properties.length})</option>
               <option value="active">
@@ -115,7 +115,7 @@ const AgentPropertiesSection = ({ agentName, properties = [] }) => {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
             >
               <option value="recent">Most Recent</option>
               <option value="price-high">Price: High to Low</option>
@@ -169,7 +169,7 @@ const AgentPropertiesSection = ({ agentName, properties = [] }) => {
 
                   {/* Price */}
                   <div className="mb-4">
-                    <p className="text-lg sm:text-xl font-bold text-blue-600">
+                    <p className="text-lg sm:text-xl font-bold text-teal-600">
                       {property.StandardStatus === 'Closed'
                         ? `Sold: ${formatPrice(property.ClosePrice)}`
                         : formatPrice(property.ListPrice)}
@@ -198,7 +198,7 @@ const AgentPropertiesSection = ({ agentName, properties = [] }) => {
                   </div>
 
                   {/* View Details Button */}
-                  <button className="w-full px-3 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors">
+                  <button className="w-full px-3 py-2 bg-teal-600 text-white rounded-md text-sm font-medium hover:bg-teal-700 transition-colors">
                     View Details
                   </button>
                 </div>

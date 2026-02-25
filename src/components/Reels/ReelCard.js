@@ -195,7 +195,7 @@ const ReelCard = ({ reel }) => {
             >
               {!isPlaying && (
                 <div className="w-16 h-16 bg-white/80 rounded-full flex items-center justify-center transition hover:bg-white hover:scale-105">
-                  <svg className="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-8 h-8 text-teal-600" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd"></path>
                   </svg>
                 </div>
@@ -263,7 +263,7 @@ const ReelCard = ({ reel }) => {
             />
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 text-center">
               <div className="w-16 h-16 bg-white/80 rounded-full flex items-center justify-center mx-auto">
-                <svg className="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-8 h-8 text-teal-600" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd"></path>
                 </svg>
               </div>
@@ -301,7 +301,7 @@ const ReelCard = ({ reel }) => {
           href={permalink}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 font-medium"
+          className="inline-flex items-center text-sm text-teal-600 hover:text-teal-800 font-medium"
           onClick={(e) => e.stopPropagation()}
         >
           View on Facebook
@@ -313,7 +313,7 @@ const ReelCard = ({ reel }) => {
         {videoUrl && (
           <button
             onClick={handlePlayPause}
-            className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 font-medium mt-2"
+            className="inline-flex items-center text-sm text-teal-600 hover:text-teal-800 font-medium mt-2"
           >
             {isPlaying ? 'Pause' : 'Play'} Video
             <svg className="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20">

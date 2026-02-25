@@ -68,12 +68,12 @@ export default function JohnEasterAgent() {
       <main className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
         {/* Hero */}
         <section className="relative overflow-hidden">
-          <div className="bg-gradient-to-r from-slate-900 to-blue-900 absolute inset-0 opacity-95" />
+          <div className="bg-gradient-to-r from-slate-900 to-teal-900 absolute inset-0 opacity-95" />
           <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-10">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
               {/* Photo & quick contact */}
               <div className="flex flex-col items-center lg:items-start">
-                <div className="rounded-full p-1 bg-gradient-to-tr from-cyan-400 to-blue-600">
+                <div className="rounded-full p-1 bg-gradient-to-tr from-teal-400 to-green-500">
                   <img
                     src={AGENT.photo}
                     alt={AGENT.name}
@@ -85,7 +85,7 @@ export default function JohnEasterAgent() {
                 <h1 className="mt-6 text-2xl sm:text-3xl font-extrabold text-white text-center lg:text-left">
                   {AGENT.name}
                 </h1>
-                <p className="text-sm text-blue-200 mt-1">{AGENT.title} • {AGENT.agency}</p>
+                <p className="text-sm text-teal-200 mt-1">{AGENT.title} • {AGENT.agency}</p>
 
                 <div className="mt-4 w-full lg:w-auto flex flex-col gap-3">
                   <a href={`tel:${AGENT.phone}`} className="inline-flex items-center justify-center gap-3 px-4 py-2 rounded-md bg-white/10 text-white hover:bg-white/20 transition">
@@ -108,12 +108,12 @@ export default function JohnEasterAgent() {
               <div className="text-white">
                 <div className="bg-white/6 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-white/6 shadow-md">
                   <h2 className="text-lg font-semibold text-white">About {AGENT.name}</h2>
-                  <p className="mt-3 text-sm text-blue-100 max-w-prose leading-relaxed">
+                  <p className="mt-3 text-sm text-teal-100 max-w-prose leading-relaxed">
                     {AGENT.bio}
                   </p>
 
                   <div className="mt-6">
-                    <h3 className="text-sm font-medium text-blue-200">Specialties</h3>
+                    <h3 className="text-sm font-medium text-teal-200">Specialties</h3>
                     <div className="mt-3 flex flex-wrap gap-2">
                       {AGENT.specialties.map(s => (
                         <span key={s} className="text-xs bg-white/10 text-white px-3 py-1 rounded-full">{s}</span>
@@ -123,18 +123,18 @@ export default function JohnEasterAgent() {
 
                   <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="p-4 bg-white/5 rounded-lg">
-                      <h4 className="text-sm font-semibold text-blue-100">Client-first approach</h4>
-                      <p className="text-xs text-blue-200 mt-2">Tailored search, clear communication, and negotiation support through closing.</p>
+                      <h4 className="text-sm font-semibold text-teal-100">Client-first approach</h4>
+                      <p className="text-xs text-teal-200 mt-2">Tailored search, clear communication, and negotiation support through closing.</p>
                     </div>
                     <div className="p-4 bg-white/5 rounded-lg">
-                      <h4 className="text-sm font-semibold text-blue-100">Local market knowledge</h4>
-                      <p className="text-xs text-blue-200 mt-2">Deep connections across Erie to uncover off-market opportunities and insights.</p>
+                      <h4 className="text-sm font-semibold text-teal-100">Local market knowledge</h4>
+                      <p className="text-xs text-teal-200 mt-2">Deep connections across Erie to uncover off-market opportunities and insights.</p>
                     </div>
                   </div>
 
                   {/* Contact form */}
                   <form onSubmit={handleMailTo} className="mt-6">
-                    <h3 className="text-sm font-semibold text-blue-200">Contact {AGENT.name}</h3>
+                    <h3 className="text-sm font-semibold text-teal-200">Contact {AGENT.name}</h3>
                     <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <input name="name" value={form.name} onChange={handleChange} placeholder="Your name" className="px-3 py-2 rounded-md bg-white/10 border border-white/6 text-white text-sm focus:outline-none" />
                       <input name="email" value={form.email} onChange={handleChange} placeholder="Your email" className="px-3 py-2 rounded-md bg-white/10 border border-white/6 text-white text-sm focus:outline-none" />
@@ -143,7 +143,7 @@ export default function JohnEasterAgent() {
                     </div>
 
                     <div className="mt-4 flex items-center gap-3">
-                      <button type="submit" className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-gradient-to-r from-cyan-400 to-blue-600 text-white font-semibold shadow hover:scale-[1.02] transition">
+                      <button type="submit" className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-gradient-to-r from-teal-400 to-green-500 text-white font-semibold shadow hover:scale-[1.02] transition">
                         Send Message
                       </button>
                       <button type="button" onClick={() => { setForm({ name:'', email:'', message:'', propertyUrl:'' }); }} className="px-3 py-2 rounded-md border border-white/10 text-white">
@@ -164,7 +164,7 @@ export default function JohnEasterAgent() {
         {loadingProperties ? (
           <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <div className="flex justify-center items-center py-12">
-              <div className="animate-spin h-10 w-10 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+              <div className="animate-spin h-10 w-10 border-4 border-teal-500 rounded-full border-t-transparent"></div>
             </div>
           </section>
         ) : (

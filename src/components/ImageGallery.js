@@ -121,9 +121,9 @@ const ImageGallery = ({ images = [], address = 'Property' }) => {
               <button
                 key={index}
                 onClick={() => setCurrentImageIndex(index)}
-                className={`relative rounded-lg overflow-hidden aspect-square focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
+                className={`relative rounded-lg overflow-hidden aspect-square focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all ${
                   index === currentImageIndex 
-                    ? 'ring-2 ring-blue-600 opacity-100' 
+                    ? 'ring-2 ring-teal-600 opacity-100' 
                     : 'opacity-60 hover:opacity-100'
                 }`}
                 aria-label={`View image ${index + 1}`}
@@ -138,7 +138,7 @@ const ImageGallery = ({ images = [], address = 'Property' }) => {
                   }}
                 />
                 {index === currentImageIndex && (
-                  <div className="absolute inset-0 border-2 border-blue-600 rounded-lg pointer-events-none" />
+                  <div className="absolute inset-0 border-2 border-teal-600 rounded-lg pointer-events-none" />
                 )}
               </button>
             ))}

@@ -36,7 +36,7 @@ function FeaturedCard({ post }) {
             loading="lazy"
           />
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-cyan-400 to-indigo-600" />
+          <div className="absolute inset-0 bg-gradient-to-br from-teal-400 to-green-600" />
         )}
 
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent" />
@@ -117,7 +117,7 @@ function ImageCard({ post }) {
             loading="lazy"
           />
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-sky-300 to-indigo-400" />
+          <div className="absolute inset-0 bg-gradient-to-br from-teal-300 to-green-400" />
         )}
 
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />

@@ -81,7 +81,7 @@ function EngagementButtons({ post, onEngage }) {
 				onClick={() => handleEngagement('like')}
 				className={`flex items-center gap-1 rounded-full px-3 py-1 text-sm ${
 					userEngagement.like
-						? 'bg-blue-100 text-blue-700'
+						? 'bg-teal-100 text-teal-700'
 						: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
 				}`}
 			>
@@ -224,7 +224,7 @@ function PostDetail({ post, onBack, related = [] }) {
 		<article className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 lg:p-8">
 			<button
 				onClick={onBack}
-				className="mb-4 inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-blue-700 hover:bg-blue-50"
+				className="mb-4 inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-teal-700 hover:bg-teal-50"
 			>
 				← Back to all posts
 			</button>
@@ -443,7 +443,7 @@ const Blog = ({
 						<button
 							type="button"
 							onClick={handleSeeAllClick}
-							className="text-sm text-blue-600 hover:underline"
+							className="text-sm text-teal-600 hover:underline"
 						>
 							See all
 						</button>
@@ -460,7 +460,7 @@ const Blog = ({
 								key={t}
 								onClick={() => { setTab(t); }}
 								className={`px-3 py-1 rounded-md text-sm ${
-									tab === t ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'
+									tab === t ? 'bg-teal-600 text-white' : 'bg-gray-100 text-gray-700'
 								}`}
 							>
 								{t}
@@ -488,12 +488,12 @@ const Blog = ({
 			{/* Loading / Error */}
 			{loading && (
 				<div className="py-8 text-center">
-					<div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-lg">
-						<svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+					<div className="inline-flex items-center gap-2 px-4 py-2 bg-teal-50 rounded-lg">
+						<svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-teal-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
 							<circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
 							<path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
 						</svg>
-						<span className="text-sm text-blue-700">Loading posts...</span>
+						<span className="text-sm text-teal-700">Loading posts...</span>
 					</div>
 				</div>
 			)}

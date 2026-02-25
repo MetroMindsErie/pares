@@ -6,7 +6,7 @@ export const TaxInformation = ({ taxData }) => {
   return (
     <div className="space-y-10">
       {/* Owner Information */}
-      <Section title="Owner Information" tone="indigo">
+      <Section title="Owner Information" tone="teal">
         <Grid3 items={[
           ['Owner Name', taxData.ownerInformation.ownerName],
           ['Mailing Address', taxData.ownerInformation.mailingAddress],
@@ -70,7 +70,7 @@ export const HistoryInformation = ({ historyData }) => {
   return (
     <div className="space-y-10">
       {/* Listing History */}
-      <Section title="Listing History" tone="indigo">
+      <Section title="Listing History" tone="teal">
         {historyData.listingHistory.length ? (
           <>
             <div className="overflow-x-auto rounded-lg border border-gray-200">
@@ -84,12 +84,12 @@ export const HistoryInformation = ({ historyData }) => {
                   {historyData.listingHistory.map((h, i) => (
                     <tr key={i} className={i % 2 ? 'bg-gray-50' : ''}>
                       <Td>{h.dom}</Td>
-                      <Td className="text-blue-700 font-semibold">{h.changeType}</Td>
+                      <Td className="text-teal-700 font-semibold">{h.changeType}</Td>
                       <Td className="font-semibold">{h.price}</Td>
                       <Td>{h.changeDetails}</Td>
                       <Td>{h.whenChanged}</Td>
                       <Td>{h.effDate}</Td>
-                      <Td className="text-blue-700 font-semibold">{h.modBy}</Td>
+                      <Td className="text-teal-700 font-semibold">{h.modBy}</Td>
                     </tr>
                   ))}
                 </tbody>
@@ -168,8 +168,8 @@ export const NeighborhoodCommunity = ({ context }) => {
     <div className="space-y-6">
       <h3 className="text-lg font-semibold text-gray-900">Neighborhood & Community</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {subdivision && <InfoCard title="Subdivision" items={[subdivision]} accent="from-blue-500 to-indigo-500" />}
-        {!!communityFeatures.length && <InfoCard title="Community Features" items={communityFeatures} accent="from-cyan-500 to-blue-500" />}
+        {subdivision && <InfoCard title="Subdivision" items={[subdivision]} accent="from-teal-500 to-green-500" />}
+        {!!communityFeatures.length && <InfoCard title="Community Features" items={communityFeatures} accent="from-teal-500 to-green-500" />}
         {showHoaCard && <InfoCard title="Homeowners Association" items={hoaLines} accent="from-lime-500 to-green-500" />}
         {!!hoaAmenities.length && <InfoCard title="Association Amenities" items={hoaAmenities} accent="from-fuchsia-500 to-purple-500" />}
         {!!lotFeatures.length && <InfoCard title="Lot Features" items={lotFeatures} accent="from-emerald-500 to-teal-500" />}
@@ -202,15 +202,15 @@ export const SchoolsEducation = ({ context }) => {
 
       {/* If only districts available, show prominent district cards */}
       {hasOnlyDistricts && (
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-6 shadow-sm">
+        <div className="bg-gradient-to-br from-teal-50 to-green-50 border-2 border-teal-200 rounded-2xl p-6 shadow-sm">
           <div className="flex items-start gap-4 mb-4">
-            <div className="flex-shrink-0 w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center">
+            <div className="flex-shrink-0 w-14 h-14 bg-teal-600 rounded-full flex items-center justify-center">
               <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
               </svg>
             </div>
             <div className="flex-1">
-              <p className="text-xs uppercase tracking-wider text-blue-600 font-semibold mb-1">School District</p>
+              <p className="text-xs uppercase tracking-wider text-teal-600 font-semibold mb-1">School District</p>
               <h4 className="text-2xl font-bold text-gray-900 mb-2">{district}</h4>
               <p className="text-sm text-gray-700 leading-relaxed">
                 This property is served by the {district} school district. Contact the district office for specific school assignments based on your address.
@@ -220,11 +220,11 @@ export const SchoolsEducation = ({ context }) => {
           
           {/* District breakdown if we have individual level districts */}
           {(elementaryDistrict || middleDistrict || highDistrict) && (
-            <div className="mt-6 pt-6 border-t border-blue-200">
-              <p className="text-xs uppercase tracking-wider text-blue-600 font-semibold mb-3">District Breakdown</p>
+            <div className="mt-6 pt-6 border-t border-teal-200">
+              <p className="text-xs uppercase tracking-wider text-teal-600 font-semibold mb-3">District Breakdown</p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {elementaryDistrict && (
-                  <div className="bg-white/60 rounded-lg p-4 border border-blue-100">
+                  <div className="bg-white/60 rounded-lg p-4 border border-teal-100">
                     <div className="flex items-center gap-2 mb-1">
                       <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
                         <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -238,7 +238,7 @@ export const SchoolsEducation = ({ context }) => {
                   </div>
                 )}
                 {middleDistrict && (
-                  <div className="bg-white/60 rounded-lg p-4 border border-blue-100">
+                  <div className="bg-white/60 rounded-lg p-4 border border-teal-100">
                     <div className="flex items-center gap-2 mb-1">
                       <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
                         <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -252,7 +252,7 @@ export const SchoolsEducation = ({ context }) => {
                   </div>
                 )}
                 {highDistrict && (
-                  <div className="bg-white/60 rounded-lg p-4 border border-blue-100">
+                  <div className="bg-white/60 rounded-lg p-4 border border-teal-100">
                     <div className="flex items-center gap-2 mb-1">
                       <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
                         <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -274,19 +274,19 @@ export const SchoolsEducation = ({ context }) => {
 
       {/* School District Card - only show if we also have school names */}
       {!hasOnlyDistricts && district && (
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-6 shadow-sm">
+        <div className="bg-gradient-to-br from-teal-50 to-green-50 border-2 border-teal-200 rounded-2xl p-6 shadow-sm">
           <div className="flex items-center gap-3 mb-3">
-            <div className="flex-shrink-0 w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
+            <div className="flex-shrink-0 w-12 h-12 bg-teal-600 rounded-full flex items-center justify-center">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
               </svg>
             </div>
             <div>
-              <p className="text-xs uppercase tracking-wider text-blue-600 font-semibold">School District</p>
+              <p className="text-xs uppercase tracking-wider text-teal-600 font-semibold">School District</p>
               <h4 className="text-lg font-bold text-gray-900">{district}</h4>
             </div>
           </div>
-          <div className="mt-4 pt-4 border-t border-blue-200">
+          <div className="mt-4 pt-4 border-t border-teal-200">
             <p className="text-sm text-gray-700">This property is served by the {district} school district.</p>
           </div>
         </div>
@@ -352,7 +352,7 @@ export const SchoolsEducation = ({ context }) => {
 
         {high && (
           <div className="group relative bg-white border-2 border-purple-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-purple-300 transition-all duration-300">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-500/10 to-indigo-500/5 rounded-bl-full"></div>
+            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-500/10 to-teal-500/5 rounded-bl-full"></div>
             <div className="relative">
               <div className="flex items-center justify-center w-14 h-14 bg-purple-100 rounded-2xl mb-4 group-hover:bg-purple-200 transition-colors">
                 <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -526,7 +526,7 @@ function InfoCard({ title, items, accent }) {
         <ul className="space-y-1 text-xs text-gray-700 max-h-40 overflow-auto pr-1">
           {items.slice(0, 20).map((i, idx) => (
             <li key={idx} className="flex items-start gap-2">
-              <span className="mt-0.5 h-2 w-2 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500"></span>
+              <span className="mt-0.5 h-2 w-2 rounded-full bg-gradient-to-br from-teal-500 to-green-500"></span>
               <span>{i}</span>
             </li>
           ))}
@@ -547,9 +547,9 @@ function SchoolPill({ label, value }) {
 }
 
 const toneStyles = {
-  indigo: {
-    bar: 'bg-indigo-500',
-    label: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  teal: {
+    bar: 'bg-teal-500',
+    label: 'bg-teal-50 text-teal-700 border-teal-200',
   },
   emerald: {
     bar: 'bg-emerald-500',
@@ -565,8 +565,8 @@ const toneStyles = {
   },
 };
 
-function Section({ title, children, tone = 'indigo' }) {
-  const styles = toneStyles[tone] || toneStyles.indigo;
+function Section({ title, children, tone = 'teal' }) {
+  const styles = toneStyles[tone] || toneStyles.teal;
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
       <div className="flex items-center gap-3 px-4 sm:px-6 pt-5">

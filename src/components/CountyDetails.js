@@ -133,11 +133,11 @@ const CountyDetails = ({ countyId }) => {
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-5 rounded-xl shadow-sm">
-            <h3 className="text-sm font-medium text-blue-800 uppercase tracking-wide mb-2">Population</h3>
+            <h3 className="text-sm font-medium text-teal-800 uppercase tracking-wide mb-2">Population</h3>
             <p className="text-2xl font-bold text-gray-800">{county.details.population.toLocaleString()}</p>
           </div>
-          <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 p-5 rounded-xl shadow-sm">
-            <h3 className="text-sm font-medium text-indigo-800 uppercase tracking-wide mb-2">Median Home Price</h3>
+          <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-5 rounded-xl shadow-sm">
+            <h3 className="text-sm font-medium text-teal-800 uppercase tracking-wide mb-2">Median Home Price</h3>
             <p className="text-2xl font-bold text-gray-800">{county.details.medianHomePrice}</p>
           </div>
           <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-5 rounded-xl shadow-sm">
@@ -161,7 +161,7 @@ const CountyDetails = ({ countyId }) => {
               onClick={() => setStatus('active')}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                 status === 'active' 
-                  ? 'bg-blue-600 text-white shadow-md' 
+                  ? 'bg-teal-600 text-white shadow-md' 
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -171,7 +171,7 @@ const CountyDetails = ({ countyId }) => {
               onClick={() => setStatus('closed')}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                 status === 'closed' 
-                  ? 'bg-blue-600 text-white shadow-md' 
+                  ? 'bg-teal-600 text-white shadow-md' 
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -228,13 +228,13 @@ const CountyDetails = ({ countyId }) => {
                       <div className="mt-3 flex items-center justify-between text-sm">
                         <div className="flex gap-4">
                           <div className="flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-teal-500 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                             </svg>
                             <span>{property.BedroomsTotal || 'N/A'} bd</span>
                           </div>
                           <div className="flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-teal-500 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
                             <span>{property.BathroomsTotalInteger || 'N/A'} ba</span>

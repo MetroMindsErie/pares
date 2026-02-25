@@ -168,13 +168,13 @@ export default function ActiveNearbyPropertiesWidget({ property }) {
                 <div className="p-3">
                   <div className="text-sm font-semibold text-gray-900 truncate">{item?.address || 'Address unavailable'}</div>
                   <div className="text-xs text-gray-500">{item?.city || ''}{item?.zip ? `, ${item.zip}` : ''}</div>
-                  <div className="mt-2 text-sm font-semibold text-blue-700">{formatPrice(item?.price)}</div>
+                  <div className="mt-2 text-sm font-semibold text-teal-700">{formatPrice(item?.price)}</div>
                   <div className="text-xs text-gray-600">{beds} bd • {baths} ba • {sqft} sq ft</div>
                   <div className="text-xs text-gray-500">Status: {item?.status || 'Active'}</div>
                   {itemId ? (
                     <Link
                       href={`/property/${itemId}`}
-                      className="inline-flex items-center mt-2 text-xs text-blue-600 hover:text-blue-700"
+                      className="inline-flex items-center mt-2 text-xs text-teal-600 hover:text-teal-700"
                     >
                       View details
                     </Link>

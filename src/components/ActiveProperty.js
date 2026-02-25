@@ -250,7 +250,7 @@ export const ActiveProperty = ({ property, contextLoading, taxData, historyData,
         </div>
 
         {(variant === 'special' || specialConditionsList.length > 0) && (
-          <div className="mb-8 rounded-xl border border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50 p-5 shadow-sm">
+          <div className="mb-8 rounded-xl border border-purple-200 bg-gradient-to-r from-purple-50 to-teal-50 p-5 shadow-sm">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
               <div>
                 <h2 className="text-lg sm:text-xl font-bold text-gray-900">Special Listing Conditions</h2>
@@ -319,7 +319,7 @@ export const ActiveProperty = ({ property, contextLoading, taxData, historyData,
         {/* Property Overview */}
         <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-8">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6">
-            <h2 className="text-2xl md:text-3xl font-bold text-blue-700 mb-2 sm:mb-0">
+            <h2 className="text-2xl md:text-3xl font-bold text-teal-700 mb-2 sm:mb-0">
               {formatPrice(property.ListPrice)}
             </h2>
 
@@ -436,7 +436,7 @@ export const ActiveProperty = ({ property, contextLoading, taxData, historyData,
                   key={id}
                   onClick={()=>setActiveTab(id)}
                   className={`mr-6 py-3 border-b-2 font-medium ${
-                    activeTab===id ? 'border-blue-700 text-blue-700' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    activeTab===id ? 'border-teal-700 text-teal-700' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
                 >
                   {id==='details' && 'Property Details'}
@@ -541,7 +541,7 @@ export const ActiveProperty = ({ property, contextLoading, taxData, historyData,
             {property.ListAgentPhone && <p>{property.ListAgentPhone}</p>}
           </div>
 
-          <button className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors">
+          <button className="bg-teal-600 text-white py-2 px-4 rounded hover:bg-teal-700 transition-colors">
             Contact About This Property
           </button>
         </div>

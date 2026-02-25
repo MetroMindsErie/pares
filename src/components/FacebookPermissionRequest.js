@@ -57,7 +57,7 @@ const FacebookPermissionRequest = ({ missingPermissions = [], onComplete }) => {
         Additional Permissions Required
       </h2>
       
-      <div className="p-4 mb-4 text-sm bg-blue-50 text-blue-700 border border-blue-100 rounded-md">
+      <div className="p-4 mb-4 text-sm bg-teal-50 text-teal-700 border border-teal-100 rounded-md">
         To access your Facebook videos and reels, the following permissions are needed:
         <ul className="pl-5 mt-2 list-disc">
           {missingPermissions.includes('user_videos') && (
@@ -76,7 +76,7 @@ const FacebookPermissionRequest = ({ missingPermissions = [], onComplete }) => {
       )}
       
       <button 
-        className={`px-4 py-2 rounded-md text-white ${isLoading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+        className={`px-4 py-2 rounded-md text-white ${isLoading ? 'bg-blue-400 cursor-not-allowed' : 'bg-teal-600 hover:bg-teal-700'}`}
         disabled={isLoading}
         onClick={handleRequestPermissions}
       >

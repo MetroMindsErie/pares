@@ -636,8 +636,8 @@ export default function CompareModal({ open = false, onClose = () => {}, propert
             <h2 id="compare-modal-title" className="text-lg font-semibold text-gray-900">Compare properties</h2>
             <div className="text-sm text-gray-600">({selectedProps.length} selected)</div>
             {isEnriching && (
-              <div className="flex items-center gap-2 text-sm text-blue-600">
-                <div className="animate-spin h-4 w-4 border-2 border-blue-600 rounded-full border-t-transparent"></div>
+              <div className="flex items-center gap-2 text-sm text-teal-600">
+                <div className="animate-spin h-4 w-4 border-2 border-teal-600 rounded-full border-t-transparent"></div>
                 <span>Loading full details...</span>
               </div>
             )}

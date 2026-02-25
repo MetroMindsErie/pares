@@ -56,7 +56,7 @@ export function Hero() {
     >
       {/* Background layers */}
       <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-indigo-900 to-blue-900 opacity-95" />
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-teal-900 to-blue-900 opacity-95" />
         <svg className="absolute inset-0 w-full h-full opacity-6" aria-hidden>
           <defs>
             <pattern id="grid-outro" width="36" height="36" patternUnits="userSpaceOnUse">
@@ -66,7 +66,7 @@ export function Hero() {
           <rect width="100%" height="100%" fill="url(#grid-outro)" />
         </svg>
 
-        <motion.div style={{ translateX: tx, translateY: ty }} className="absolute -left-16 -top-16 w-48 h-48 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-full opacity-18 filter blur-2xl" aria-hidden />
+        <motion.div style={{ translateX: tx, translateY: ty }} className="absolute -left-16 -top-16 w-48 h-48 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full opacity-18 filter blur-2xl" aria-hidden />
         <motion.div style={{ translateX: tx }} className="absolute right-8 bottom-8 w-44 h-28 opacity-12" aria-hidden>
           <svg viewBox="0 0 320 160" className="w-full h-full" fill="none">
             <defs>
@@ -85,7 +85,7 @@ export function Hero() {
           <div className="grid lg:grid-cols-2 gap-8 items-center">
             {/* Left: compact CTA message */}
             <div>
-              <p className="inline-flex items-center gap-3 mb-3 text-sm text-cyan-200 bg-white/4 px-3 py-1 rounded-full">
+              <p className="inline-flex items-center gap-3 mb-3 text-sm text-teal-200 bg-white/4 px-3 py-1 rounded-full">
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M12 2v20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 Ready when you are
               </p>
@@ -101,7 +101,7 @@ export function Hero() {
               <div className="flex flex-wrap gap-3">
                 <button
                   onClick={handleExplore}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-cyan-400 to-blue-600 text-white font-semibold rounded-md shadow hover:scale-[1.02] transition"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-teal-500 to-green-500 text-white font-semibold rounded-md shadow hover:scale-[1.02] transition"
                 >
                   Explore Listings
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5l7 7-7 7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>

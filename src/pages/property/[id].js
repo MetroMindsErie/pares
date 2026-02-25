@@ -344,7 +344,7 @@ const TaxInformation = ({ taxData }) => {
       
       {/* Owner Information */}
       <div className="mb-8">
-        <h3 className="text-lg font-semibold mb-4 text-blue-600 border-b border-blue-200 pb-2">
+        <h3 className="text-lg font-semibold mb-4 text-teal-600 border-b border-teal-200 pb-2">
           Owner Information
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -373,7 +373,7 @@ const TaxInformation = ({ taxData }) => {
 
       {/* Location Information */}
       <div className="mb-8">
-        <h3 className="text-lg font-semibold mb-4 text-blue-600 border-b border-blue-200 pb-2">
+        <h3 className="text-lg font-semibold mb-4 text-teal-600 border-b border-teal-200 pb-2">
           Location Information
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -406,7 +406,7 @@ const TaxInformation = ({ taxData }) => {
 
       {/* Tax Information */}
       <div className="mb-8">
-        <h3 className="text-lg font-semibold mb-4 text-blue-600 border-b border-blue-200 pb-2">
+        <h3 className="text-lg font-semibold mb-4 text-teal-600 border-b border-teal-200 pb-2">
           Tax Information
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -439,7 +439,7 @@ const TaxInformation = ({ taxData }) => {
 
       {/* Assessment & Taxes Table */}
       <div>
-        <h3 className="text-lg font-semibold mb-4 text-blue-600 border-b border-blue-200 pb-2">
+        <h3 className="text-lg font-semibold mb-4 text-teal-600 border-b border-teal-200 pb-2">
           Assessment & Taxes
         </h3>
         <div className="overflow-x-auto">
@@ -524,7 +524,7 @@ const HistoryInformation = ({ historyData }) => {
       
       {/* Listing History */}
       <div className="mb-8">
-        <h3 className="text-lg font-semibold mb-4 text-blue-600 border-b border-blue-200 pb-2">
+        <h3 className="text-lg font-semibold mb-4 text-teal-600 border-b border-teal-200 pb-2">
           Listing History from MLS
         </h3>
         <div className="overflow-x-auto">
@@ -560,7 +560,7 @@ const HistoryInformation = ({ historyData }) => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {listing.dom}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-teal-600">
                     {listing.changeType}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -575,7 +575,7 @@ const HistoryInformation = ({ historyData }) => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {listing.effDate}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-teal-600">
                     {listing.modBy}
                   </td>
                 </tr>
@@ -607,7 +607,7 @@ const HistoryInformation = ({ historyData }) => {
 
       {/* Sale History */}
       <div className="mb-8">
-        <h3 className="text-lg font-semibold mb-4 text-blue-600 border-b border-blue-200 pb-2">
+        <h3 className="text-lg font-semibold mb-4 text-teal-600 border-b border-teal-200 pb-2">
           Sale History from Public Records
         </h3>
         {historyData.saleHistory.length > 0 ? (
@@ -662,7 +662,7 @@ const HistoryInformation = ({ historyData }) => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {sale.titleCompany}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-teal-600">
                       {sale.docNumber}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -710,7 +710,7 @@ const PropertyDetailWithTabs = ({ property, isSold, taxData, historyData }) => {
                 onClick={() => setActiveTab(tab.id)}
                 className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-1.5 sm:gap-2 whitespace-nowrap ${
                   activeTab === tab.id
-                    ? 'border-blue-500 text-blue-600'
+                    ? 'border-teal-500 text-teal-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >

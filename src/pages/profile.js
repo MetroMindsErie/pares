@@ -59,7 +59,7 @@ const ProfilePage = () => {
     return (
       <div className="min-h-screen flex justify-center items-center">
         <div className="flex flex-col items-center">
-          <div className="animate-spin h-10 w-10 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+          <div className="animate-spin h-10 w-10 border-4 border-teal-500 rounded-full border-t-transparent"></div>
           <p className="mt-4 text-gray-600">Loading profile...</p>
         </div>
       </div>
@@ -73,7 +73,7 @@ const ProfilePage = () => {
           <p className="text-gray-600">Profile not found</p>
           <button
             onClick={() => router.push('/dashboard')}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="mt-4 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
           >
             Go to Dashboard
           </button>

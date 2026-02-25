@@ -43,8 +43,20 @@ export default function AuthCallback() {
         setError(err.message || 'Authentication callback failed');
         setDebugInfo(prev => ({...prev, callbackError: err.message}));
         
+        // On general callback error, check profile before defaulting to create-profile
         try {
-
+          const { data: { session: recoverySession } } = await supabase.auth.getSession();
+          if (recoverySession?.user?.id) {
+            const { data: recoveryProfile } = await supabase
+              .from('users')
+              .select('hasprofile')
+              .eq('id', recoverySession.user.id)
+              .maybeSingle();
+            if (recoveryProfile?.hasprofile === true) {
+              router.replace('/dashboard');
+              return;
+            }
+          }
           router.replace('/create-profile?setup=true&recovery=true');
         } catch (routerErr) {
           console.error('Even router redirect failed:', routerErr);
@@ -84,20 +96,12 @@ export default function AuthCallback() {
           }
         }
         
-        // Update user data in auth context and get the proper redirect path
+        // Update user data in auth context
         await refreshUserData(user.id);
         
-        // Use the getRedirectPath function from auth context to determine where to go
-        const redirectPath = getRedirectPath();
-
-        
-        if (redirectPath && redirectPath !== '/login') {
-
-          router.replace(redirectPath);
-        } else {
-          // Fallback to profile check if context doesn't provide a path
-          await checkProfileStatusAndRedirect(user.id);
-        }
+        // Always use direct DB check for redirect — getRedirectPath() may
+        // see stale React state since refreshUserData triggers async setState.
+        await checkProfileStatusAndRedirect(user.id);
       } catch (err) {
         console.error('Error processing authenticated user:', err);
         
@@ -113,6 +117,18 @@ export default function AuthCallback() {
           errorDetails: JSON.stringify(errorDetails)
         }));
         
+        // Don't blindly send to create-profile — check if user has a profile first
+        try {
+          const { data: profileCheck } = await supabase
+            .from('users')
+            .select('hasprofile')
+            .eq('id', user.id)
+            .maybeSingle();
+          if (profileCheck?.hasprofile === true) {
+            router.replace('/dashboard');
+            return;
+          }
+        } catch (_) { /* fall through to create-profile */ }
 
         router.replace('/create-profile?setup=true&error=processing');
       }
@@ -125,7 +141,7 @@ export default function AuthCallback() {
         
         const { data: userData, error: userError } = await supabase
           .from('users')
-          .select('hasprofile')
+          .select('hasprofile, first_name, last_name, city')
           .eq('id', userId)
           .single();
           
@@ -137,6 +153,14 @@ export default function AuthCallback() {
         
         if (userData && userData.hasprofile === true) {
 
+          router.replace('/dashboard');
+        } else if (userData?.first_name && userData?.last_name && userData?.city) {
+          // Profile fields exist but hasprofile is false — self-heal
+          console.warn('hasprofile was false but profile data exists — repairing');
+          await supabase
+            .from('users')
+            .update({ hasprofile: true, updated_at: new Date().toISOString() })
+            .eq('id', userId);
           router.replace('/dashboard');
         } else {
 
@@ -194,22 +218,39 @@ export default function AuthCallback() {
         }
         
         try {
+          // First check if the user already has a profile to avoid
+          // resetting hasprofile on returning Facebook logins
+          const { data: existingUser } = await supabase
+            .from('users')
+            .select('hasprofile, first_name')
+            .eq('id', user.id)
+            .maybeSingle();
+
+          const updatePayload = {
+            facebook_access_token: providerToken,
+            facebook_user_id: fbUserId,
+            facebook_token_valid: true,
+            facebook_token_updated_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            ...additionalData,
+          };
+
+          // Only populate profile fields if the user doesn't have them yet
+          if (!existingUser?.first_name) {
+            updatePayload.profile_picture_url = avatarUrl || null;
+            updatePayload.first_name = firstName || null;
+            updatePayload.last_name = lastName || null;
+            updatePayload.email = email || null;
+          }
+
+          // Never overwrite hasprofile if it's already true
+          if (!existingUser || existingUser.hasprofile !== true) {
+            updatePayload.hasprofile = false;
+          }
+
           const { error: fbError } = await supabase
             .from('users')
-            .update({
-              facebook_access_token: providerToken,
-              facebook_user_id: fbUserId,
-              facebook_token_valid: true,
-              facebook_token_updated_at: new Date().toISOString(),
-              profile_picture_url: avatarUrl || null,
-              first_name: firstName || null,
-              last_name: lastName || null,
-              email: email || null,
-              ...additionalData,
-              hasprofile: false,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            })
+            .update(updatePayload)
             .eq('id', user.id);
           
           if (fbError) {
@@ -272,7 +313,7 @@ export default function AuthCallback() {
       <div className="p-8 bg-white shadow-lg rounded-lg max-w-md w-full">
         {loading ? (
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500 mx-auto"></div>
             <p className="mt-4 text-gray-600">Processing your login...</p>
           </div>
         ) : error ? (
@@ -286,7 +327,7 @@ export default function AuthCallback() {
             )}
             <button 
               onClick={() => router.push('/login')}
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              className="mt-4 px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700"
             >
               Back to Login
             </button>

@@ -135,22 +135,22 @@ export const PendingProperty = ({ property, taxData, historyData }) => {
               {/* Property Stats Grid */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 <div className="bg-gray-50 p-4 rounded-lg text-center">
-                  <FontAwesomeIcon icon={faBed} className="text-blue-500 text-xl mb-2" />
+                  <FontAwesomeIcon icon={faBed} className="text-teal-500 text-xl mb-2" />
                   <p className="text-sm text-gray-500">Bedrooms</p>
                   <p className="font-bold">{property.BedroomsTotal || 'N/A'}</p>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-lg text-center">
-                  <FontAwesomeIcon icon={faBath} className="text-blue-500 text-xl mb-2" />
+                  <FontAwesomeIcon icon={faBath} className="text-teal-500 text-xl mb-2" />
                   <p className="text-sm text-gray-500">Bathrooms</p>
                   <p className="font-bold">{property.BathroomsTotalInteger || 'N/A'}</p>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-lg text-center">
-                  <FontAwesomeIcon icon={faRuler} className="text-blue-500 text-xl mb-2" />
+                  <FontAwesomeIcon icon={faRuler} className="text-teal-500 text-xl mb-2" />
                   <p className="text-sm text-gray-500">Living Area</p>
                   <p className="font-bold">{property.LivingArea ? property.LivingArea.toLocaleString() : 'N/A'} sq ft</p>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-lg text-center">
-                  <FontAwesomeIcon icon={faCalendar} className="text-blue-500 text-xl mb-2" />
+                  <FontAwesomeIcon icon={faCalendar} className="text-teal-500 text-xl mb-2" />
                   <p className="text-sm text-gray-500">Year Built</p>
                   <p className="font-bold">{property.YearBuilt || 'N/A'}</p>
                 </div>
