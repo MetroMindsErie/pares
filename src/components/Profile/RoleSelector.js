@@ -1,10 +1,38 @@
 import React, { useState, useEffect } from 'react';
 
+// Role definitions with RBAC mapping info
 const roles = [
-  { id: 'user', name: 'User', description: 'Regular platform user access' },
-  { id: 'agent', name: 'Agent', description: 'Real estate agent access' },
-  { id: 'broker', name: 'Broker', description: 'Broker with agent management' },
-  { id: 'crypto_investor', name: 'Crypto Investor', description: 'Access to fractional property investments via stablecoins' },
+  { 
+    id: 'user', 
+    name: 'User', 
+    description: 'Regular platform user - browse listings, save favorites, contact agents',
+    tier: 'free',
+    professional: false
+  },
+  { 
+    id: 'agent', 
+    name: 'Agent', 
+    description: 'Real estate agent - list properties, manage listings, view analytics',
+    tier: 'professional',
+    professional: true,
+    badge: 'Pro'
+  },
+  { 
+    id: 'broker', 
+    name: 'Broker', 
+    description: 'Broker - manage agents, company dashboard, advanced features',
+    tier: 'professional',
+    professional: true,
+    badge: 'Pro'
+  },
+  { 
+    id: 'crypto_investor', 
+    name: 'Crypto Investor', 
+    description: 'Access fractional property investments via stablecoins',
+    tier: 'professional',
+    professional: true,
+    badge: 'Pro'
+  },
 ];
 
 export default function RoleSelector({ selectedRoles = [], onChange, onNext, onBack }) {
@@ -115,9 +143,21 @@ export default function RoleSelector({ selectedRoles = [], onChange, onNext, onB
               tabIndex={0}
             >
               <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-medium text-gray-900">{role.name}</h4>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-medium text-gray-900">{role.name}</h4>
+                    {role.badge && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                        {role.badge}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-sm text-gray-500">{role.description}</p>
+                  {role.professional && (
+                    <p className="text-xs text-blue-600 mt-1">
+                      Upgrade to Professional plan to unlock full features
+                    </p>
+                  )}
                 </div>
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
                   isSelected ? 'bg-blue-600' : 'bg-gray-200'

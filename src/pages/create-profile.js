@@ -9,6 +9,7 @@ import ProfileProgressBar from '../components/Profile/ProfileProgressBar';
 import Layout from '../components/Layout';
 import { getFacebookToken, getFacebookProfilePicture } from '../services/facebookService';
 import { saveUserProfile } from '../utils/profileUtils';
+import { mapLegacyRoles, ROLES, SUBSCRIPTION_TIERS } from '../lib/authorizationUtils';
 
 export default function CreateProfile() {
     const { user, isAuthenticated, loading, authChecked } = useAuth();
@@ -330,6 +331,9 @@ export default function CreateProfile() {
                         title: formData.title
                     };
 
+                    // Map legacy roles to new RBAC system
+                    const rbacMapping = mapLegacyRoles(formData.roles || ['user']);
+
                     // Prepare data for submission
                     const dataToSubmit = {
                         first_name: formData.first_name,
@@ -347,6 +351,11 @@ export default function CreateProfile() {
                         metadata: metadata,
                         hasprofile: true,
                         updated_at: new Date().toISOString(),
+                        // New RBAC fields
+                        role: rbacMapping.role,
+                        professional_type: rbacMapping.professional_type,
+                        subscription_tier: SUBSCRIPTION_TIERS.FREE,
+                        is_active: true,
                         // Preserve any existing Facebook data
                         ...facebookData
                     };
@@ -466,6 +475,9 @@ export default function CreateProfile() {
                 rolesToSubmit.push('user');
             }
 
+            // Map legacy roles to new RBAC system
+            const rbacMapping = mapLegacyRoles(rolesToSubmit);
+
             // Save to database with complete user data
             const dataToSubmit = {
                 first_name: formData.first_name,
@@ -478,11 +490,16 @@ export default function CreateProfile() {
                 zip_code: formData.zip_code,
                 profile_type_id: formData.profile_type_id,
                 interests: formData.interests,
-                roles: rolesToSubmit, // Use our sanitized roles array
+                roles: rolesToSubmit, // Keep legacy roles array for backward compatibility
                 profile_picture_url: formData.profile_picture_url,
                 metadata: metadata,
                 hasprofile: true,
                 updated_at: new Date().toISOString(),
+                // New RBAC fields
+                role: rbacMapping.role,
+                professional_type: rbacMapping.professional_type,
+                subscription_tier: SUBSCRIPTION_TIERS.FREE, // Start with free tier
+                is_active: true,
                 // Preserve any existing Facebook data
                 ...facebookData
             };
