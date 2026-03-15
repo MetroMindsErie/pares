@@ -114,7 +114,26 @@ export const AuthProvider = ({ children }) => {
           
           if (error) {
             console.error('Error getting auth session:', error);
+            
+            // If auth is failing, clear potentially corrupted session data
+            if (error.message?.includes('Failed to fetch') || 
+                error.message?.includes('network') ||
+                error.name === 'AuthRetryableFetchError') {
+              console.warn('Clearing potentially corrupted auth session');
+              try {
+                await supabaseClient.auth.signOut();
+                localStorage.removeItem('pares-auth-storage');
+                sessionStorage.clear();
+              } catch (e) {
+                console.error('Error clearing session:', e);
+              }
+            }
+            
             setError(error.message);
+            // Still mark as checked so app doesn't hang
+            setAuthChecked(true);
+            setLoading(false);
+            return;
           } else if (data && data.session) {
 
             // Ensure a corresponding users table row exists.
@@ -217,6 +236,20 @@ export const AuthProvider = ({ children }) => {
           };
         } catch (err) {
           console.error('Error initializing auth:', err);
+          
+          // Clear potentially corrupted auth session on initialization error
+          if (err.name === 'AbortError' || 
+              err.message?.includes('Failed to fetch') ||
+              err.message?.includes('522')) {
+            console.warn('Clearing auth storage due to initialization error');
+            try {
+              localStorage.removeItem('pares-auth-storage');
+              sessionStorage.clear();
+            } catch (e) {
+              // Ignore storage errors
+            }
+          }
+          
           setAuthChecked(true);
           setLoading(false);
         }

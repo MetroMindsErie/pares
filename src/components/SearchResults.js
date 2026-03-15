@@ -190,11 +190,14 @@ const SearchResults = ({
     // Check if we just need to reveal more already-loaded items
     const hasMoreLocalItems = allListings && allListings.length > visibleCount;
     
-    // If there are more local items to show, just reveal them
-    if (hasMoreLocalItems && !effectiveNextLink && !onLoadMore && !loadMoreProp && !onLoadMoreClick) {
+    // ALWAYS reveal more local items first before fetching remotely
+    if (hasMoreLocalItems) {
       setVisibleCount(prev => Math.min(prev + PAGE_SIZE, allListings.length));
       return;
     }
+    
+    // No more local items — try to fetch more from the server
+    if (!effectiveNextLink && !onLoadMore && !loadMoreProp && !onLoadMoreClick) return;
     
     // Set loading state before async operations
     setLoading(true);
@@ -203,7 +206,6 @@ const SearchResults = ({
       // Prefer parent's handler if they provided one
       if (typeof onLoadMore === 'function') {
         await onLoadMore();
-        // Parent handles everything, just reveal more items
         setVisibleCount(prev => prev + PAGE_SIZE);
       } else if (typeof loadMoreProp === 'function') {
         await loadMoreProp();
@@ -212,11 +214,7 @@ const SearchResults = ({
         await onLoadMoreClick();
         setVisibleCount(prev => prev + PAGE_SIZE);
       } else if (effectiveNextLink) {
-        // Use internal loader - it handles visibleCount update internally
         await loadMoreProperties();
-      } else if (hasMoreLocalItems) {
-        // Just reveal more already-loaded items
-        setVisibleCount(prev => Math.min(prev + PAGE_SIZE, allListings.length));
       }
     } catch (err) {
       console.error('Error loading more properties:', err);
@@ -257,12 +255,17 @@ const SearchResults = ({
           </span>
         </h2>
         
-              <div className="flex items-center">
-              <div className="h-10 flex items-right">
-                <span className="font-serif text-2xl text-teal-700">
-                Pares
-                </span>
-              </div>
+              <div className="flex items-center gap-3">
+                <button onClick={() => setViewMode('grid')}
+                  className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300' : 'text-gray-400 hover:text-gray-600'}`}>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+                </button>
+                <button onClick={() => setViewMode('map')}
+                  className={`p-2 rounded-lg transition-colors ${viewMode === 'map' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300' : 'text-gray-400 hover:text-gray-600'}`}>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
+                </button>
+                <div className="h-6 w-px bg-gray-200 dark:bg-gray-700"></div>
+                <span className="font-serif text-xl text-teal-700 dark:text-teal-400">Pares</span>
               </div>
             </div>
 
@@ -347,6 +350,15 @@ const SearchResults = ({
                     <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
                       {getAddress(listing)}
                     </h3>
+                    {(listing.PostalCity || listing.City || listing.CountyOrParish || listing.PostalCode) && (
+                      <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400 truncate">
+                        {[
+                          listing.PostalCity || listing.City,
+                          listing.CountyOrParish ? `${listing.CountyOrParish} County` : null,
+                          listing.PostalCode
+                        ].filter(Boolean).join(' · ')}
+                      </p>
+                    )}
                     {(isReo || isForeclosure) && specialText && (
                       <p className="mt-1 text-xs text-gray-600 dark:text-gray-400 line-clamp-1">
                         Special conditions: <span className="font-medium">{specialText}</span>

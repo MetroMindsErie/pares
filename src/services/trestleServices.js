@@ -336,8 +336,57 @@ const generateVariants = (input) => {
   return Array.from(variants);
 };
 
+/** Fire-and-forget: send Trestle results to the server-side cache */
+function backfillCache(properties) {
+  if (!properties?.length) return;
+  fetch('/api/property-cache/backfill', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ listings: properties }),
+  }).catch(() => {}); // silent
+}
+
+/** Try the Supabase property cache (trigram fuzzy search) first */
+async function tryCacheSearch(searchParams) {
+  try {
+    const params = new URLSearchParams();
+    if (searchParams.location)  params.set('q', searchParams.location);
+    if (searchParams.status)    params.set('status', searchParams.status);
+    if (searchParams.minPrice)  params.set('minPrice', searchParams.minPrice);
+    if (searchParams.maxPrice)  params.set('maxPrice', searchParams.maxPrice);
+    if (searchParams.beds)      params.set('beds', searchParams.beds);
+    if (searchParams.baths)     params.set('baths', searchParams.baths);
+    if (searchParams.sort)      params.set('sort', searchParams.sort);
+    if (searchParams.mlsAreaMajor) params.set('county', searchParams.mlsAreaMajor);
+    params.set('limit', '50');
+
+    const resp = await fetch(`/api/property-cache?${params.toString()}`);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    if (data.properties?.length > 0) return data;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export const searchProperties = async (searchParams) => {
   try {
+    // --- Cache-first ONLY for address-like queries (not zips, not city names) ---
+    const loc = searchParams.location || '';
+    const isZipCode = /^\d{5}$/.test(loc.trim());
+    const looksLikeAddress = !isZipCode && /^\d+\s+\S/.test(loc.trim());
+    if (looksLikeAddress) {
+      const cached = await tryCacheSearch(searchParams);
+      if (cached && cached.properties.length > 0) {
+        return {
+          properties: cached.properties,
+          nextLink: null,
+          total: cached.properties.length,
+        };
+      }
+    }
+
     const filters = [];
     // NOTE: Per /odata/$metadata, SpecialListingConditions is a Flags Enum:
     // Type="Cotality.DataStandard.RESO.DD.Enums.Multi.SpecialListingConditions" IsFlags="true"
@@ -419,7 +468,8 @@ export const searchProperties = async (searchParams) => {
       } else if (isProbableAddress(rawLocation)) {
         // Generate variants to match "E" vs "East", "St" vs "Street", etc.
         const fullVariants = generateVariants(rawLocation);
-        const escapedFullVariants = fullVariants.map(v => odataEscape(v));
+        // IMPORTANT: lowercase variants since we compare with tolower()
+        const escapedFullVariants = fullVariants.map(v => odataEscape(v.toLowerCase()));
 
         // Build unparsed exact equality OR clauses for variants
         const unparsedExactClauses = escapedFullVariants
@@ -439,7 +489,7 @@ export const searchProperties = async (searchParams) => {
           const streetNumber = odataEscape(firstToken);
           const streetNameRaw = parts.slice(1).join(' ');
           const streetNameVariants = generateVariants(streetNameRaw);
-          const escapedStreetNameVariants = streetNameVariants.map(v => odataEscape(v));
+          const escapedStreetNameVariants = streetNameVariants.map(v => odataEscape(v.toLowerCase()));
           const streetNameContains = escapedStreetNameVariants
             .map(v => `contains(tolower(StreetName), '${v}')`)
             .join(' or ');
@@ -529,22 +579,45 @@ export const searchProperties = async (searchParams) => {
     // Build the filter query string
     const filterQuery = filters.length > 0 ? `$filter=${filters.join(' and ')}` : '';
 
-    // Fetch all properties without limit - use a large number to get all results
-    // The API may still paginate, but we'll return the nextLink for loading more
-    const response = await getPropertiesByFilter(filterQuery, 500, 0);
+    // Build OData $orderby based on sort parameter
+    let orderbyClause = '';
+    if (searchParams.sort) {
+      switch (searchParams.sort) {
+        case 'price-asc':
+          orderbyClause = '&$orderby=ListPrice asc';
+          break;
+        case 'price-desc':
+          orderbyClause = '&$orderby=ListPrice desc';
+          break;
+        case 'newest':
+          orderbyClause = '&$orderby=ModificationTimestamp desc';
+          break;
+        case 'sqft-desc':
+          orderbyClause = '&$orderby=LivingArea desc';
+          break;
+        default:
+          orderbyClause = '&$orderby=ListPrice asc';
+      }
+    }
 
-    // Format and sort results for the UI (ascending price)
+    const fullQuery = filterQuery + orderbyClause;
+    const response = await getPropertiesByFilter(fullQuery, 500, 0);
+
+    // Format results (server already sorted if $orderby was provided)
     let formattedProperties = response.properties
       .map(property => ({
         ...property,
         media: property.media,
         mediaArray: property.mediaArray
-      }))
-      .sort((a, b) => {
-        const priceA = a.ListPrice || 0;
-        const priceB = b.ListPrice || 0;
-        return priceA - priceB;
-      });
+      }));
+
+    // Client-side fallback sort if no server sort was applied
+    if (!searchParams.sort) {
+      formattedProperties.sort((a, b) => (a.ListPrice || 0) - (b.ListPrice || 0));
+    }
+
+    // Backfill the DB cache with fresh Trestle data
+    backfillCache(formattedProperties);
 
     return {
       properties: formattedProperties,
@@ -553,6 +626,15 @@ export const searchProperties = async (searchParams) => {
     };
   } catch (error) {
     console.error('Error searching properties:', error);
+
+    // On Trestle failure, try cache as fallback
+    try {
+      const cached = await tryCacheSearch(searchParams);
+      if (cached && cached.properties.length > 0) {
+        return { properties: cached.properties, nextLink: null, total: cached.properties.length };
+      }
+    } catch {}
+
     throw new Error('Failed to search properties');
   }
 };

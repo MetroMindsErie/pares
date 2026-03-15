@@ -108,15 +108,18 @@ export default function Navbar() {
   const browseMenuItems = allBrowseMenuItems.filter(item => item.href !== router.pathname);
   
   // Return early if not client-side yet to prevent hydration issues
+  // IMPORTANT: must match the same outer structure as the full client render below
   if (!isClient) {
     return (
       <React.Fragment>
-        {/* keep the placeholder nav above the partners ticker by increasing z-index */}
         <nav
-          className="backdrop-blur-md bg-white/20 border-b border-white/10 sticky top-0 h-16"
+          className="backdrop-blur-md bg-white/20 dark:bg-gray-900/20 border-b border-white/10 sticky top-0"
           style={{ zIndex: 80 }}
-        />
-        <PartnersTicker />
+        >
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between h-16" />
+          </div>
+        </nav>
       </React.Fragment>
     );
   }
@@ -153,7 +156,7 @@ export default function Navbar() {
                   <img
                     src="/pares_homes.png"
                     alt="pares.homes"
-                    className="h-32 w-auto object-contain"
+                    className="h-44 w-auto object-contain"
                   />
                 </Link>
               </div>

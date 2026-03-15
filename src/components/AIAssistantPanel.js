@@ -57,9 +57,48 @@ const COUNTY_OPTIONS = [
 ];
 
 const COUNTY_ZIP_OPTIONS = {
-  Erie: buildZipRange(16501, 16515),
-  Crawford: ['16316', '16424', '16327', '16406', '16260', '16404', '16111'],
-  Warren: ['16365', '16371', '16345', '16350', '16347', '16351', '16313', '16340', '16312', '16329', '16352', '16402', '16405', '16416', '16420', '16436'],
+  // Erie County, PA - All zip codes
+  Erie: [
+    ...buildZipRange(16501, 16515), // Erie City
+    '16411', // Albion
+    '16421', // Corry
+    '16423', // Cranesville
+    '16426', // East Springfield
+    '16427', // Edinboro
+    '16428', // Elgin
+    '16430', // Fairview
+    '16434', // Girard
+    '16438', // Harborcreek
+    '16440', // Lake City
+    '16441', // Lawrence Park
+    '16442', // McKean
+    '16444', // Mill Village
+    '16475', // Waterford
+  ],
+  // Crawford County, PA - All zip codes
+  Crawford: [
+    '16101', '16111', '16137', '16142', '16150', // Western area
+    '16311', '16314', '16316', '16319', '16327', // Northern area
+    '16331', '16335', '16341', '16342', '16353', // Central area
+    '16360', '16364', '16373', '16374', '16388', // Eastern area
+    '16401', '16403', '16404', '16407', '16410', // Southern area
+    '16412', '16415', '16417', '16424', '16433', // Meadville area
+    '16435', '16438', '16440', // Lake Erie border area
+  ],
+  // Warren County, PA - All zip codes
+  Warren: [
+    '16301', // Warren city (main)
+    '16313', // Bear Lake
+    '16329', // Clarendon
+    '16340', // Grand Valley
+    '16345', // Irvine
+    '16347', // Pittsfield
+    '16350', // Russell
+    '16351', // Sheffield
+    '16352', // Spring Creek
+    '16365', // Tidioute
+    '16371', // Warren (west)
+  ],
 };
 
 function LoadingRow({ label }) {
