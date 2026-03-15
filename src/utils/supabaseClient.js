@@ -3,13 +3,32 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-// Enhanced client setup with persistent sessions
+// Enhanced client setup with persistent sessions and better error handling
 const supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    storageKey: 'pares-auth-storage'
+    storageKey: 'pares-auth-storage',
+    // Add timeout and better error handling
+    flowType: 'pkce',
+    debug: process.env.NODE_ENV === 'development'
+  },
+  global: {
+    headers: {
+      'x-client-info': 'pares-homes'
+    },
+    fetch: (url, options = {}) => {
+      // Add timeout to prevent hanging on 522 errors
+      const timeout = 10000; // 10 seconds
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), timeout);
+      
+      return fetch(url, {
+        ...options,
+        signal: controller.signal
+      }).finally(() => clearTimeout(id));
+    }
   }
 });
 
@@ -24,7 +43,35 @@ export const supabaseClient = supabaseInstance;
 // Add event listeners for auth state changes
 if (typeof window !== 'undefined') {
     supabaseInstance.auth.onAuthStateChange((event, session) => {
-
+      // Clear storage on sign out to prevent stale tokens
+      if (event === 'SIGNED_OUT') {
+        try {
+          localStorage.removeItem('pares-auth-storage');
+          sessionStorage.removeItem('isLoggingOut');
+        } catch (e) {
+          // Ignore storage errors
+        }
+      }
+    });
+    
+    // Clear any stale auth data on load if we detect auth errors
+    window.addEventListener('load', () => {
+      const storageKey = 'pares-auth-storage';
+      try {
+        const authData = localStorage.getItem(storageKey);
+        if (authData) {
+          const parsed = JSON.parse(authData);
+          // Check if token is expired (basic check)
+          if (parsed.expires_at && new Date(parsed.expires_at * 1000) < new Date()) {
+            console.warn('Clearing expired auth session');
+            localStorage.removeItem(storageKey);
+          }
+        }
+      } catch (e) {
+        // If we can't parse the auth data, clear it
+        console.warn('Clearing corrupted auth data');
+        localStorage.removeItem(storageKey);
+      }
     });
 }
 

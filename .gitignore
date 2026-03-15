@@ -9,8 +9,9 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
-
+.sql
 *.sql
+!supabase/migrations/*.sql
 
 # testing
 /coverage

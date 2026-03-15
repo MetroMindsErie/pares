@@ -6,6 +6,47 @@ const CACHE_KEY = 'pares_search_cache';
 const CACHE_EXPIRY = 30 * 60 * 1000; // 30 minutes
 const SUGGESTIONS_KEY_PREFIX = 'pares_suggestions_';
 const SUGGESTIONS_EXPIRY = 6 * 60 * 60 * 1000; // 6h
+const MAX_CACHED_LISTINGS = 75;
+
+/** Keep only the fields needed to render cards */
+function trimListing(l) {
+  if (!l || typeof l !== 'object') return l;
+  return {
+    ListingKey: l.ListingKey, ListingId: l.ListingId,
+    UnparsedAddress: l.UnparsedAddress, StreetNumber: l.StreetNumber,
+    StreetName: l.StreetName, StreetSuffix: l.StreetSuffix,
+    PostalCity: l.PostalCity, City: l.City,
+    CountyOrParish: l.CountyOrParish, PostalCode: l.PostalCode,
+    StateOrProvince: l.StateOrProvince,
+    ListPrice: l.ListPrice, Price: l.Price,
+    BedroomsTotal: l.BedroomsTotal, Bedrooms: l.Bedrooms, Beds: l.Beds,
+    BathroomsTotalInteger: l.BathroomsTotalInteger, BathroomsTotal: l.BathroomsTotal, Baths: l.Baths,
+    LivingArea: l.LivingArea, LivingAreaSqFt: l.LivingAreaSqFt, SqFt: l.SqFt,
+    StandardStatus: l.StandardStatus, MlsStatus: l.MlsStatus,
+    SpecialListingConditions: l.SpecialListingConditions,
+    Latitude: l.Latitude, Longitude: l.Longitude,
+    Media: l.Media ? l.Media.slice(0, 1).map(m => ({ MediaURL: m.MediaURL })) : undefined,
+    photos: l.photos ? l.photos.slice(0, 1) : undefined,
+  };
+}
+
+function safeCacheSet(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // Quota exceeded – clear stale caches and retry once
+    try {
+      localStorage.removeItem(CACHE_KEY);
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith(SUGGESTIONS_KEY_PREFIX)) localStorage.removeItem(k);
+      }
+      localStorage.setItem(key, value);
+    } catch {
+      // Still failing – nothing more we can do
+    }
+  }
+}
 
 /**
  * Save search results to cache
@@ -14,12 +55,16 @@ export const cacheSearchResults = (results) => {
   if (!results) return;
   
   try {
+    const trimmed = Array.isArray(results)
+      ? results.slice(0, MAX_CACHED_LISTINGS).map(trimListing)
+      : results;
+
     const cacheData = {
-      results,
+      results: trimmed,
       timestamp: Date.now()
     };
     
-    localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+    safeCacheSet(CACHE_KEY, JSON.stringify(cacheData));
   } catch (error) {
     console.error('Error caching search results:', error);
   }
@@ -72,7 +117,7 @@ export const hasCachedSearchResults = () => {
 export function cacheSuggestions(userId, payload) {
   if (!userId || !payload) return;
   try {
-    localStorage.setItem(
+    safeCacheSet(
       `${SUGGESTIONS_KEY_PREFIX}${userId}`,
       JSON.stringify({ data: payload, ts: Date.now() })
     );

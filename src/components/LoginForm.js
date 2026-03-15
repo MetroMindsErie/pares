@@ -73,8 +73,31 @@ const Login = () => {
     <div className="max-w-md mx-auto p-8 bg-white/80 backdrop-blur-md rounded-2xl shadow-xl mt-10">
       <h2 className="text-3xl font-semibold mb-6 text-center text-gray-800">Log In</h2>
       {(error || authError) && (
-        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded text-center">
-          {error || authError}
+        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
+          <p className="font-semibold text-center mb-2">
+            {error?.includes('Failed to fetch') || authError?.includes('Failed to fetch') || 
+             error?.includes('network') || authError?.includes('network')
+              ? '⚠️ Connection Error'
+              : '❌ Login Failed'}
+          </p>
+          <p className="text-sm text-center">
+            {error?.includes('Failed to fetch') || authError?.includes('Failed to fetch') || 
+             error?.includes('network') || authError?.includes('network')
+              ? 'Unable to connect to authentication service. Please try again later or contact support if the issue persists.'
+              : (error || authError)}
+          </p>
+          {(error?.includes('Failed to fetch') || authError?.includes('Failed to fetch')) && (
+            <button
+              onClick={() => {
+                localStorage.removeItem('pares-auth-storage');
+                sessionStorage.clear();
+                window.location.reload();
+              }}
+              className="mt-3 w-full px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
+            >
+              Clear Session & Retry
+            </button>
+          )}
         </div>
       )}
       
