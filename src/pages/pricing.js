@@ -39,8 +39,9 @@ const PLANS = [
     monthly: 29,
     yearly: 290,
     highlighted: true,
-    badge: 'Most Popular',
-    cta: 'Upgrade to Professional',
+    badge: 'Coming Soon',
+    comingSoon: true,
+    cta: 'Coming Soon',
     features: [
       { text: 'Everything in Free', included: true },
       { text: 'List up to 5 properties', included: true },
@@ -61,7 +62,9 @@ const PLANS = [
     monthly: 99,
     yearly: 990,
     highlighted: false,
-    cta: 'Upgrade to Premium',
+    badge: 'Coming Soon',
+    comingSoon: true,
+    cta: 'Coming Soon',
     features: [
       { text: 'Everything in Professional', included: true },
       { text: 'Unlimited property listings', included: true },
@@ -137,24 +140,24 @@ const PROFESSIONAL_HIGHLIGHTS = {
 
 const PRICING_FAQ = [
   {
-    q: 'Can I switch plans at any time?',
-    a: 'Yes — upgrade or downgrade whenever you like. When you upgrade you get immediate access to your new features. When you downgrade your current tier stays active until the end of the billing cycle.',
+    q: 'When will the Professional and Premium plans be available?',
+    a: 'We\'re actively building out our paid plans and will announce them soon. Sign up for free now and you\'ll be the first to know when they launch!',
   },
   {
-    q: 'Is there a free trial for Professional or Premium?',
-    a: 'We offer a 14-day free trial on the Professional plan so you can explore all the features risk-free. No credit card required to start.',
+    q: 'What can I do on the Free plan?',
+    a: 'You can browse all property listings, save up to 10 properties, view public agent profiles, use basic property search, and contact professionals — all completely free.',
   },
   {
-    q: 'What payment methods do you accept?',
-    a: 'We accept all major credit and debit cards through Stripe. Invoice billing is available for Premium annual plans.',
+    q: 'Will I need to pay to keep browsing listings?',
+    a: 'No! Browsing listings, saving properties, and contacting agents will always be free. Paid plans will unlock advanced features like listing properties, analytics, and team management.',
   },
   {
-    q: 'What happens to my data if I downgrade?',
-    a: 'Your data is never deleted. If you downgrade, listings above your new plan limit will be unpublished (not removed) and you can re-publish them if you upgrade again.',
+    q: 'Will there be a free trial for paid plans?',
+    a: 'We\'re planning to offer a free trial so you can explore all the features risk-free. Stay tuned for details!',
   },
   {
-    q: 'Do I need a professional plan to browse listings?',
-    a: 'No! All users can browse every listing, save properties, and contact agents on the Free plan. Professional plans unlock listing, analytics, and team management features.',
+    q: 'How will I know when new plans launch?',
+    a: 'Create a free account and we\'ll notify you by email as soon as Professional and Premium plans are ready.',
   },
 ];
 
@@ -235,6 +238,7 @@ function PlanCard({ plan, cycle, currentTier, onSelect }) {
   const price = cycle === BILLING_CYCLES.YEARLY ? plan.yearly : plan.monthly;
   const period = plan.id === SUBSCRIPTION_TIERS.FREE ? '' : cycle === BILLING_CYCLES.YEARLY ? '/year' : '/month';
   const isCurrent = currentTier === plan.id;
+  const isComingSoon = plan.comingSoon;
 
   return (
     <div
@@ -242,12 +246,14 @@ function PlanCard({ plan, cycle, currentTier, onSelect }) {
         plan.highlighted
           ? 'border-teal-400 bg-white shadow-lg ring-2 ring-teal-400/30'
           : 'border-gray-200 bg-white'
-      }`}
+      } ${isComingSoon ? 'opacity-75' : ''}`}
     >
       {/* Badge */}
       {plan.badge && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <span className="inline-flex items-center rounded-full bg-teal-600 px-4 py-1 text-xs font-semibold text-white shadow-sm">
+          <span className={`inline-flex items-center rounded-full px-4 py-1 text-xs font-semibold text-white shadow-sm ${
+            isComingSoon ? 'bg-amber-500' : 'bg-teal-600'
+          }`}>
             {plan.badge}
           </span>
         </div>
@@ -258,26 +264,39 @@ function PlanCard({ plan, cycle, currentTier, onSelect }) {
 
       {/* Price */}
       <div className="mt-6 flex items-baseline gap-1">
-        <span className="text-4xl font-extrabold text-gray-900">
-          ${price}
-        </span>
-        {period && <span className="text-base text-gray-500">{period}</span>}
+        {isComingSoon ? (
+          <span className="text-2xl font-bold text-gray-400">Price TBD</span>
+        ) : (
+          <>
+            <span className="text-4xl font-extrabold text-gray-900">
+              ${price}
+            </span>
+            {period && <span className="text-base text-gray-500">{period}</span>}
+          </>
+        )}
       </div>
 
       {/* CTA */}
       <button
-        onClick={() => onSelect(plan)}
-        disabled={isCurrent}
+        disabled={isCurrent || isComingSoon}
         className={`mt-8 w-full rounded-lg px-4 py-3 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-          isCurrent
+          isComingSoon
+            ? 'cursor-not-allowed border border-amber-300 bg-amber-50 text-amber-600'
+            : isCurrent
             ? 'cursor-default border border-gray-300 bg-gray-50 text-gray-400'
             : plan.highlighted
             ? 'bg-teal-600 text-white hover:bg-teal-700 focus:ring-teal-500'
             : 'border border-gray-300 bg-white text-gray-900 hover:bg-gray-50 focus:ring-gray-500'
         }`}
       >
-        {isCurrent ? 'Current Plan' : plan.cta}
+        {isComingSoon ? '🚀 Coming Soon' : isCurrent ? 'Current Plan' : plan.cta}
       </button>
+
+      {isComingSoon && (
+        <p className="mt-3 text-center text-xs text-amber-600">
+          We&apos;re working hard to bring this to you!
+        </p>
+      )}
 
       {/* Feature list */}
       <ul className="mt-8 flex-1 space-y-3">
@@ -384,14 +403,14 @@ function ComparisonTable({ cycle }) {
               </th>
               <th className="px-6 py-4 text-center text-sm font-semibold text-teal-600">
                 Professional
-                <span className="block text-xs font-normal text-gray-500">
-                  ${cycle === BILLING_CYCLES.YEARLY ? '290/yr' : '29/mo'}
+                <span className="block text-xs font-normal text-amber-500">
+                  Coming Soon
                 </span>
               </th>
               <th className="px-6 py-4 text-center text-sm font-semibold text-gray-900">
                 Premium
-                <span className="block text-xs font-normal text-gray-500">
-                  ${cycle === BILLING_CYCLES.YEARLY ? '990/yr' : '99/mo'}
+                <span className="block text-xs font-normal text-amber-500">
+                  Coming Soon
                 </span>
               </th>
             </tr>
@@ -499,11 +518,9 @@ export default function PricingPage() {
             Simple, transparent pricing
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-gray-600">
-            Whether you&apos;re just browsing or running a brokerage, there&apos;s a
-            plan built for you. Start free, upgrade when you&apos;re ready.
+            Get started for free today! Professional and Premium plans are on
+            the way — we&apos;ll let you know as soon as they&apos;re available.
           </p>
-
-          <BillingToggle cycle={billingCycle} onChange={setBillingCycle} />
         </div>
 
         {/* Plan cards */}
@@ -530,10 +547,10 @@ export default function PricingPage() {
 
         {/* Final CTA */}
         <div className="mt-16 rounded-2xl bg-gradient-to-r from-teal-600 to-green-600 px-8 py-12 text-center text-white shadow-lg">
-          <h2 className="text-3xl font-bold">Ready to grow your real estate business?</h2>
+          <h2 className="text-3xl font-bold">Start exploring for free today</h2>
           <p className="mx-auto mt-3 max-w-xl text-teal-100">
-            Join thousands of agents, brokers, and investors using Pares to
-            list, analyze, and close deals faster.
+            Create your free account to browse listings, save properties, and
+            connect with professionals. More plans are on the way!
           </p>
           <button
             onClick={() =>
