@@ -223,6 +223,7 @@ const PropertyCard = ({ property, onSwipe, isTop = false, isMobile = false }) =>
               <span className="text-[10px] sm:text-xs text-teal-600">Connect</span>
             </button>
           </div>
+          <p className="text-[10px] text-gray-400 text-center mt-2">Courtesy of GEBOR</p>
         </div>
       </div>
 

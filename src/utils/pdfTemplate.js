@@ -419,6 +419,7 @@ ${imgUrl ? `<img class="photo" src="${imgUrl}" alt="Property photo"/>` : ''}
 ${buildSectionsHtml(sections)}
 
 <div class="ft">
+  Courtesy of GEBOR &bull;
   Saved ${property.saved_at ? new Date(property.saved_at).toLocaleDateString() : '—'}
   &bull; Generated ${new Date().toLocaleDateString()}
   &bull; pares.homes
@@ -477,6 +478,7 @@ function buildPropertyBodyFragment(property, index, total) {
   ${buildSectionsHtml(sections)}
 
   <div class="ft">
+    Courtesy of GEBOR &bull;
     Saved ${property.saved_at ? new Date(property.saved_at).toLocaleDateString() : '—'}
     &bull; Generated ${new Date().toLocaleDateString()}
     &bull; pares.homes
@@ -680,7 +682,7 @@ export function buildComparisonPdfHtml(properties) {
   </tbody>
 </table>
 
-<div class="ft">Generated ${new Date().toLocaleDateString()} \u2022 pares.homes</div>
+<div class="ft">Courtesy of GEBOR \u2022 Generated ${new Date().toLocaleDateString()} \u2022 pares.homes</div>
 
 </body></html>`;
 }

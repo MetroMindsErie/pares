@@ -169,6 +169,7 @@ const PropertyDetailPanel = ({ property, d, onClose, onPrint, onDelete, isDeleti
             Saved {new Date(property.saved_at).toLocaleDateString()}
           </span>
         </div>
+        <p className="text-[0.6rem] text-gray-400 text-center mt-2">Courtesy of GEBOR</p>
       </div>
     </div>
   </div>
@@ -359,6 +360,7 @@ const SavedProperties = ({ properties, isLoading, error, onDelete, deletingIds }
                       </button>
                     )}
                   </div>
+                  <p className="text-[0.6rem] text-gray-400 text-center mt-2">Courtesy of GEBOR</p>
                 </div>
               </div>
             );

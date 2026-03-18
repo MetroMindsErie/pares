@@ -156,6 +156,7 @@ const PropertyCard = ({ listing, mobile }) => {
             </>
           )}
         </div>
+        <p className="text-[0.6rem] text-slate-400 text-center py-1 border-t border-slate-100">Courtesy of GEBOR</p>
       </div>
     </Link>
   );

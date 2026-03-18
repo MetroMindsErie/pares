@@ -240,6 +240,8 @@ export const PendingProperty = ({ property, taxData, historyData }) => {
         <div className="text-center mt-8 pt-8 pb-4 border-t border-gray-200">
           <BackToListingsButton className="bg-gray-100 text-black py-2 px-6 rounded-lg border border-black hover:bg-gray-200 transition-colors" />
         </div>
+
+        <p className="text-center text-xs text-gray-500 mt-4 pb-4">Courtesy of GEBOR</p>
       </div>
     </Layout>
   );
