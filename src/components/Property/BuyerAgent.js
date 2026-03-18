@@ -8,6 +8,7 @@ const BuyerAgent = ({ className = "" }) => {
     email: 'easterjo106@yahoo.com',
     phone: '814-873-5810',
     agency: 'Pennington Lines Real Estate',
+    agencyPhone: '814-833-3310',
     photo: '/dad.PNG',
     title: 'Real Estate Agent'
   };
@@ -36,8 +37,8 @@ const BuyerAgent = ({ className = "" }) => {
         
         <div className="flex-1">
           <h3 className="text-lg font-semibold text-gray-900 mb-1">{buyerAgent.name}</h3>
-          <p className="text-lg font-semibold text-gray-700 mb-1">{buyerAgent.title}</p>
-          <p className="text-lg font-semibold text-gray-700 mb-3">{buyerAgent.agency}</p>
+          <p className="text-sm text-gray-600 mb-1">{buyerAgent.title}</p>
+          <p className="text-sm text-gray-600 mb-3">{buyerAgent.agency}</p>
           
           <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0">
             <button
@@ -46,6 +47,14 @@ const BuyerAgent = ({ className = "" }) => {
             >
               <FontAwesomeIcon icon={faPhone} className="w-4 h-4 mr-2" />
               {buyerAgent.phone}
+            </button>
+            
+            <button
+              onClick={() => handleContact('phone', buyerAgent.agencyPhone)}
+              className="flex items-center text-sm text-teal-600 hover:text-teal-800 transition-colors"
+            >
+              <FontAwesomeIcon icon={faBuilding} className="w-4 h-4 mr-2" />
+              {buyerAgent.agencyPhone}
             </button>
             
             <button

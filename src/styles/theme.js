@@ -39,8 +39,8 @@ export const theme = {
   },
   typography: {
     fontFamily: {
-      main: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-      heading: "'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+      main: "var(--font-poppins, Poppins), sans-serif",
+      heading: "var(--font-poppins, Poppins), sans-serif",
     },
     fontWeight: {
       regular: 400,

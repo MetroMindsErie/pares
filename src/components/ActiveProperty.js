@@ -534,7 +534,7 @@ export const ActiveProperty = ({ property, contextLoading, taxData, historyData,
 
         {/* Contact Section */}
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold mb-4">Contact Agent</h3>
+          <h3 className="text-lg font-semibold mb-4">Listing Agent</h3>
           <div className="mb-4">
             <p className="font-bold">{property.ListAgentFullName || 'Agent information not available'}</p>
             {property.ListAgentEmail && <p>{property.ListAgentEmail}</p>}

@@ -57,9 +57,9 @@ const typeLabel = (type) => {
 
 // Small helper component for active filter pills
 const FilterPill = ({ label, onRemove }) => (
-  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs font-medium">
+  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-teal-50 border border-teal-200 text-teal-700 dark:bg-teal-900/30 dark:border-teal-700 dark:text-teal-300 text-xs font-semibold" style={{fontFamily:'var(--font-poppins, Poppins), sans-serif'}}>
     {label}
-    <button type="button" onClick={onRemove} className="ml-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+    <button type="button" onClick={onRemove} className="ml-0.5 text-teal-400 hover:text-teal-600 dark:hover:text-teal-300 transition-colors">
       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
       </svg>
@@ -71,10 +71,11 @@ const FilterPill = ({ label, onRemove }) => (
 const FilterDropdown = ({ label, value, displayValue, isOpen, onToggle, children }) => (
   <div className="relative">
     <button type="button" onClick={onToggle}
-      className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-all duration-150 whitespace-nowrap ${
+      style={{fontFamily:'var(--font-poppins, Poppins), sans-serif'}}
+      className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg border text-[0.8rem] font-semibold tracking-[0.02em] transition-all duration-150 whitespace-nowrap ${
         value
-          ? 'border-gray-300 bg-gray-50 text-gray-900 dark:border-gray-500 dark:bg-gray-700 dark:text-white'
-          : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
+          ? 'border-teal-400 bg-teal-50 text-teal-700 dark:border-teal-600 dark:bg-teal-900/40 dark:text-teal-300'
+          : 'border-slate-200 bg-white text-slate-600 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-teal-900/20 dark:hover:border-teal-600'
       }`}>
       {value && <span className="w-1.5 h-1.5 rounded-full bg-teal-500 flex-shrink-0" />}
       <span>{displayValue || label}</span>
@@ -93,10 +94,11 @@ const FilterDropdown = ({ label, value, displayValue, isOpen, onToggle, children
 // Option row inside a FilterDropdown
 const FilterOption = ({ selected, onClick, children }) => (
   <button type="button" onClick={onClick}
+    style={{fontFamily:'var(--font-poppins, Poppins), sans-serif'}}
     className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between ${
       selected
-        ? 'bg-gray-50 text-gray-900 font-medium dark:bg-gray-700 dark:text-white'
-        : 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'
+        ? 'bg-teal-50 text-teal-700 font-semibold dark:bg-teal-900/40 dark:text-teal-300'
+        : 'text-slate-600 hover:bg-teal-50 hover:text-teal-700 dark:text-slate-300 dark:hover:bg-teal-900/20'
     }`}>
     <span>{children}</span>
     {selected && (
@@ -386,7 +388,7 @@ const SearchBar = ({
       <form onSubmit={handleSubmit} className="space-y-3 relative">
         {/* Main Search Bar - Zillow-style */}
         <div className="relative">
-          <div className="flex items-stretch rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-visible focus-within:ring-2 focus-within:ring-gray-400 focus-within:border-gray-300 dark:focus-within:ring-gray-500 dark:focus-within:border-gray-500 transition-all duration-200">
+          <div className="flex items-stretch rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-visible focus-within:ring-2 focus-within:ring-teal-400 focus-within:border-teal-400 dark:focus-within:ring-teal-500 dark:focus-within:border-teal-500 transition-all duration-200">
             {/* Search icon */}
             <div className="flex items-center pl-4 pr-2">
               {fetchingSuggestions ? (
@@ -413,7 +415,8 @@ const SearchBar = ({
               onFocus={handleInputFocus}
               placeholder="Search address, city, county, or ZIP..."
               autoComplete="off"
-              className="flex-1 px-2 py-3.5 sm:py-4 text-sm sm:text-base bg-transparent border-0 focus:ring-0 focus:outline-none text-gray-800 dark:text-gray-100 placeholder-gray-400"
+              style={{fontFamily:'var(--font-poppins, Poppins), sans-serif'}}
+              className="flex-1 px-2 py-3.5 sm:py-4 text-sm sm:text-base bg-transparent border-0 focus:ring-0 focus:outline-none text-slate-800 dark:text-slate-100 placeholder-slate-400"
             />
 
             {/* Clear */}
@@ -426,7 +429,8 @@ const SearchBar = ({
 
             {/* Search button */}
             <button type="submit" disabled={loading}
-              className="flex items-center gap-2 px-4 sm:px-6 bg-gray-900 hover:bg-black dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100 text-white font-medium text-sm sm:text-base transition-all duration-200 disabled:opacity-60 min-h-[48px]">
+              style={{fontFamily:'var(--font-poppins, Poppins), sans-serif'}}
+              className="flex items-center gap-2 px-5 sm:px-7 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white font-semibold text-[0.72rem] sm:text-[0.8rem] tracking-[0.1em] uppercase transition-all duration-200 disabled:opacity-60 min-h-[48px] rounded-r-xl shadow-sm">
               {loading ? (
                 <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -467,7 +471,7 @@ const SearchBar = ({
                         </div>
                       )}
                       <button type="button" onClick={() => selectSuggestion(suggestion)}
-                        className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${index === activeSuggestion ? 'bg-gray-100 dark:bg-gray-700' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}>
+                        className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${index === activeSuggestion ? 'bg-teal-50 dark:bg-teal-900/30' : 'hover:bg-teal-50/60 dark:hover:bg-teal-900/20'}`}>
                         <TypeIcon type={suggestion.type} />
                         <div className="flex-1 min-w-0">
                           <span className="text-sm text-gray-900 dark:text-gray-100 truncate block">{suggestion.label}</span>
@@ -553,7 +557,8 @@ const SearchBar = ({
                 </div>
               </div>
               <button type="button" onClick={() => setOpenDropdown(null)}
-                className="w-full mt-1 px-3 py-1.5 bg-gray-800 text-white text-sm font-medium rounded-lg hover:bg-gray-900 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100 transition-colors">
+                style={{fontFamily:'var(--font-poppins, Poppins), sans-serif'}}
+              className="w-full mt-1 px-3 py-1.5 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white text-xs font-semibold uppercase tracking-[0.08em] rounded-lg transition-colors">
                 Apply
               </button>
             </div>
@@ -576,10 +581,10 @@ const SearchBar = ({
                   {['', '1', '2', '3', '4', '5'].map(val => (
                     <button key={`bed-${val}`} type="button"
                       onClick={() => setSearchParams(prev => ({ ...prev, beds: val }))}
-                      className={`flex-1 py-1.5 text-sm font-medium rounded-lg border transition-colors ${
+                      className={`flex-1 py-1.5 text-sm font-semibold rounded-lg border transition-colors ${
                         searchParams.beds === val
-                          ? 'bg-gray-800 text-white border-gray-800 dark:bg-white dark:text-gray-900 dark:border-white'
-                          : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700'
+                          ? 'bg-teal-600 text-white border-teal-600 dark:bg-teal-500 dark:border-teal-500'
+                          : 'bg-white text-slate-600 border-slate-200 hover:bg-teal-50 hover:border-teal-300 hover:text-teal-700 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600 dark:hover:bg-teal-900/20'
                       }`}>
                       {val ? `${val}+` : 'Any'}
                     </button>
@@ -592,10 +597,10 @@ const SearchBar = ({
                   {['', '1', '2', '3', '4'].map(val => (
                     <button key={`bath-${val}`} type="button"
                       onClick={() => setSearchParams(prev => ({ ...prev, baths: val }))}
-                      className={`flex-1 py-1.5 text-sm font-medium rounded-lg border transition-colors ${
+                      className={`flex-1 py-1.5 text-sm font-semibold rounded-lg border transition-colors ${
                         searchParams.baths === val
-                          ? 'bg-gray-800 text-white border-gray-800 dark:bg-white dark:text-gray-900 dark:border-white'
-                          : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700'
+                          ? 'bg-teal-600 text-white border-teal-600 dark:bg-teal-500 dark:border-teal-500'
+                          : 'bg-white text-slate-600 border-slate-200 hover:bg-teal-50 hover:border-teal-300 hover:text-teal-700 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600 dark:hover:bg-teal-900/20'
                       }`}>
                       {val ? `${val}+` : 'Any'}
                     </button>
@@ -603,7 +608,8 @@ const SearchBar = ({
                 </div>
               </div>
               <button type="button" onClick={() => setOpenDropdown(null)}
-                className="w-full mt-1 px-3 py-1.5 bg-gray-800 text-white text-sm font-medium rounded-lg hover:bg-gray-900 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100 transition-colors">
+                style={{fontFamily:'var(--font-poppins, Poppins), sans-serif'}}
+              className="w-full mt-1 px-3 py-1.5 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white text-xs font-semibold uppercase tracking-[0.08em] rounded-lg transition-colors">
                 Apply
               </button>
             </div>
@@ -623,17 +629,18 @@ const SearchBar = ({
 
           {/* More Filters toggle */}
           <button type="button" onClick={() => { setShowFilters(!showFilters); setOpenDropdown(null); }}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-all duration-150 whitespace-nowrap ${
+            style={{fontFamily:'var(--font-poppins, Poppins), sans-serif'}}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg border text-[0.8rem] font-semibold tracking-[0.02em] transition-all duration-150 whitespace-nowrap ${
               showFilters
-                ? 'border-gray-300 bg-gray-50 text-gray-900 dark:border-gray-500 dark:bg-gray-700 dark:text-white'
-                : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
+                ? 'border-teal-400 bg-teal-50 text-teal-700 dark:border-teal-600 dark:bg-teal-900/40 dark:text-teal-300'
+                : 'border-slate-200 bg-white text-slate-600 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-teal-900/20'
             }`}>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
             </svg>
             More
             {(searchParams.mlsAreaMajor || searchParams.specialListingConditions || searchParams.minSqFt || searchParams.maxSqFt || searchParams.sort) && (
-              <span className="inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold text-white bg-gray-700 dark:bg-gray-200 dark:text-gray-800 rounded-full">
+              <span className="inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold text-white bg-teal-500 dark:bg-teal-400 dark:text-white rounded-full">
                 {[searchParams.mlsAreaMajor, searchParams.specialListingConditions, searchParams.minSqFt, searchParams.maxSqFt, searchParams.sort].filter(Boolean).length}
               </span>
             )}
@@ -664,7 +671,8 @@ const SearchBar = ({
           {['Erie', 'Crawford', 'Warren', 'Meadville', 'Corry', 'North East'].map(term => (
             <button key={term} type="button"
               onClick={() => { setSearchParams(prev => ({ ...prev, location: term })); setTimeout(() => { const form = inputRef.current?.closest('form'); if (form) form.requestSubmit(); }, 50); }}
-              className="px-2.5 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 hover:text-gray-800 dark:hover:bg-gray-600 dark:hover:text-gray-100 transition-colors">
+              style={{fontFamily:'var(--font-poppins, Poppins), sans-serif'}}
+              className="px-3 py-1 text-xs font-semibold rounded-full border border-teal-200 bg-white text-teal-700 hover:bg-teal-50 hover:border-teal-400 dark:border-teal-700 dark:bg-slate-800 dark:text-teal-400 dark:hover:bg-teal-900/30 transition-colors">
               {term}
             </button>
           ))}

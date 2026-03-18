@@ -85,31 +85,30 @@ export function Hero() {
           <div className="grid lg:grid-cols-2 gap-8 items-center">
             {/* Left: compact CTA message */}
             <div>
-              <p className="inline-flex items-center gap-3 mb-3 text-sm text-teal-200 bg-white/4 px-3 py-1 rounded-full">
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M12 2v20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              <p className="inline-flex items-center gap-2 mb-4 text-[0.62rem] text-teal-300 uppercase tracking-[0.18em] font-semibold">
                 Ready when you are
               </p>
 
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white leading-tight mb-3">
+              <h2 className="font-heading font-bold text-white leading-[1.15] mb-3 tracking-tight" style={{ fontSize: 'clamp(32px, 4.5vw, 52px)' }}>
                 Find modern homes with confident, tech-driven search
               </h2>
 
-              <p className="text-sm sm:text-base text-white/80 max-w-xl mb-6">
+              <p className="text-white/75 max-w-xl mb-6 font-sans" style={{ fontSize: '17px', fontWeight: 400, lineHeight: 1.65 }}>
                 Explore up-to-date MLS listings, save favorites, and get instant alerts — designed for buyers and investors who expect fast, reliable tools.
               </p>
 
               <div className="flex flex-wrap gap-3">
                 <button
                   onClick={handleExplore}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-teal-500 to-green-500 text-white font-semibold rounded-md shadow hover:scale-[1.02] transition"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-teal-500 to-green-500 text-white font-semibold rounded-md shadow hover:scale-[1.02] transition text-[0.68rem] tracking-[0.12em] uppercase"
                 >
                   Explore Listings
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5l7 7-7 7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5l7 7-7 7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 </button>
 
                 <button
                   onClick={() => router.push('/agents/john-easter')}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 border border-white/20 text-white bg-transparent rounded-md hover:bg-white/5 transition"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 border border-white/25 text-white bg-transparent rounded-md hover:bg-white/5 transition text-[0.68rem] tracking-[0.12em] uppercase"
                 >
                   Contact an Agent
                 </button>

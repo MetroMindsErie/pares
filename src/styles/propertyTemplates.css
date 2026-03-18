@@ -7,7 +7,7 @@
 }
 
 .property-card {
-    font-family: 'Arial', sans-serif;
+    font-family: var(--font-poppins), 'Poppins', sans-serif;
     max-width: 1200px;
     margin: 20px auto;
     padding: 25px;

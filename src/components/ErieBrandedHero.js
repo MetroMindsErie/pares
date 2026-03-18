@@ -101,7 +101,7 @@ const ErieBrandedHero = ({ onSearchResults, onSearchStart }) => {
               transition={{ delay: 0.5, duration: 1 }}
               className="text-white"
             >
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+              <h1 className="font-heading font-bold text-5xl md:text-6xl lg:text-7xl mb-6 leading-[1.1] tracking-tight">
                 <span className="block">Discover Your</span>
                 <span className="block text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-green-300">
                   Perfect Home
@@ -109,8 +109,8 @@ const ErieBrandedHero = ({ onSearchResults, onSearchStart }) => {
                 <span className="block">in Erie</span>
               </h1>
               
-              <p className="text-xl md:text-2xl text-teal-100 mb-8 leading-relaxed max-w-xl">
-                Experience premium real estate services in Pennsylvania's beautiful lakefront city. 
+              <p className="text-base md:text-lg text-teal-100/90 mb-8 leading-relaxed max-w-lg font-light tracking-wide">
+                Premium real estate services in Pennsylvania's beautiful lakefront city. 
                 From downtown lofts to waterfront estates.
               </p>
               
@@ -122,16 +122,16 @@ const ErieBrandedHero = ({ onSearchResults, onSearchStart }) => {
                 className="grid grid-cols-3 gap-6 mb-8"
               >
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-white mb-1">500+</div>
-                  <div className="text-sm text-teal-200">Active Listings</div>
+                  <div className="text-3xl font-bold text-white mb-1 tabular-nums tracking-tight">500+</div>
+                  <div className="text-[0.6rem] text-teal-300 uppercase tracking-[0.18em] font-semibold mt-0.5">Active Listings</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-white mb-1">98%</div>
-                  <div className="text-sm text-teal-200">Client Satisfaction</div>
+                  <div className="text-3xl font-bold text-white mb-1 tabular-nums tracking-tight">98%</div>
+                  <div className="text-[0.6rem] text-teal-300 uppercase tracking-[0.18em] font-semibold mt-0.5">Client Satisfaction</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-white mb-1">15+</div>
-                  <div className="text-sm text-teal-200">Years Experience</div>
+                  <div className="text-3xl font-bold text-white mb-1 tabular-nums tracking-tight">15+</div>
+                  <div className="text-[0.6rem] text-teal-300 uppercase tracking-[0.18em] font-semibold mt-0.5">Years Experience</div>
                 </div>
               </motion.div>
             </motion.div>
@@ -143,13 +143,13 @@ const ErieBrandedHero = ({ onSearchResults, onSearchStart }) => {
               transition={{ delay: 0.8, duration: 1 }}
               className="lg:pl-8"
             >
-              <div className="bg-white/95 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20">
+              <div className="bg-white backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-slate-100">
                 <div className="mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                  <h2 className="font-heading font-bold text-slate-900 text-2xl mb-1.5 tracking-tight">
                     Start Your Property Search
                   </h2>
-                  <p className="text-gray-600">
-                    Access our comprehensive MLS database with real-time listings
+                  <p className="text-[0.68rem] text-slate-400 uppercase tracking-[0.12em] font-semibold">
+                    Real-time MLS · Erie &amp; surrounds
                   </p>
                 </div>
                 

@@ -129,7 +129,7 @@ export default function Navbar() {
   ];
   
   // single shared style: thin blue border, transparent background — matches Pares logo border
-  const borderedButtonClass = "inline-flex items-center h-10 leading-none px-4 py-2 border border-teal-200 text-sm font-medium rounded-md text-teal-700 bg-transparent hover:bg-white/5 transition-colors";
+  const borderedButtonClass = "inline-flex items-center h-10 leading-none px-4 py-2 border border-teal-300/60 text-[0.68rem] font-semibold rounded-md text-teal-700 bg-transparent hover:bg-teal-50/10 tracking-[0.1em] uppercase transition-colors";
 
   const authedLinks = [
     { href: '/dashboard', label: 'Dashboard' },

@@ -39,19 +39,19 @@ export function FeaturedListings({ listings, title }) {
 
   return (
     <section className="mb-16">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
+      <div className="flex justify-between items-center mb-8">
+        <h2 className="font-heading font-bold text-slate-900 tracking-tight text-2xl">{title}</h2>
         {!isMobile && scrollableListings.length > 0 && (
           <div className="flex gap-2">
             <button
               onClick={() => handleScroll('prev')}
-              className="p-2 rounded-full bg-gray-100 hover:bg-gray-200"
+              className="w-8 h-8 rounded-full border border-slate-200 bg-white shadow-sm hover:border-teal-400 hover:text-teal-600 transition-colors flex items-center justify-center text-slate-400 text-sm"
             >
               ←
             </button>
             <button
               onClick={() => handleScroll('next')}
-              className="p-2 rounded-full bg-gray-100 hover:bg-gray-200"
+              className="w-8 h-8 rounded-full border border-slate-200 bg-white shadow-sm hover:border-teal-400 hover:text-teal-600 transition-colors flex items-center justify-center text-slate-400 text-sm"
             >
               →
             </button>
@@ -116,40 +116,46 @@ const PropertyCard = ({ listing, mobile }) => {
       href={`/property/${listing.ListingKey}`}
       className={`${
         mobile ? 'min-w-[85vw]' : 'min-w-[300px]'
-      } flex-shrink-0 group block rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300`}
+      } flex-shrink-0 group block rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 hover:-translate-y-0.5`}
     >
       <div className="relative h-60 bg-gray-100">
         <Image
           src={imageSrc}
           alt={listing.UnparsedAddress}
           fill
-          className="object-cover"
+          className="object-cover group-hover:scale-105 transition-transform duration-500"
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
         />
         {listing.StandardStatus === 'Closed' && (
-          <div className="absolute top-2 right-2 bg-red-600 text-white px-3 py-1 rounded-full text-sm font-medium">
+          <div className="absolute top-3 left-3 bg-red-600 text-white px-2.5 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.12em] rounded-sm">
             Sold
+          </div>
+        )}
+        {listing.StandardStatus === 'Active' && (
+          <div className="absolute top-3 left-3 bg-teal-600 text-white px-2.5 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.12em] rounded-sm">
+            Active
           </div>
         )}
       </div>
       
-      <div className="p-4 bg-white">
-        <h3 className="text-lg font-semibold text-gray-900 truncate">
+      <div className="p-4 bg-white border-t-2 border-teal-500/70">
+        <p className="text-lg font-bold text-teal-600 mb-1 tabular-nums">
+          {listing.ListPrice ? `$${listing.ListPrice.toLocaleString()}` : 'Price on Request'}
+        </p>
+        <h3 className="text-sm font-semibold text-slate-800 truncate mb-2">
           {listing.UnparsedAddress}
         </h3>
-        <div className="flex items-center gap-2 mt-1">
-          <p className="text-gray-500 text-sm">
-            {listing.BedroomsTotal} beds · {listing.BathroomsTotalInteger} baths
-          </p>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[0.65rem] text-slate-400 uppercase tracking-[0.1em] font-semibold">{listing.BedroomsTotal} bd</span>
+          <span className="text-slate-300 text-xs">·</span>
+          <span className="text-[0.65rem] text-slate-400 uppercase tracking-[0.1em] font-semibold">{listing.BathroomsTotalInteger} ba</span>
           {listing.LivingAreaSqFt && (
-            <span className="text-gray-500 text-sm">
-              · {listing.LivingAreaSqFt.toLocaleString()} sqft
-            </span>
+            <>
+              <span className="text-slate-300 text-xs">·</span>
+              <span className="text-[0.65rem] text-slate-400 uppercase tracking-[0.1em] font-semibold">{listing.LivingAreaSqFt.toLocaleString()} sf</span>
+            </>
           )}
         </div>
-        <p className="text-xl font-bold text-gray-900 mt-2">
-          {listing.ListPrice ? `$${listing.ListPrice.toLocaleString()}` : 'Price not available'}
-        </p>
       </div>
     </Link>
   );
