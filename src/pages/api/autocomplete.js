@@ -1,6 +1,5 @@
-import { NextResponse } from 'next/server';
-import { getTrestleToken, buildTrestleODataUrl } from '../../../lib/trestleServer';
-import { searchCacheByAddress } from '../../../lib/propertyCache';
+import { getTrestleToken, buildTrestleODataUrl } from '../../lib/trestleServer';
+import { searchCacheByAddress } from '../../lib/propertyCache';
 
 // Known cities/townships in GEBOR MLS tri-county area
 const AREA_CITIES = [
@@ -43,13 +42,16 @@ function odataEscape(val) {
   return String(val || '').replace(/'/g, "''");
 }
 
-export async function GET(request) {
+export default async function handler(req, res) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   try {
-    const { searchParams } = new URL(request.url);
-    const q = (searchParams.get('q') || '').trim();
+    const q = (req.query.q || '').trim();
 
     if (q.length < 2) {
-      return NextResponse.json({ suggestions: [] });
+      return res.status(200).json({ suggestions: [] });
     }
 
     const lower = q.toLowerCase();
@@ -192,9 +194,9 @@ export async function GET(request) {
     const typeOrder = { address: 0, city: 1, county: 2, zip: 3 };
     unique.sort((a, b) => (typeOrder[a.type] ?? 9) - (typeOrder[b.type] ?? 9));
 
-    return NextResponse.json({ suggestions: unique.slice(0, 12) });
+    return res.status(200).json({ suggestions: unique.slice(0, 12) });
   } catch (error) {
     console.error('Autocomplete error:', error);
-    return NextResponse.json({ suggestions: [] });
+    return res.status(200).json({ suggestions: [] });
   }
 }

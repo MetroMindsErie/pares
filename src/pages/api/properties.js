@@ -1,5 +1,3 @@
-import { NextResponse } from 'next/server';
-
 // Helper function to get Trestle OAuth token
 async function getTrestleToken() {
   const tokenUrl = process.env.NEXT_PUBLIC_TRESTLE_TOKEN_URL;
@@ -15,115 +13,86 @@ async function getTrestleToken() {
   params.append('client_id', clientId);
   params.append('client_secret', clientSecret);
   
-  try {
-    const response = await fetch(tokenUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: params.toString(),
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Token request failed:', errorText);
-      throw new Error(`Failed to get Trestle token: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    return data.access_token;
-  } catch (error) {
-    console.error('Error getting Trestle token:', error);
-    throw error;
+  const response = await fetch(tokenUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params.toString(),
+  });
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Token request failed:', errorText);
+    throw new Error(`Failed to get Trestle token: ${response.status}`);
   }
+  
+  const data = await response.json();
+  return data.access_token;
 }
 
-export async function GET(request) {
-  try {
-    // Get search parameters from the request URL
-    const { searchParams } = new URL(request.url);
+export default async function handler(req, res) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
-    const requestId = Math.random().toString(36).slice(2, 8);
-    // Check if we're in development mode
+  try {
     const isDevelopment = process.env.NODE_ENV === 'development';
-    
-    // Configure Trestle API credentials using the correct environment variables
     const trestleBaseUrl = process.env.NEXT_PUBLIC_TRESTLE_BASE_URL;
     
     if (!trestleBaseUrl) {
       console.error('Trestle API base URL not configured');
-      return NextResponse.json(
-        { error: 'Trestle API credentials are missing or invalid.' }, 
-        { status: 500 }
-      );
+      return res.status(500).json({ error: 'Trestle API credentials are missing or invalid.' });
     }
     
-    // Format the search parameters for Trestle API
     const formattedParams = new URLSearchParams();
     let filters = [];
+    const query = req.query;
     
     // Location search handling (ZIP, County, City)
-    if (searchParams.has('location') || searchParams.has('q')) {
-      const locationTerm = (searchParams.get('location') || searchParams.get('q') || '').trim();
-      
-      if (locationTerm) {
-        // Check if it's a ZIP code
-        if (/^\d{5}(-\d{4})?$/.test(locationTerm)) {
-          filters.push(`PostalCode eq '${locationTerm}'`);
-        } 
-        // Check for specific county names
-        else if (['erie', 'warren', 'crawford'].includes(locationTerm.toLowerCase())) {
-          const countyName = locationTerm.charAt(0).toUpperCase() + locationTerm.slice(1).toLowerCase() + ' County';
-          filters.push(`CountyOrParish eq '${countyName}'`);
-        }
-        // General search
-        else {
-          filters.push(`(contains(CountyOrParish,'${locationTerm}') or contains(PostalCity,'${locationTerm}') or contains(UnparsedAddress,'${locationTerm}'))`);
-        }
+    const locationTerm = (query.location || query.q || '').trim();
+    if (locationTerm) {
+      if (/^\d{5}(-\d{4})?$/.test(locationTerm)) {
+        filters.push(`PostalCode eq '${locationTerm}'`);
+      } else if (['erie', 'warren', 'crawford'].includes(locationTerm.toLowerCase())) {
+        const countyName = locationTerm.charAt(0).toUpperCase() + locationTerm.slice(1).toLowerCase() + ' County';
+        filters.push(`CountyOrParish eq '${countyName}'`);
+      } else {
+        filters.push(`(contains(CountyOrParish,'${locationTerm}') or contains(PostalCity,'${locationTerm}') or contains(UnparsedAddress,'${locationTerm}'))`);
       }
     }
     
     // ZIP code specific search
-    if (searchParams.has('zipCode')) {
-      const zipCode = searchParams.get('zipCode').trim();
-      if (zipCode) {
-        filters.push(`PostalCode eq '${zipCode}'`);
-      }
+    if (query.zipCode) {
+      const zipCode = query.zipCode.trim();
+      if (zipCode) filters.push(`PostalCode eq '${zipCode}'`);
     }
     
-    // Property type filter (residential or commercial)
-    if (searchParams.has('propertyType')) {
-      const propertyType = searchParams.get('propertyType').trim();
+    // Property type filter
+    if (query.propertyType) {
+      const propertyType = query.propertyType.trim();
       if (propertyType.toLowerCase() === 'residential') {
         filters.push(`(PropertyType eq 'Residential' or PropertyType eq 'Residential Lease')`);
       } else if (propertyType.toLowerCase() === 'commercial') {
         filters.push(`(PropertyType eq 'Commercial Sale' or PropertyType eq 'Commercial Lease')`);
       } else {
-        // If specific property type is provided, use it directly
         filters.push(`PropertyType eq '${propertyType}'`);
       }
     }
     
     // Price range filters
-    if (searchParams.has('minPrice')) {
-      const minPrice = parseInt(searchParams.get('minPrice'));
-      if (!isNaN(minPrice) && minPrice > 0) {
-        filters.push(`ListPrice ge ${minPrice}`);
-      }
+    if (query.minPrice) {
+      const minPrice = parseInt(query.minPrice);
+      if (!isNaN(minPrice) && minPrice > 0) filters.push(`ListPrice ge ${minPrice}`);
+    }
+    if (query.maxPrice) {
+      const maxPrice = parseInt(query.maxPrice);
+      if (!isNaN(maxPrice) && maxPrice > 0) filters.push(`ListPrice le ${maxPrice}`);
     }
     
-    if (searchParams.has('maxPrice')) {
-      const maxPrice = parseInt(searchParams.get('maxPrice'));
-      if (!isNaN(maxPrice) && maxPrice > 0) {
-        filters.push(`ListPrice le ${maxPrice}`);
-      }
-    }
-    
-    // Bedroom filters - support both exact and minimum
-    if (searchParams.has('beds')) {
-      const beds = parseInt(searchParams.get('beds'));
+    // Bedroom filters
+    if (query.beds) {
+      const beds = parseInt(query.beds);
       if (!isNaN(beds)) {
-        if (searchParams.has('bedsExact') && searchParams.get('bedsExact') === 'true') {
+        if (query.bedsExact === 'true') {
           filters.push(`BedroomsTotal eq ${beds}`);
         } else {
           filters.push(`BedroomsTotal ge ${beds}`);
@@ -131,11 +100,11 @@ export async function GET(request) {
       }
     }
     
-    // Bathroom filters - support both exact and minimum
-    if (searchParams.has('baths')) {
-      const baths = parseInt(searchParams.get('baths'));
+    // Bathroom filters
+    if (query.baths) {
+      const baths = parseInt(query.baths);
       if (!isNaN(baths)) {
-        if (searchParams.has('bathsExact') && searchParams.get('bathsExact') === 'true') {
+        if (query.bathsExact === 'true') {
           filters.push(`BathroomsTotalInteger eq ${baths}`);
         } else {
           filters.push(`BathroomsTotalInteger ge ${baths}`);
@@ -143,44 +112,37 @@ export async function GET(request) {
       }
     }
     
-    // Default status filter for active listings (unless overridden)
-    if (!searchParams.has('status')) {
+    // Status filter
+    if (!query.status) {
       filters.push(`StandardStatus eq 'Active'`);
     } else {
-      const status = searchParams.get('status');
-      filters.push(`StandardStatus eq '${status}'`);
+      filters.push(`StandardStatus eq '${query.status}'`);
     }
     
     // Square footage filter
-    if (searchParams.has('minSqFt')) {
-      const minSqFt = parseInt(searchParams.get('minSqFt'));
-      if (!isNaN(minSqFt) && minSqFt > 0) {
-        filters.push(`LivingArea/SquareFeet ge ${minSqFt}`);
-      }
+    if (query.minSqFt) {
+      const minSqFt = parseInt(query.minSqFt);
+      if (!isNaN(minSqFt) && minSqFt > 0) filters.push(`LivingArea/SquareFeet ge ${minSqFt}`);
     }
     
     // Lot size filter
-    if (searchParams.has('minLotSize')) {
-      const minLotSize = parseInt(searchParams.get('minLotSize'));
-      if (!isNaN(minLotSize) && minLotSize > 0) {
-        filters.push(`LotSize/SquareFeet ge ${minLotSize}`);
-      }
+    if (query.minLotSize) {
+      const minLotSize = parseInt(query.minLotSize);
+      if (!isNaN(minLotSize) && minLotSize > 0) filters.push(`LotSize/SquareFeet ge ${minLotSize}`);
     }
     
-    // Combine all filters with AND operator
+    // Combine all filters
     if (filters.length > 0) {
       formattedParams.append('$filter', filters.join(' and '));
     }
     
-    // Add other standard parameters
-    const pageSize = searchParams.get('pageSize') || '20';
-    formattedParams.append('$top', pageSize); // Limit results
-    formattedParams.append('$expand', 'Media'); // Include media/images
+    const pageSize = query.pageSize || '20';
+    formattedParams.append('$top', pageSize);
+    formattedParams.append('$expand', 'Media');
     
-    // Add sorting options if specified
-    if (searchParams.has('sort')) {
-      const sortOption = searchParams.get('sort');
-      switch (sortOption) {
+    // Sorting
+    if (query.sort) {
+      switch (query.sort) {
         case 'price-asc':
           formattedParams.append('$orderby', 'ListPrice asc');
           break;
@@ -197,20 +159,16 @@ export async function GET(request) {
       formattedParams.append('$orderby', 'ListingKeyNumeric desc');
     }
     
-    // Build the Trestle API URL with formatted parameters
     const trestleUrl = `${trestleBaseUrl}/trestle/odata/Property?${formattedParams.toString()}`;
 
     try {
-      // Get OAuth token for Trestle API
       const token = await getTrestleToken();
 
-      // Make the request to the Trestle API with the token
       const response = await fetch(trestleUrl, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json'
         },
-        cache: 'no-store' // Disable caching to always get fresh data
       });
 
       if (!response.ok) {
@@ -218,38 +176,23 @@ export async function GET(request) {
         console.error('Trestle API error status:', response.status);
         console.error('Trestle API error body:', errorText);
         
-        // In development, return mock data when the API fails
         if (isDevelopment) {
-
-          return NextResponse.json({
-            value: getMockListings(searchParams),
-            '@odata.nextLink': null
-          });
+          return res.status(200).json({ value: getMockListings(query), '@odata.nextLink': null });
         }
         
-        return NextResponse.json(
-          { error: `Trestle API error: ${response.status}`, details: errorText },
-          { status: response.status }
-        );
+        return res.status(response.status).json({ error: `Trestle API error: ${response.status}`, details: errorText });
       }
       
-      // Process the response
       const data = await response.json();
 
-      // Map the response to include property images and format data
       const properties = (data.value || []).map(property => {
-        // Try to find the preferred property image, otherwise use the first one
         let mediaUrl = null;
-        
         if (property.Media && property.Media.length > 0) {
-          // Look for preferred photo based on PreferredPhotoYN flag
           const preferredPhoto = property.Media.find(media => 
             media.PreferredPhotoYN === true || 
             media.PreferredPhotoYN === 'Y' || 
             media.PreferredPhotoYN === 'Yes'
           );
-          
-          // Use preferred photo if found, otherwise use first photo
           mediaUrl = preferredPhoto ? preferredPhoto.MediaURL : property.Media[0].MediaURL;
         }
           
@@ -263,8 +206,6 @@ export async function GET(request) {
           ListPrice: property.ListPrice || 0,
           PropertyType: property.PropertyType || '',
           media: mediaUrl,
-          
-          // Additional Trestle-specific fields
           MlsStatus: property.MlsStatus,
           PublicRemarks: property.PublicRemarks,
           YearBuilt: property.YearBuilt,
@@ -276,70 +217,49 @@ export async function GET(request) {
         };
       });
       
-      // Return the formatted response
-      return NextResponse.json({
-        value: properties,
-        '@odata.nextLink': data['@odata.nextLink']
-      });
+      return res.status(200).json({ value: properties, '@odata.nextLink': data['@odata.nextLink'] });
       
     } catch (apiError) {
       console.error('Error fetching from Trestle API:', apiError);
       
-      // In development, return mock data when the API fails
       if (isDevelopment) {
-
-        return NextResponse.json({
-          value: getMockListings(searchParams),
-          '@odata.nextLink': null
-        });
+        return res.status(200).json({ value: getMockListings(query), '@odata.nextLink': null });
       }
       
-      throw apiError; // Re-throw to be caught by the outer try/catch
+      throw apiError;
     }
     
   } catch (error) {
     console.error('Server error in properties API route:', error);
     
-    // In development, return mock data on server error
     if (process.env.NODE_ENV === 'development') {
       try {
-        const { searchParams } = new URL(request.url);
-
-        return NextResponse.json({
-          value: getMockListings(searchParams),
-          '@odata.nextLink': null
-        });
+        return res.status(200).json({ value: getMockListings(req.query), '@odata.nextLink': null });
       } catch (mockError) {
         console.error('Error generating mock data:', mockError);
       }
     }
     
-    return NextResponse.json(
-      { error: 'Failed to fetch properties. Please try again later.' },
-      { status: 500 }
-    );
+    return res.status(500).json({ error: 'Failed to fetch properties. Please try again later.' });
   }
 }
 
 // Helper function to generate mock listings for development
-function getMockListings(searchParams) {
-  // Extract search parameters to filter mock data
-  const location = searchParams?.get('location') || searchParams?.get('q') || '';
-  const minPrice = parseInt(searchParams?.get('minPrice') || '0');
-  const maxPrice = parseInt(searchParams?.get('maxPrice') || '10000000');
-  const beds = parseInt(searchParams?.get('beds') || '0');
-  const baths = parseInt(searchParams?.get('baths') || '0');
-  const propertyType = searchParams?.get('propertyType') || '';
-  const zipCode = searchParams?.get('zipCode') || '';
+function getMockListings(query) {
+  const location = query?.location || query?.q || '';
+  const minPrice = parseInt(query?.minPrice || '0');
+  const maxPrice = parseInt(query?.maxPrice || '10000000');
+  const beds = parseInt(query?.beds || '0');
+  const baths = parseInt(query?.baths || '0');
+  const propertyType = query?.propertyType || '';
+  const zipCode = query?.zipCode || '';
   
-  // Generate 10 mock properties
   const mockProperties = [];
   const countyOptions = ['Erie County', 'Warren County', 'Crawford County'];
   const cityOptions = ['Erie', 'Warren', 'Meadville', 'Corry', 'Edinboro'];
   const zipOptions = ['16501', '16502', '16503', '16504', '16505', '16506'];
   const propertyTypeOptions = ['Residential', 'Commercial Sale', 'Residential Lease', 'Commercial Lease'];
   
-  // Filter the property type based on search parameters
   let filteredPropertyTypes = propertyTypeOptions;
   if (propertyType.toLowerCase() === 'residential') {
     filteredPropertyTypes = propertyTypeOptions.filter(type => 
@@ -350,7 +270,6 @@ function getMockListings(searchParams) {
   }
   
   for (let i = 0; i < 10; i++) {
-    // Generate random property data
     const mockPrice = Math.floor(Math.random() * 900000) + 100000;
     const mockBeds = Math.floor(Math.random() * 5) + 1;
     const mockBaths = Math.floor(Math.random() * 4) + 1;
@@ -360,17 +279,14 @@ function getMockListings(searchParams) {
     const mockZip = zipOptions[Math.floor(Math.random() * zipOptions.length)];
     const mockType = filteredPropertyTypes[Math.floor(Math.random() * filteredPropertyTypes.length)];
     
-    // Apply filters
     if ((minPrice > 0 && mockPrice < minPrice) || 
         (maxPrice < 10000000 && mockPrice > maxPrice) ||
         (beds > 0 && mockBeds < beds) ||
         (baths > 0 && mockBaths < baths) ||
         (zipCode && mockZip !== zipCode)) {
-      // Skip this property if it doesn't match filters
       continue;
     }
     
-    // Create the mock property
     mockProperties.push({
       ListingKey: `mock-${i}-${Date.now()}`,
       UnparsedAddress: `${100 + i} Main St, ${mockCity}, PA ${mockZip}`,
@@ -392,7 +308,6 @@ function getMockListings(searchParams) {
     });
   }
   
-  // Return at least some properties even if filters are strict
   if (mockProperties.length < 3) {
     for (let i = 0; i < 3; i++) {
       mockProperties.push({

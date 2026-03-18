@@ -6,7 +6,6 @@ import { Hero } from '../components/Hero';
 import Blog from '../components/Blog';
 import { useAuth } from '../context/auth-context';
 import Layout from '../components/Layout';
-import '../styles/animations.css';
 import SearchResults from '../components/SearchResults';
 import ErieBrandedHero from '../components/ErieBrandedHero';
 import CityFeatures from '../components/CityFeatures';

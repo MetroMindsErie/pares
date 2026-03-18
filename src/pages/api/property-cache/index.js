@@ -1,39 +1,42 @@
 /**
- * /api/property-cache  — Cache-first property search
+ * /api/property-cache — Cache-first property search
  *
  * GET  ?q=123+Main        → fuzzy address search (trigram)
  * GET  ?location=Erie&…   → structured search with cache → Trestle fallback
  * POST                    → manually warm the cache for a county
  */
 
-import { NextResponse } from 'next/server';
 import {
   searchCacheByAddress,
   searchCachedProperties,
   upsertListingsToCache,
   isCacheWarm,
-} from '@/lib/propertyCache';
-import { fetchTrestleOData } from '@/lib/trestleServer';
+} from '../../../lib/propertyCache';
+import { fetchTrestleOData } from '../../../lib/trestleServer';
 
-/* ------------------------------------------------------------------ */
-/*  GET — search with cache-first strategy                             */
-/* ------------------------------------------------------------------ */
+export default async function handler(req, res) {
+  if (req.method === 'GET') {
+    return handleGet(req, res);
+  } else if (req.method === 'POST') {
+    return handlePost(req, res);
+  }
+  return res.status(405).json({ error: 'Method not allowed' });
+}
 
-export async function GET(request) {
-  const { searchParams } = new URL(request.url);
-
-  const q        = searchParams.get('q')        || '';
-  const location = searchParams.get('location')  || q;
-  const city     = searchParams.get('city')      || '';
-  const county   = searchParams.get('county')    || '';
-  const zip      = searchParams.get('zip')       || '';
-  const status   = searchParams.get('status')    || '';
-  const minPrice = searchParams.get('minPrice')  || '';
-  const maxPrice = searchParams.get('maxPrice')  || '';
-  const beds     = searchParams.get('beds')      || '';
-  const baths    = searchParams.get('baths')     || '';
-  const sort     = searchParams.get('sort')      || 'relevance';
-  const limit    = Math.min(Number(searchParams.get('limit')) || 50, 100);
+/* GET — search with cache-first strategy */
+async function handleGet(req, res) {
+  const q        = req.query.q        || '';
+  const location = req.query.location  || q;
+  const city     = req.query.city      || '';
+  const county   = req.query.county    || '';
+  const zip      = req.query.zip       || '';
+  const status   = req.query.status    || '';
+  const minPrice = req.query.minPrice  || '';
+  const maxPrice = req.query.maxPrice  || '';
+  const beds     = req.query.beds      || '';
+  const baths    = req.query.baths     || '';
+  const sort     = req.query.sort      || 'relevance';
+  const limit    = Math.min(Number(req.query.limit) || 50, 100);
 
   try {
     // 1. Quick address fuzzy search if q looks like an address
@@ -41,13 +44,12 @@ export async function GET(request) {
     if (looksLikeAddress) {
       const cached = await searchCacheByAddress(q, limit);
       if (cached.properties.length > 0) {
-        return NextResponse.json({
+        return res.status(200).json({
           properties: cached.properties,
           total: cached.properties.length,
           source: 'cache',
         });
       }
-      // Fall through to Trestle if cache miss
     }
 
     // 2. Structured cache search
@@ -58,7 +60,7 @@ export async function GET(request) {
     });
 
     if (cached.properties.length > 0) {
-      return NextResponse.json({
+      return res.status(200).json({
         properties: cached.properties,
         total: cached.properties.length,
         source: 'cache',
@@ -68,14 +70,13 @@ export async function GET(request) {
     // 3. Cache miss → query Trestle and backfill
     const trestleResult = await fetchFromTrestle({ location, city, county, zip, status, minPrice, maxPrice, beds, baths, sort, limit });
 
-    // Backfill cache in background (don't block response)
     if (trestleResult.properties.length > 0) {
       upsertListingsToCache(trestleResult.properties).catch(err =>
         console.error('Background cache backfill failed:', err.message)
       );
     }
 
-    return NextResponse.json({
+    return res.status(200).json({
       properties: trestleResult.properties,
       total: trestleResult.properties.length,
       nextLink: trestleResult.nextLink || null,
@@ -83,23 +84,20 @@ export async function GET(request) {
     });
   } catch (err) {
     console.error('Property cache search error:', err);
-    return NextResponse.json({ error: 'Search failed' }, { status: 500 });
+    return res.status(500).json({ error: 'Search failed' });
   }
 }
 
-/* ------------------------------------------------------------------ */
-/*  POST — warm the cache for a county                                 */
-/* ------------------------------------------------------------------ */
-
-export async function POST(request) {
+/* POST — warm the cache for a county */
+async function handlePost(req, res) {
   try {
-    const body = await request.json();
+    const body = req.body;
     const county = body.county || 'Erie';
     const maxPages = Math.min(body.maxPages || 5, 20);
 
     const warm = await isCacheWarm(county);
     if (warm) {
-      return NextResponse.json({ message: `Cache already warm for ${county}`, skipped: true });
+      return res.status(200).json({ message: `Cache already warm for ${county}`, skipped: true });
     }
 
     let total = 0;
@@ -131,21 +129,17 @@ export async function POST(request) {
       if (!nextLink) break;
     }
 
-    return NextResponse.json({ message: `Cached ${total} properties for ${county}`, total });
+    return res.status(200).json({ message: `Cached ${total} properties for ${county}`, total });
   } catch (err) {
     console.error('Cache warm error:', err);
-    return NextResponse.json({ error: 'Cache warm failed' }, { status: 500 });
+    return res.status(500).json({ error: 'Cache warm failed' });
   }
 }
 
-/* ------------------------------------------------------------------ */
-/*  Trestle fallback helper                                            */
-/* ------------------------------------------------------------------ */
-
+/* Trestle fallback helper */
 async function fetchFromTrestle({ location, city, county, zip, status, minPrice, maxPrice, beds, baths, sort, limit }) {
   const filters = [];
 
-  // County restriction
   const counties = ['Erie', 'Crawford', 'Warren'];
   if (county && counties.map(c => c.toLowerCase()).includes(county.toLowerCase())) {
     filters.push(`CountyOrParish eq '${county}'`);
@@ -153,12 +147,10 @@ async function fetchFromTrestle({ location, city, county, zip, status, minPrice,
     filters.push(`(${counties.map(c => `CountyOrParish eq '${c}'`).join(' or ')})`);
   }
 
-  // Location — detect zip vs address vs city
   if (location) {
     if (/^\d{5}$/.test(location)) {
       filters.push(`PostalCode eq '${location}'`);
     } else if (/\d/.test(location)) {
-      // Address-like
       const safe = location.replace(/'/g, "''").toLowerCase();
       filters.push(`contains(tolower(UnparsedAddress), '${safe}')`);
     } else {

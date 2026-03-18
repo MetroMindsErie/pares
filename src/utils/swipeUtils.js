@@ -38,7 +38,8 @@ const saveLikedPropertyToSavedProperties = async (userId, propertyData) => {
         address: propertyData.UnparsedAddress,
         price: propertyData.ListPrice,
         image_url: propertyData.media || '/fallback-property.jpg',
-        saved_at: new Date().toISOString()
+        saved_at: new Date().toISOString(),
+        property_data: propertyData
       });
 
     if (error) {

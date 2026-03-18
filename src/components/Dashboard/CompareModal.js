@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { getPropertyDetails } from '../../services/trestleServices';
+import { printComparisonPdf } from '../../utils/pdfTemplate';
 
 export default function CompareModal({ open = false, onClose = () => {}, properties = [], allSelectedIds = [] }) {
   const MAX_COMPARE = 4;
@@ -355,24 +356,6 @@ export default function CompareModal({ open = false, onClose = () => {}, propert
   };
   const format = (v) => (v === null || typeof v === 'undefined' || v === '' ? '—' : String(v));
 
-  const exportJSON = () => {
-    const payload = selectedProps;
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(payload, null, 2));
-    const a = document.createElement('a');
-    a.setAttribute('href', dataStr);
-    a.setAttribute('download', 'compare-properties.json');
-    a.click();
-  };
-
-  const saveSnapshot = () => {
-    const name = prompt('Snapshot name (optional):', `Compare snapshot ${new Date().toLocaleString()}`);
-    if (name === null) return;
-    const snaps = JSON.parse(localStorage.getItem('compare_snapshots') || '[]');
-    snaps.unshift({ id: Date.now(), name, createdAt: new Date().toISOString(), properties: selectedProps });
-    localStorage.setItem('compare_snapshots', JSON.stringify(snaps));
-    alert('Snapshot saved locally.');
-  };
-
   const shareLink = () => {
     const ids = selectedProps.map(getId).filter(Boolean).join(',');
     const url = new URL(window.location.href);
@@ -381,7 +364,8 @@ export default function CompareModal({ open = false, onClose = () => {}, propert
   };
 
   const printView = () => {
-    window.print();
+    if (!selectedProps.length) return;
+    printComparisonPdf(selectedProps);
   };
 
   // Helper function to format array values
@@ -643,7 +627,7 @@ export default function CompareModal({ open = false, onClose = () => {}, propert
             )}
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <button onClick={saveSnapshot} className="px-2 py-1 rounded-md text-sm text-gray-700 hover:bg-gray-100">Save snapshot</button>
+
             <button onClick={shareLink} className="px-2 py-1 rounded-md text-sm text-gray-700 hover:bg-gray-100">Share</button>
             <button onClick={printView} className="px-2 py-1 rounded-md text-sm text-gray-700 hover:bg-gray-100">Print</button>
             <button ref={closeBtnRef} onClick={onClose} aria-label="Close compare modal" className="px-3 py-1 rounded-md text-sm bg-red-50 text-red-600">Close</button>
@@ -658,7 +642,7 @@ export default function CompareModal({ open = false, onClose = () => {}, propert
               <button onClick={() => setViewMode(viewMode === 'table' ? 'cards' : 'table')} className="px-2 py-1 rounded-md bg-gray-100 text-sm">
                 View: {viewMode === 'table' ? 'Table' : 'Cards'}
               </button>
-              <button onClick={exportJSON} className="px-2 py-1 rounded-md bg-gray-100 text-sm">Export</button>
+
             </div>
           </div>
 

@@ -1,9 +1,12 @@
-import { NextResponse } from 'next/server';
 import { supabase } from '../../../../../utils/supabaseClient';
 
-export async function GET(request, { params }) {
+export default async function handler(req, res) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   try {
-    const { identifier } = params;
+    const { identifier } = req.query;
     
     const { data: post, error } = await supabase
       .from('blog_posts')
@@ -22,20 +25,13 @@ export async function GET(request, { params }) {
     
     if (error) {
       console.error('Post query error:', error);
-      return NextResponse.json(
-        { error: 'Failed to retrieve blog post' },
-        { status: error.code === 'PGRST116' ? 404 : 500 }
-      );
+      return res.status(error.code === 'PGRST116' ? 404 : 500).json({ error: 'Failed to retrieve blog post' });
     }
     
     if (!post) {
-      return NextResponse.json(
-        { error: 'Post not found' },
-        { status: 404 }
-      );
+      return res.status(404).json({ error: 'Post not found' });
     }
     
-    // Format post for response
     const formattedPost = {
       kind: post.kind,
       id: post.post_id,
@@ -63,12 +59,9 @@ export async function GET(request, { params }) {
       html: post.html_content,
     };
     
-    return NextResponse.json(formattedPost);
+    return res.status(200).json(formattedPost);
   } catch (error) {
     console.error('Error in blog post API route:', error);
-    return NextResponse.json(
-      { error: 'Failed to retrieve blog post' },
-      { status: 500 }
-    );
+    return res.status(500).json({ error: 'Failed to retrieve blog post' });
   }
 }

@@ -1,11 +1,13 @@
-import { NextResponse } from 'next/server';
-import { supabase } from '../../../../../../utils/supabaseClient';
+import { supabase } from '../../../../../utils/supabaseClient';
 
-export async function GET(request, { params }) {
+export default async function handler(req, res) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   try {
-    const { identifier } = params;
-    const url = new URL(request.url);
-    const limit = parseInt(url.searchParams.get('limit') || '3');
+    const { identifier } = req.query;
+    const limit = parseInt(req.query.limit || '3');
     
     // First get the current post
     const { data: post, error: postError } = await supabase
@@ -16,7 +18,7 @@ export async function GET(request, { params }) {
     
     if (postError || !post) {
       console.error('Error fetching post:', postError);
-      return NextResponse.json({ posts: [] });
+      return res.status(200).json({ posts: [] });
     }
     
     // Get category IDs for this post
@@ -35,12 +37,10 @@ export async function GET(request, { params }) {
     
     const tagIds = (tags || []).map(t => t.tag_id).filter(Boolean);
     
-    // If no categories or tags, return empty array
     if (categoryIds.length === 0 && tagIds.length === 0) {
-      return NextResponse.json({ posts: [] });
+      return res.status(200).json({ posts: [] });
     }
     
-    // Build filter conditions
     let filterCondition = '';
     
     if (categoryIds.length > 0) {
@@ -54,7 +54,6 @@ export async function GET(request, { params }) {
       filterCondition += tagFilter;
     }
     
-    // Get related posts that share categories or tags
     const { data: relatedPosts, error: relatedError } = await supabase
       .from('blog_posts')
       .select(`
@@ -74,10 +73,9 @@ export async function GET(request, { params }) {
     
     if (relatedError) {
       console.error('Error fetching related posts:', relatedError);
-      return NextResponse.json({ posts: [] });
+      return res.status(200).json({ posts: [] });
     }
     
-    // Format the related posts
     const formattedPosts = (relatedPosts || []).map(post => ({
       kind: post.kind,
       id: post.post_id,
@@ -104,12 +102,9 @@ export async function GET(request, { params }) {
       youtubeUrl: post.youtube_url,
     }));
     
-    return NextResponse.json({ posts: formattedPosts });
+    return res.status(200).json({ posts: formattedPosts });
   } catch (error) {
     console.error('Error in related posts API route:', error);
-    return NextResponse.json(
-      { error: 'Failed to retrieve related posts', posts: [] },
-      { status: 500 }
-    );
+    return res.status(500).json({ error: 'Failed to retrieve related posts' });
   }
 }

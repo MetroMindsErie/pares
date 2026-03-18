@@ -1,27 +1,26 @@
-import { NextResponse } from 'next/server';
-import { supabase } from '../../../../utils/supabaseClient';
+import { supabase } from '../../../utils/supabaseClient';
 
-export async function GET(request) {
+export default async function handler(req, res) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   try {
-    const url = new URL(request.url);
-    const tab = url.searchParams.get('tab') || 'All';
-    const category = url.searchParams.get('category') || 'All';
-    const q = url.searchParams.get('q') || '';
-    const page = parseInt(url.searchParams.get('page') || '1');
-    const pageSize = parseInt(url.searchParams.get('pageSize') || '6');
+    const tab = req.query.tab || 'All';
+    const category = req.query.category || 'All';
+    const q = req.query.q || '';
+    const page = parseInt(req.query.page || '1');
+    const pageSize = parseInt(req.query.pageSize || '6');
     const offset = (page - 1) * pageSize;
     
-    // Build base query conditions
     let conditions = {};
     
-    // Apply filters
     if (tab === 'Videos') {
       conditions.kind = 'video';
     } else if (tab === 'Stories') {
       conditions.kind = 'article';
     }
     
-    // First get the total count (have to use a separate query for this)
     const { count, error: countError } = await supabase
       .from('blog_posts')
       .select('*', { count: 'exact', head: true })
@@ -29,13 +28,9 @@ export async function GET(request) {
     
     if (countError) {
       console.error('Count error:', countError);
-      return NextResponse.json(
-        { error: 'Failed to count blog posts' },
-        { status: 500 }
-      );
+      return res.status(500).json({ error: 'Failed to count blog posts' });
     }
     
-    // Then fetch the actual data with pagination
     const { data: posts, error: postsError } = await supabase
       .from('blog_posts')
       .select(`
@@ -53,16 +48,11 @@ export async function GET(request) {
     
     if (postsError) {
       console.error('Posts query error:', postsError);
-      return NextResponse.json(
-        { error: 'Failed to retrieve blog posts' },
-        { status: 500 }
-      );
+      return res.status(500).json({ error: 'Failed to retrieve blog posts' });
     }
     
-    // Get additional data for each post in parallel
     const postIds = posts.map(post => post.id);
     
-    // Get authors
     const { data: authors } = await supabase
       .from('authors')
       .select('id, name')
@@ -73,7 +63,6 @@ export async function GET(request) {
       return map;
     }, {});
     
-    // Get categories for all posts
     const { data: categories } = await supabase
       .from('post_categories')
       .select('post_id, categories(name)')
@@ -85,7 +74,6 @@ export async function GET(request) {
       if (item.categories) categoryMap[item.post_id].push(item.categories.name);
     });
     
-    // Get tags for all posts
     const { data: tags } = await supabase
       .from('post_tags')
       .select('post_id, tags(name)')
@@ -97,7 +85,6 @@ export async function GET(request) {
       if (item.tags) tagMap[item.post_id].push(item.tags.name);
     });
     
-    // Format posts for response
     const formattedPosts = (posts || []).map(post => ({
       kind: post.kind,
       id: post.post_id,
@@ -129,7 +116,7 @@ export async function GET(request) {
       html: post.html_content,
     }));
     
-    return NextResponse.json({
+    return res.status(200).json({
       posts: formattedPosts,
       pagination: {
         page: page,
@@ -141,9 +128,6 @@ export async function GET(request) {
     
   } catch (error) {
     console.error('Error in blog posts API route:', error);
-    return NextResponse.json(
-      { error: 'Failed to retrieve blog posts' },
-      { status: 500 }
-    );
+    return res.status(500).json({ error: 'Failed to retrieve blog posts' });
   }
 }

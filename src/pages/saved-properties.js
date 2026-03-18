@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/router';
 import { useAuth } from '../context/auth-context';
 import supabase from '../lib/supabase-setup';
 import Layout from '../components/Layout';
@@ -6,10 +7,13 @@ import Link from 'next/link';
 import Image from 'next/image';
 import SavedProperties from '../components/Dashboard/SavedProperties';
 import CompareModal from '../components/Dashboard/CompareModal';
+import { printPropertyPdf, printAllPropertiesPdf } from '../utils/pdfTemplate';
+import { getPropertyDetails } from '../services/trestleServices';
 import clsx from 'clsx';
 
 const SavedPropertiesPage = () => {
-  const { user } = useAuth();
+  const router = useRouter();
+  const { user, loading: authLoading, authChecked } = useAuth();
   const [savedProperties, setSavedProperties] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -20,10 +24,65 @@ const SavedPropertiesPage = () => {
   const [compareIds, setCompareIds] = useState([]); // array of listing keys / property ids
   const [isCompareOpen, setIsCompareOpen] = useState(false);
   const announceRef = useRef(null);
+  // Page-level enrichment so PDF buttons in the compact list use full MLS data
+  const [enrichedMap, setEnrichedMap] = useState({});
+  const [isEnrichingAll, setIsEnrichingAll] = useState(false);
+
+  // Enrich saved properties that lack property_data via Trestle API
+  useEffect(() => {
+    if (!savedProperties || savedProperties.length === 0) return;
+    const toEnrich = savedProperties.filter(
+      (p) => !(p.property_data && typeof p.property_data === 'object')
+    );
+    if (toEnrich.length === 0) return;
+
+    let mounted = true;
+    setIsEnrichingAll(true);
+    Promise.all(
+      toEnrich.map(async (p) => {
+        const key = p.listing_key || p.property_id;
+        if (!key) return [p.id, p];
+        try {
+          const full = await getPropertyDetails(String(key));
+          if (!full) return [p.id, p];
+          return [p.id, { ...p, ...full, saved_at: p.saved_at, id: p.id, user_id: p.user_id }];
+        } catch {
+          return [p.id, p];
+        }
+      })
+    ).then((results) => {
+      if (!mounted) return;
+      const next = {};
+      results.forEach(([id, enriched]) => { next[id] = enriched; });
+      setEnrichedMap(next);
+      setIsEnrichingAll(false);
+    });
+    return () => { mounted = false; };
+  }, [savedProperties]);
+
+  /** Get enriched version of a property (falls back to original row) */
+  const getEnriched = (p) => enrichedMap[p.id] || p;
+
+  /** Export ALL saved properties to a single multi-page PDF */
+  const handleExportAllPdf = () => {
+    const enriched = savedProperties.map(getEnriched);
+    printAllPropertiesPdf(enriched);
+  };
+
+  // Redirect unauthenticated users once auth has finished initializing
+  useEffect(() => {
+    if (authChecked && !authLoading && !user) {
+      router.replace('/login?redirect=/saved-properties');
+    }
+  }, [authChecked, authLoading, user, router]);
 
   useEffect(() => {
     const fetchSavedProperties = async () => {
-      if (!user?.id) return;
+      if (!user?.id) {
+        // Auth still loading or no user – stop the spinner without data
+        if (authChecked) setIsLoading(false);
+        return;
+      }
 
       try {
         const { data, error } = await supabase
@@ -43,7 +102,7 @@ const SavedPropertiesPage = () => {
     };
 
     fetchSavedProperties();
-  }, [user?.id]);
+  }, [user?.id, authChecked]);
 
   const toggleCompare = (id) => {
     setCompareIds(prev => {
@@ -149,6 +208,23 @@ const SavedPropertiesPage = () => {
                 <Link href="/swipe" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#2563EB] text-white hover:brightness-95 shadow">
                   Browse Properties
                 </Link>
+                {savedProperties.length > 0 && (
+                  <button
+                    onClick={handleExportAllPdf}
+                    disabled={isEnrichingAll}
+                    className={clsx(
+                      'inline-flex items-center gap-2 px-4 py-2 rounded-lg shadow border transition',
+                      isEnrichingAll
+                        ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-wait'
+                        : 'bg-white border-[#2563EB]/30 text-[#2563EB] hover:bg-[#2563EB]/5'
+                    )}
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                    </svg>
+                    {isEnrichingAll ? 'Loading data…' : `Export All (${savedProperties.length}) to PDF`}
+                  </button>
+                )}
                 <button onClick={() => { clearCompare(); setCompareIds([]); }} className="px-3 py-2 rounded-lg bg-white border border-gray-200 text-slate-700 hover:bg-gray-50">
                   Reset
                 </button>
@@ -206,14 +282,35 @@ const SavedPropertiesPage = () => {
                     return (
                       <div key={String(id)} className={clsx('flex items-center gap-4 p-3 rounded-lg transition-shadow', selected ? 'ring-2 ring-[#2563EB]/30 bg-white' : 'bg-white hover:shadow-lg')}>
                         <img src={thumb} alt={p.address} className="w-36 h-24 object-cover rounded-lg shadow-sm" loading="lazy" />
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <div className="text-sm font-semibold text-slate-900">{price ? `$${Number(price).toLocaleString()}` : '—'}</div>
                           <div className="text-xs text-slate-500 truncate">{p.address}</div>
+                          {(() => { const pd = getEnriched(p).property_data || getEnriched(p); return (pd.BedroomsTotal || pd.BathroomsTotalInteger || pd.LivingArea) ? (
+                            <div className="flex gap-3 mt-1 text-xs text-slate-500">
+                              {pd.BedroomsTotal && <span>{pd.BedroomsTotal} bd</span>}
+                              {pd.BathroomsTotalInteger && <span>{pd.BathroomsTotalInteger} ba</span>}
+                              {(pd.LivingArea || pd.LivingAreaSqFt) && <span>{Number(pd.LivingArea || pd.LivingAreaSqFt).toLocaleString()} sqft</span>}
+                              {pd.YearBuilt && <span>Built {pd.YearBuilt}</span>}
+                            </div>
+                          ) : null; })()}
                           <div className="text-xs text-slate-400 mt-1">Saved {new Date(p.saved_at).toLocaleDateString()}</div>
                           {deleteError && <div className="text-xs text-red-500 mt-1">{deleteError}</div>}
                         </div>
                         <div className="flex flex-col items-end gap-2">
                           <Link href={`/property/${p.listing_key || p.property_id || p.id}`} className="text-sm text-slate-700 underline">View</Link>
+                          <button
+                            onClick={() => printPropertyPdf(getEnriched(p))}
+                            disabled={isEnrichingAll}
+                            className={clsx(
+                              'px-3 py-2 rounded-md border text-sm transition',
+                              isEnrichingAll
+                                ? 'border-gray-200 text-gray-400 cursor-wait'
+                                : 'border-[#2563EB]/30 text-[#2563EB] hover:bg-[#2563EB]/5'
+                            )}
+                            title="Save as PDF"
+                          >
+                            {isEnrichingAll ? '…' : 'PDF'}
+                          </button>
                           <button
                             onClick={() => toggleCompare(String(id))}
                             className={clsx('px-3 py-2 rounded-md border text-sm', selected ? 'bg-[#2563EB] border-[#2563EB] text-white' : 'bg-white border-gray-200 text-slate-700')}

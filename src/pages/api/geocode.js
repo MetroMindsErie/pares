@@ -3,16 +3,9 @@
  *
  * POST { addresses: [{ key, query }] }
  * Returns { results: { [key]: { lat, lng } | null } }
- *
- * Flow:
- *  1. Batch-fetch cached coords from Supabase geocode_cache
- *  2. Geocode missing addresses via Nominatim (server-side, 1 req/sec)
- *  3. Store new results in Supabase for next time
- *  4. Return all coords
  */
 
-import { NextResponse } from 'next/server';
-import { getSupabaseAdminClient } from '@/lib/supabaseAdmin';
+import { getSupabaseAdminClient } from '../../lib/supabaseAdmin';
 
 function normalizeKey(s) {
   return String(s || '')
@@ -33,11 +26,11 @@ function isValidLatLng(lat, lng) {
 
 async function geocodeViaNominatim(query) {
   const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`;
-  const res = await fetch(url, {
+  const resp = await fetch(url, {
     headers: { 'User-Agent': 'ParesHomes/1.0 (property map)' },
   });
-  if (!res.ok) return null;
-  const json = await res.json().catch(() => null);
+  if (!resp.ok) return null;
+  const json = await resp.json().catch(() => null);
   const first = Array.isArray(json) ? json[0] : null;
   const lat = Number(first?.lat);
   const lng = Number(first?.lon);
@@ -49,13 +42,16 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-export async function POST(request) {
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   try {
-    const body = await request.json();
-    const addresses = body?.addresses;
+    const addresses = req.body?.addresses;
 
     if (!Array.isArray(addresses) || addresses.length === 0) {
-      return NextResponse.json({ results: {} });
+      return res.status(200).json({ results: {} });
     }
 
     // Limit batch size
@@ -63,7 +59,7 @@ export async function POST(request) {
     const results = {};
 
     // Normalize all keys
-    const keyMap = new Map(); // normalizedKey -> { originalKey, query }
+    const keyMap = new Map();
     for (const item of batch) {
       const nk = normalizeKey(item.query || item.key);
       if (!nk) continue;
@@ -78,7 +74,6 @@ export async function POST(request) {
 
     if (sb && normalizedKeys.length > 0) {
       try {
-        // Fetch in chunks of 100 (Supabase .in() limit)
         for (let i = 0; i < normalizedKeys.length; i += 100) {
           const chunk = normalizedKeys.slice(i, i + 100);
           const { data, error } = await sb
@@ -119,7 +114,7 @@ export async function POST(request) {
       const nk = toGeocode[i];
       const { originalKey, query } = keyMap.get(nk);
 
-      if (i > 0) await sleep(1050); // Nominatim rate limit
+      if (i > 0) await sleep(1050);
 
       const coords = await geocodeViaNominatim(query);
       if (coords) {
@@ -149,9 +144,9 @@ export async function POST(request) {
       }
     }
 
-    return NextResponse.json({ results, cached: cachedMap.size, geocoded: newResults.length });
+    return res.status(200).json({ results, cached: cachedMap.size, geocoded: newResults.length });
   } catch (err) {
     console.error('Geocode batch error:', err);
-    return NextResponse.json({ error: 'Geocode failed' }, { status: 500 });
+    return res.status(500).json({ error: 'Geocode failed' });
   }
 }

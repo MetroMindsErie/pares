@@ -908,3 +908,35 @@ nav[role="navigation"], .backdrop-blur-md.sticky {
   outline: 3px solid rgba(59,130,246,0.16);
   outline-offset: 2px;
 }
+
+/* ——— CSS custom properties for shadcn/ui components ——— */
+@layer utilities {
+  .border-border {
+    border-color: hsl(var(--border));
+  }
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 210 20% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 210 20% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 20% 10%;
+    --primary: 170 100% 27%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 97%;
+    --secondary-foreground: 210 20% 10%;
+    --muted: 0 0% 97%;
+    --muted-foreground: 0 0% 0%;
+    --accent: 0 0% 100%;
+    --accent-foreground: 0 0% 0%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 0%;
+    --input: 0 0% 100%;
+    --ring: 0 0% 0%;
+    --radius: 0.5rem;
+  }
+}

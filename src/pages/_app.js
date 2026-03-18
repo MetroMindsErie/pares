@@ -4,6 +4,7 @@ import { initClient } from '../lib/setup-client';
 import 'leaflet/dist/leaflet.css';
 import '../styles/globals.css';
 import '../styles/propertyTemplates.css';
+import '../styles/animations.css';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AuthProvider } from '../context/auth-context';
 import RoleSaver from '../components/Profile/RoleSaver';
