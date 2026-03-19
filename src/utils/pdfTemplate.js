@@ -321,8 +321,9 @@ function buildSectionsHtml(sections) {
 
 const PDF_STYLES = `
 *{margin:0;padding:0;box-sizing:border-box}
-@page{size:letter portrait;margin:0.5in}
+@page{size:letter portrait;margin:0.6in}
 body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:#1e293b;
+  padding:16px 20px;
   -webkit-print-color-adjust:exact;print-color-adjust:exact}
 
 /* Header */
@@ -563,8 +564,9 @@ export function printAllPropertiesPdf(properties) {
 
 const COMPARISON_STYLES = `
 *{margin:0;padding:0;box-sizing:border-box}
-@page{size:landscape;margin:0.35in}
+@page{size:landscape;margin:0.45in}
 body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:#1e293b;
+  padding:12px 16px;
   -webkit-print-color-adjust:exact;print-color-adjust:exact}
 
 .hdr{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #2563EB;padding-bottom:10px;margin-bottom:14px}

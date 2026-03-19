@@ -4,10 +4,9 @@ import { useAuth } from '../context/auth-context';
 import supabase from '../lib/supabase-setup';
 import Layout from '../components/Layout';
 import Link from 'next/link';
-import Image from 'next/image';
 import SavedProperties from '../components/Dashboard/SavedProperties';
 import CompareModal from '../components/Dashboard/CompareModal';
-import { printPropertyPdf, printAllPropertiesPdf } from '../utils/pdfTemplate';
+import { printAllPropertiesPdf } from '../utils/pdfTemplate';
 import { getPropertyDetails } from '../services/trestleServices';
 import clsx from 'clsx';
 
@@ -28,12 +27,17 @@ const SavedPropertiesPage = () => {
   const [enrichedMap, setEnrichedMap] = useState({});
   const [isEnrichingAll, setIsEnrichingAll] = useState(false);
 
-  // Enrich saved properties that lack property_data via Trestle API
+  // Enrich saved properties that lack full MLS detail via Trestle API.
+  // cleanPropertyData() in swipeUtils strips records to ~14 essential fields;
+  // full MLS records have 50+ fields.  Detect the slim version and re-fetch.
   useEffect(() => {
     if (!savedProperties || savedProperties.length === 0) return;
-    const toEnrich = savedProperties.filter(
-      (p) => !(p.property_data && typeof p.property_data === 'object')
-    );
+    const toEnrich = savedProperties.filter((p) => {
+      const pd = p.property_data;
+      if (!pd || typeof pd !== 'object') return true;
+      // Minimal cleaned data has ≤15 keys — always re-fetch full detail
+      return Object.keys(pd).length < 20;
+    });
     if (toEnrich.length === 0) return;
 
     let mounted = true;
@@ -45,7 +49,7 @@ const SavedPropertiesPage = () => {
         try {
           const full = await getPropertyDetails(String(key));
           if (!full) return [p.id, p];
-          return [p.id, { ...p, ...full, saved_at: p.saved_at, id: p.id, user_id: p.user_id }];
+          return [p.id, { ...p, ...full, property_data: full, saved_at: p.saved_at, id: p.id, user_id: p.user_id }];
         } catch {
           return [p.id, p];
         }
@@ -234,122 +238,22 @@ const SavedPropertiesPage = () => {
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Compare controls panel */}
-          <div className="bg-white rounded-2xl shadow-md p-6 mb-6 border-l-4 border-[#2563EB]">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-slate-900">Compare & Manage</h2>
-                <p className="text-sm text-slate-500">Select properties below to build a comparison.</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={openCompareModal}
-                  className={clsx(
-                    'inline-flex items-center gap-2 px-4 py-2 rounded-md font-medium transition',
-                    compareIds.length >= 2 ? 'bg-[#2563EB] text-white hover:bg-[#2563EB]/90' : 'bg-gray-100 text-gray-500 cursor-not-allowed'
-                  )}
-                  aria-disabled={compareIds.length < 2}
-                >
-                  Compare {compareIds.length > 0 && <span className="ml-1 inline-flex items-center justify-center w-6 h-6 text-xs font-semibold bg-white text-[#2563EB] rounded-full">{compareIds.length}</span>}
-                </button>
-                <button onClick={clearCompare} className="px-3 py-2 rounded-md text-gray-600 bg-white border border-gray-200">Clear</button>
-              </div>
-            </div>
+          <div aria-live="polite" className="sr-only" ref={announceRef} />
 
-            {/* compact selector list */}
-            <div className="mt-4">
-              {savedProperties.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-gray-200 p-6 text-center bg-white/60">
-                  <div className="mx-auto max-w-md">
-                    <svg className="mx-auto w-12 h-12 text-[#2563EB] mb-3" viewBox="0 0 24 24" fill="none"><path d="M3 7h18M6 7v13h12V7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    <h3 className="text-lg font-semibold text-slate-900">No saved properties yet</h3>
-                    <p className="mt-2 text-sm text-slate-500">Save properties from listings to see them here. Use the browse button to get started.</p>
-                    <div className="mt-4 flex justify-center gap-3">
-                      <Link href="/swipe" className="inline-flex items-center px-4 py-2 bg-[#2563EB] text-white rounded-lg">Browse Listings</Link>
-                      <Link href="/" className="inline-flex items-center px-4 py-2 bg-white border rounded-lg">Home</Link>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 gap-3">
-                  {savedProperties.map((p) => {
-                    const id = p.listing_key || p.property_id || p.id || JSON.stringify(p);
-                    const selected = compareIds.includes(String(id));
-                    const price = p.price || p.listing_price || p.price;
-                    const thumb = p.image_url || '/fallback-property.jpg';
-                    const rowId = p.id; // actual table row id
-                    const isDeleting = deletingIds.has(rowId);
-                    return (
-                      <div key={String(id)} className={clsx('flex items-center gap-4 p-3 rounded-lg transition-shadow', selected ? 'ring-2 ring-[#2563EB]/30 bg-white' : 'bg-white hover:shadow-lg')}>
-                        <img src={thumb} alt={p.address} className="w-36 h-24 object-cover rounded-lg shadow-sm" loading="lazy" />
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-semibold text-slate-900">{price ? `$${Number(price).toLocaleString()}` : '—'}</div>
-                          <div className="text-xs text-slate-500 truncate">{p.address}</div>
-                          {(() => { const pd = getEnriched(p).property_data || getEnriched(p); return (pd.BedroomsTotal || pd.BathroomsTotalInteger || pd.LivingArea) ? (
-                            <div className="flex gap-3 mt-1 text-xs text-slate-500">
-                              {pd.BedroomsTotal && <span>{pd.BedroomsTotal} bd</span>}
-                              {pd.BathroomsTotalInteger && <span>{pd.BathroomsTotalInteger} ba</span>}
-                              {(pd.LivingArea || pd.LivingAreaSqFt) && <span>{Number(pd.LivingArea || pd.LivingAreaSqFt).toLocaleString()} sqft</span>}
-                              {pd.YearBuilt && <span>Built {pd.YearBuilt}</span>}
-                            </div>
-                          ) : null; })()}
-                          <div className="text-xs text-slate-400 mt-1">Saved {new Date(p.saved_at).toLocaleDateString()}</div>
-                          {deleteError && <div className="text-xs text-red-500 mt-1">{deleteError}</div>}
-                        </div>
-                        <div className="flex flex-col items-end gap-2">
-                          <Link href={`/property/${p.listing_key || p.property_id || p.id}`} className="text-sm text-slate-700 underline">View</Link>
-                          <button
-                            onClick={() => printPropertyPdf(getEnriched(p))}
-                            disabled={isEnrichingAll}
-                            className={clsx(
-                              'px-3 py-2 rounded-md border text-sm transition',
-                              isEnrichingAll
-                                ? 'border-gray-200 text-gray-400 cursor-wait'
-                                : 'border-[#2563EB]/30 text-[#2563EB] hover:bg-[#2563EB]/5'
-                            )}
-                            title="Save as PDF"
-                          >
-                            {isEnrichingAll ? '…' : 'PDF'}
-                          </button>
-                          <button
-                            onClick={() => toggleCompare(String(id))}
-                            className={clsx('px-3 py-2 rounded-md border text-sm', selected ? 'bg-[#2563EB] border-[#2563EB] text-white' : 'bg-white border-gray-200 text-slate-700')}
-                            disabled={isDeleting}
-                          >
-                            {selected ? 'Selected' : 'Compare'}
-                          </button>
-                          <button
-                            onClick={() => deleteSavedProperty(rowId)}
-                            disabled={isDeleting}
-                            className={clsx(
-                              'px-3 py-2 rounded-md text-sm border transition',
-                              isDeleting
-                                ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
-                                : 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'
-                            )}
-                          >
-                            {isDeleting ? 'Deleting...' : 'Delete'}
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-            <div aria-live="polite" className="sr-only" ref={announceRef} />
-          </div>
-
-          {/* Full grid below (keeps existing SavedProperties component for detailed grid view) */}
-          <div className="mt-6">
-            <SavedProperties 
-              properties={savedProperties}
-              isLoading={isLoading}
-              error={error}
-              onDelete={deleteSavedProperty}
-              deletingIds={deletingIds}
-            />
-          </div>
+          <SavedProperties 
+            properties={savedProperties}
+            isLoading={isLoading}
+            error={error}
+            onDelete={deleteSavedProperty}
+            deletingIds={deletingIds}
+            compareIds={compareIds}
+            toggleCompare={toggleCompare}
+            openCompareModal={openCompareModal}
+            clearCompare={clearCompare}
+            maxCompare={MAX_COMPARE}
+            getEnriched={getEnriched}
+            isEnrichingAll={isEnrichingAll}
+          />
 
           {/* Sticky compare trays & modal (unchanged functionality but visually consistent) */}
           {compareIds.length > 0 && (

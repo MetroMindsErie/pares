@@ -178,7 +178,11 @@ const PropertyDetailPanel = ({ property, d, onClose, onPrint, onDelete, isDeleti
 /* ---------------------------------------------------------------- */
 /*  Main component                                                    */
 /* ---------------------------------------------------------------- */
-const SavedProperties = ({ properties, isLoading, error, onDelete, deletingIds }) => {
+const SavedProperties = ({
+  properties, isLoading, error, onDelete, deletingIds,
+  compareIds = [], toggleCompare, openCompareModal, clearCompare, maxCompare = 4,
+  getEnriched: getEnrichedProp, isEnrichingAll = false,
+}) => {
   const [expandedId, setExpandedId] = useState(null);
   // Enriched versions of properties that were saved without full property_data
   const [enrichedMap, setEnrichedMap] = useState({});
@@ -189,6 +193,8 @@ const SavedProperties = ({ properties, isLoading, error, onDelete, deletingIds }
   // fetching live MLS details — same pattern as CompareModal
   useEffect(() => {
     if (!properties || properties.length === 0) return;
+    // Skip local enrichment if parent is already enriching
+    if (getEnrichedProp) return;
 
     const toEnrich = properties.filter(
       (p) => !(p.property_data && typeof p.property_data === 'object')
@@ -224,25 +230,28 @@ const SavedProperties = ({ properties, isLoading, error, onDelete, deletingIds }
     return () => { mounted = false; };
   }, [properties]);
 
+  /** Resolve the best enriched version of a property */
+  const getEnriched = useCallback((p) => {
+    if (getEnrichedProp) return getEnrichedProp(p);
+    return enrichedMap[p.id] || p;
+  }, [getEnrichedProp, enrichedMap]);
+
   // Pre-extract details for all properties — uses enriched data when available
   const detailsMap = useMemo(() => {
     const map = {};
     (properties || []).forEach((p) => {
-      const src = enrichedMap[p.id] || p;
-      map[p.id] = extractDetails(src);
+      map[p.id] = extractDetails(getEnriched(p));
     });
     return map;
-  }, [properties, enrichedMap]);
+  }, [properties, enrichedMap, getEnriched]);
 
   const toggleExpand = useCallback((id) => {
     setExpandedId((prev) => (prev === id ? null : id));
   }, []);
 
   const handlePrint = useCallback((property) => {
-    // Use enriched version so PDF has full MLS details
-    const enriched = enrichedMap[property.id] || property;
-    printPropertyPdf(enriched);
-  }, [enrichedMap]);
+    printPropertyPdf(getEnriched(property));
+  }, [getEnriched]);
 
   if (isLoading) {
     return (
@@ -266,11 +275,41 @@ const SavedProperties = ({ properties, isLoading, error, onDelete, deletingIds }
     );
   }
 
+  const compareId = (p) => String(p.listing_key || p.property_id || p.id);
+
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-xl font-semibold mb-4">Saved Properties</h2>
+    <div className="bg-white rounded-2xl shadow-md p-6">
+      {/* Header with compare controls */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <h2 className="text-xl font-semibold text-slate-900">Saved Properties</h2>
+        {toggleCompare && properties.length > 0 && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={openCompareModal}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-md font-medium text-sm transition ${
+                compareIds.length >= 2
+                  ? 'bg-[#2563EB] text-white hover:bg-[#2563EB]/90'
+                  : 'bg-gray-100 text-gray-500 cursor-not-allowed'
+              }`}
+              disabled={compareIds.length < 2}
+            >
+              Compare{compareIds.length > 0 && (
+                <span className="ml-1 inline-flex items-center justify-center w-5 h-5 text-xs font-semibold bg-white text-[#2563EB] rounded-full">
+                  {compareIds.length}
+                </span>
+              )}
+            </button>
+            {compareIds.length > 0 && (
+              <button onClick={clearCompare} className="px-3 py-2 rounded-md text-sm text-gray-600 bg-white border border-gray-200 hover:bg-gray-50">Clear</button>
+            )}
+          </div>
+        )}
+      </div>
+
       {properties.length === 0 ? (
-        <p className="text-gray-500 text-center py-8">No saved properties yet.</p>
+        <div className="rounded-lg border border-dashed border-gray-200 p-8 text-center">
+          <p className="text-gray-500">No saved properties yet.</p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {properties.map((property) => {
@@ -298,8 +337,10 @@ const SavedProperties = ({ properties, isLoading, error, onDelete, deletingIds }
             }
 
             /* ---- collapsed: card ---- */
+            const cid = compareId(property);
+            const isSelected = compareIds.includes(cid);
             return (
-              <div key={property.id} className="group relative border rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
+              <div key={property.id} className={`group relative border rounded-lg overflow-hidden hover:shadow-lg transition-shadow ${isSelected ? 'ring-2 ring-[#2563EB]/40' : ''}`}>
                 <Link href={`/property/${property.listing_key}`} className="block">
                   <div className="relative h-48 w-full">
                     <img
@@ -336,15 +377,32 @@ const SavedProperties = ({ properties, isLoading, error, onDelete, deletingIds }
                     >
                       ▼ Details
                     </button>
+                    {toggleCompare && (
+                      <button
+                        onClick={() => toggleCompare(cid)}
+                        className={`text-sm px-3 py-1.5 rounded-md border transition ${
+                          isSelected
+                            ? 'bg-[#2563EB] border-[#2563EB] text-white'
+                            : 'border-gray-200 text-slate-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        {isSelected ? '✓ Selected' : 'Compare'}
+                      </button>
+                    )}
                     <button
                       onClick={() => handlePrint(property)}
-                      className="text-sm px-3 py-1.5 rounded-md border border-[#2563EB]/30 text-[#2563EB] hover:bg-[#2563EB]/5 transition flex items-center gap-1"
+                      disabled={isEnrichingAll}
+                      className={`text-sm px-3 py-1.5 rounded-md border transition flex items-center gap-1 ${
+                        isEnrichingAll
+                          ? 'border-gray-200 text-gray-400 cursor-wait'
+                          : 'border-[#2563EB]/30 text-[#2563EB] hover:bg-[#2563EB]/5'
+                      }`}
                       title="Save as PDF"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
                       </svg>
-                      PDF
+                      {isEnrichingAll ? '…' : 'PDF'}
                     </button>
                     {onDelete && (
                       <button
