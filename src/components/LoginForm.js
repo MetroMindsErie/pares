@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../context/auth-context';
+import EmailVerificationModal from './EmailVerificationModal';
 
 // Safe import of Supabase client only on client side
 let supabaseClient = null;
@@ -10,6 +11,7 @@ const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
   const router = useRouter();
   
   // Initialize supabase client only on client side
@@ -57,7 +59,11 @@ const Login = () => {
       }
     } catch (err) {
       console.error('Login error:', err);
-      setError(err.message);
+      if (err.message?.toLowerCase().includes('email not confirmed')) {
+        setShowVerifyModal(true);
+      } else {
+        setError(err.message);
+      }
     }
   };
 
@@ -71,6 +77,16 @@ const Login = () => {
   // Return the form interface
   return (
     <div className="max-w-md mx-auto p-8 bg-white/80 backdrop-blur-md rounded-2xl shadow-xl mt-10">
+      {showVerifyModal && (
+        <EmailVerificationModal
+          email={username}
+          onClose={() => setShowVerifyModal(false)}
+          onResend={async () => {
+            const { default: supabaseClient } = await import('../utils/supabaseClient');
+            await supabaseClient.auth.resend({ type: 'signup', email: username });
+          }}
+        />
+      )}
       <h2 className="text-3xl font-semibold mb-6 text-center text-gray-800">Log In</h2>
       {(error || authError) && (
         <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">

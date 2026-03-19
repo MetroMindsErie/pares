@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../context/auth-context';
+import EmailVerificationModal from './EmailVerificationModal';
 
 const RegisterForm = () => {
   const [email, setEmail] = useState('');
@@ -8,6 +9,7 @@ const RegisterForm = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [formError, setFormError] = useState(null);
   const [localLoading, setLocalLoading] = useState(false);
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
   
   const { signup, loginWithProvider, loading: authLoading, error: authError, user } = useAuth();
   const router = useRouter();
@@ -93,8 +95,8 @@ const RegisterForm = () => {
       if (error) {
         setFormError(error.message || 'Failed to sign up');
       } else {
-        // Registration successful, redirect to profile setup
-        router.push('/create-profile?setup=true');
+        // Show email verification modal instead of immediate redirect
+        setShowVerifyModal(true);
       }
     } catch (err) {
       setFormError(err.message || 'An unexpected error occurred');
@@ -194,6 +196,18 @@ const RegisterForm = () => {
 
   return (
     <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+      {showVerifyModal && (
+        <EmailVerificationModal
+          email={email}
+          onClose={() => {
+            setShowVerifyModal(false);
+            router.push('/login');
+          }}
+          onResend={async () => {
+            await signup(email, password);
+          }}
+        />
+      )}
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
           Create your account
