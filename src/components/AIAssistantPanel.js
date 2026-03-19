@@ -387,18 +387,27 @@ export function AIAssistantPanel() {
 
       const address = `${pricingStreet.trim()}, ${pricingCounty.trim()} County, PA ${pricingZip.trim()}`;
 
-      const res = await fetch('/api/ai/pricing', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify({
-          address,
-          county: pricingCounty.trim(),
-          zip: pricingZip.trim(),
-        })
-      });
+      const ac = new AbortController();
+      const timer = setTimeout(() => ac.abort(), 30000);
+
+      let res;
+      try {
+        res = await fetch('/api/ai/pricing', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({
+            address,
+            county: pricingCounty.trim(),
+            zip: pricingZip.trim(),
+          }),
+          signal: ac.signal,
+        });
+      } finally {
+        clearTimeout(timer);
+      }
 
       if (!res.ok) {
         const text = await res.text().catch(() => '');

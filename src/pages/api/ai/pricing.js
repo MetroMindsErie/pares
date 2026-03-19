@@ -547,20 +547,27 @@ export default async function handler(req, res) {
       const mid = adjusted?.mid ?? (Number.isFinite(p50) ? Math.round(p50) : null);
       const high = adjusted?.high ?? (Number.isFinite(p75) ? Math.round(p75) : null);
 
-      // CMA playbook chunks
+      // CMA playbook chunks (5 s timeout so a down RAG service doesn't block the response)
       let cmaChunks = [];
       try {
-        const cmaRes = await fetch(`${ragBase}/cma/search`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            query: `CMA methodology for selecting comps, deriving a price range, and explaining adjustments.`,
-            top_k: 6,
-            kind: 'playbook',
-          }),
-        });
-        const cmaJson = await cmaRes.json().catch(() => null);
-        cmaChunks = Array.isArray(cmaJson?.chunks) ? cmaJson.chunks : [];
+        const cmaAc = new AbortController();
+        const cmaTimer = setTimeout(() => cmaAc.abort(), 5000);
+        try {
+          const cmaRes = await fetch(`${ragBase}/cma/search`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              query: `CMA methodology for selecting comps, deriving a price range, and explaining adjustments.`,
+              top_k: 6,
+              kind: 'playbook',
+            }),
+            signal: cmaAc.signal,
+          });
+          const cmaJson = await cmaRes.json().catch(() => null);
+          cmaChunks = Array.isArray(cmaJson?.chunks) ? cmaJson.chunks : [];
+        } finally {
+          clearTimeout(cmaTimer);
+        }
       } catch {
         cmaChunks = [];
       }
@@ -774,20 +781,27 @@ export default async function handler(req, res) {
 
     const suggested = p50 ? Math.round(p50) : null;
 
-    // 3) Retrieve relevant CMA *playbook* chunks (methodology, not client-specific facts)
+    // 3) Retrieve relevant CMA *playbook* chunks (5 s timeout so a down RAG service doesn't block)
     let cmaChunks = [];
     try {
-      const cmaRes = await fetch(`${ragBase}/cma/search`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: `CMA methodology for selecting comps, deriving a price range, and explaining adjustments.`,
-          top_k: 6,
-          kind: 'playbook',
-        }),
-      });
-      const cmaJson = await cmaRes.json().catch(() => null);
-      cmaChunks = Array.isArray(cmaJson?.chunks) ? cmaJson.chunks : [];
+      const cmaAc = new AbortController();
+      const cmaTimer = setTimeout(() => cmaAc.abort(), 5000);
+      try {
+        const cmaRes = await fetch(`${ragBase}/cma/search`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: `CMA methodology for selecting comps, deriving a price range, and explaining adjustments.`,
+            top_k: 6,
+            kind: 'playbook',
+          }),
+          signal: cmaAc.signal,
+        });
+        const cmaJson = await cmaRes.json().catch(() => null);
+        cmaChunks = Array.isArray(cmaJson?.chunks) ? cmaJson.chunks : [];
+      } finally {
+        clearTimeout(cmaTimer);
+      }
     } catch {
       cmaChunks = [];
     }

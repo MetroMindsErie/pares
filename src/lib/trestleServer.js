@@ -44,7 +44,15 @@ export function buildTrestleODataUrl(odataPath, params = {}) {
   return url;
 }
 
-export async function getTrestleToken() {
+/* ------------------------------------------------------------------ */
+/*  Token cache — avoids re-fetching on every OData call              */
+/* ------------------------------------------------------------------ */
+
+let _cachedToken = null;
+let _tokenExpiresAt = 0;   // epoch ms
+let _tokenPromise = null;   // coalesce concurrent requests
+
+async function _fetchTokenFresh() {
   const tokenUrl = getTrestleTokenUrl();
   const { clientId, clientSecret } = getTrestleCredentials();
 
@@ -55,48 +63,100 @@ export async function getTrestleToken() {
     scope: 'api'
   });
 
-  const res = await fetch(tokenUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10_000);
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`Trestle token request failed (${res.status}): ${text.slice(0, 200)}`);
+  try {
+    const res = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`Trestle token request failed (${res.status}): ${text.slice(0, 200)}`);
+    }
+
+    const json = await res.json();
+    if (!json?.access_token) {
+      throw new Error('Trestle token response missing access_token');
+    }
+
+    const expiresIn = Number(json.expires_in) || 3600;
+    // Expire 60 s early to avoid using a stale token on the wire.
+    _cachedToken = json.access_token;
+    _tokenExpiresAt = Date.now() + (expiresIn - 60) * 1000;
+
+    return _cachedToken;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export async function getTrestleToken() {
+  if (_cachedToken && Date.now() < _tokenExpiresAt) {
+    return _cachedToken;
   }
 
-  const json = await res.json();
-  if (!json?.access_token) {
-    throw new Error('Trestle token response missing access_token');
+  // Coalesce: if a fetch is already in-flight, piggy-back on it.
+  if (!_tokenPromise) {
+    _tokenPromise = _fetchTokenFresh().finally(() => { _tokenPromise = null; });
   }
+  return _tokenPromise;
+}
 
-  return json.access_token;
+/* ------------------------------------------------------------------ */
+/*  OData fetch with timeout + single retry on transient errors       */
+/* ------------------------------------------------------------------ */
+
+const ODATA_TIMEOUT_MS = 15_000;
+const RETRYABLE_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
+
+async function _fetchODataOnce(url, token) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ODATA_TIMEOUT_MS);
+
+  try {
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json'
+      },
+      signal: controller.signal,
+    });
+
+    const text = await res.text();
+    if (!res.ok) {
+      const err = new Error(`Trestle OData failed (${res.status}): ${text.slice(0, 200)}`);
+      err.status = res.status;
+      throw err;
+    }
+
+    let json;
+    try { json = JSON.parse(text); } catch { json = null; }
+    return { url: url.toString(), json, rawText: text };
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export async function fetchTrestleOData(odataPath, params = {}) {
   const token = await getTrestleToken();
   const url = buildTrestleODataUrl(odataPath, params);
 
-  const res = await fetch(url, {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/json'
-    }
-  });
-
-  const text = await res.text();
-  if (!res.ok) {
-    throw new Error(`Trestle OData failed (${res.status}): ${text.slice(0, 200)}`);
-  }
-
-  let json;
   try {
-    json = JSON.parse(text);
-  } catch {
-    json = null;
-  }
+    return await _fetchODataOnce(url, token);
+  } catch (err) {
+    // Retry once on transient errors or timeout
+    const isTransient = RETRYABLE_STATUSES.has(err.status) || err.name === 'AbortError';
+    if (!isTransient) throw err;
 
-  return { url: url.toString(), json, rawText: text };
+    // Brief backoff then retry with a fresh token (the old one may have expired mid-flight)
+    await new Promise((r) => setTimeout(r, 800));
+    const freshToken = await _fetchTokenFresh();
+    return _fetchODataOnce(url, freshToken);
+  }
 }

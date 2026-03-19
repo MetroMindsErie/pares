@@ -58,6 +58,7 @@ export default function ComparablePropertiesWidget({ property, variant = 'scroll
   useEffect(() => {
     let active = true;
     const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 25000);
 
     const run = async () => {
       if (!address) {
@@ -130,6 +131,7 @@ export default function ComparablePropertiesWidget({ property, variant = 'scroll
 
     return () => {
       active = false;
+      clearTimeout(timer);
       controller.abort();
     };
   }, [address, county, zip, subjectId, refreshKey]);

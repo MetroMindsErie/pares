@@ -61,13 +61,22 @@ export default async function handler(req, res) {
   try {
     const token = await getTrestleToken();
 
-    const upstream = await fetch(upstreamUrl, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: req.headers.accept || 'application/json'
-      }
-    });
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), 15000);
+
+    let upstream;
+    try {
+      upstream = await fetch(upstreamUrl, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: req.headers.accept || 'application/json'
+        },
+        signal: ac.signal,
+      });
+    } finally {
+      clearTimeout(timer);
+    }
 
     const buf = await upstream.arrayBuffer();
 
