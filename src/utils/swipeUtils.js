@@ -24,31 +24,39 @@ const saveLikedPropertyToSavedProperties = async (userId, propertyData) => {
       .maybeSingle();
 
     if (existing) {
-      // Already saved, no need to insert again
       return;
     }
 
-    // Insert into saved_properties
+    // Try inserting with property_data first, fall back without it
+    const row = {
+      user_id: userId,
+      property_id: propertyData.ListingKey,
+      listing_key: propertyData.ListingKey,
+      address: propertyData.UnparsedAddress,
+      price: propertyData.ListPrice,
+      image_url: propertyData.media || '/fallback-property.jpg',
+      saved_at: new Date().toISOString(),
+      property_data: propertyData
+    };
+
     const { error } = await supabase
       .from('saved_properties')
-      .insert({
-        user_id: userId,
-        property_id: propertyData.ListingKey,
-        listing_key: propertyData.ListingKey,
-        address: propertyData.UnparsedAddress,
-        price: propertyData.ListPrice,
-        image_url: propertyData.media || '/fallback-property.jpg',
-        saved_at: new Date().toISOString(),
-        property_data: propertyData
-      });
+      .insert(row);
 
     if (error) {
-      console.error('Error saving to saved_properties:', error);
-      // Don't throw - this is a secondary save, we don't want to break the swipe action
+      // If property_data column doesn't exist, retry without it
+      if (error.message?.includes('property_data')) {
+        const { property_data, ...rowWithout } = row;
+        const { error: retryError } = await supabase
+          .from('saved_properties')
+          .insert(rowWithout);
+        if (retryError) console.error('Retry save error:', retryError);
+      } else {
+        console.error('Error saving to saved_properties:', error);
+      }
     }
   } catch (error) {
     console.error('Error in saveLikedPropertyToSavedProperties:', error);
-    // Don't throw - this is a secondary save
   }
 };
 

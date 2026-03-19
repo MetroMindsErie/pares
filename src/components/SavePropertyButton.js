@@ -75,11 +75,21 @@ const SavePropertyButton = ({ propertyId, listingKey, address, price, imageUrl, 
           dataToSave.property_data = propertyData;
         }
 
-        const { error: insertError } = await supabase
+        let { error: insertError } = await supabase
           .from('saved_properties')
           .insert(dataToSave);
 
-        if (insertError) throw insertError;
+        // If property_data column doesn't exist, retry without it
+        if (insertError?.message?.includes('property_data')) {
+          const { property_data, ...dataWithout } = dataToSave;
+          const { error: retryError } = await supabase
+            .from('saved_properties')
+            .insert(dataWithout);
+          if (retryError) throw retryError;
+        } else if (insertError) {
+          throw insertError;
+        }
+
         setIsSaved(true);
       }
     } catch (error) {
