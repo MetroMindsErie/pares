@@ -243,12 +243,7 @@ const SearchBar = ({
     setSuggestions([]);
     setActiveSuggestion(-1);
     saveRecentSearch(suggestion.label);
-
-    // All types auto-submit to show results in the search grid
-    setTimeout(() => {
-      const form = inputRef.current?.closest('form');
-      if (form) form.requestSubmit();
-    }, 50);
+    inputRef.current?.focus();
   };
 
   // Combine API suggestions with recent searches
@@ -670,9 +665,13 @@ const SearchBar = ({
           <span className="text-xs text-gray-500 dark:text-gray-400">Quick:</span>
           {['Erie', 'Crawford', 'Warren', 'Meadville', 'Corry', 'North East'].map(term => (
             <button key={term} type="button"
-              onClick={() => { setSearchParams(prev => ({ ...prev, location: term })); setTimeout(() => { const form = inputRef.current?.closest('form'); if (form) form.requestSubmit(); }, 50); }}
+              onClick={() => { setSearchParams(prev => ({ ...prev, location: term })); inputRef.current?.focus(); }}
               style={{fontFamily:'var(--font-poppins, Poppins), sans-serif'}}
-              className="px-3 py-1 text-xs font-semibold rounded-full border border-teal-200 bg-white text-teal-700 hover:bg-teal-50 hover:border-teal-400 dark:border-teal-700 dark:bg-slate-800 dark:text-teal-400 dark:hover:bg-teal-900/30 transition-colors">
+              className={`px-3 py-1 text-xs font-semibold rounded-full border transition-colors ${
+                searchParams.location === term
+                  ? 'border-teal-500 bg-teal-50 text-teal-800 ring-1 ring-teal-400 dark:border-teal-400 dark:bg-teal-900/40 dark:text-teal-300'
+                  : 'border-teal-200 bg-white text-teal-700 hover:bg-teal-50 hover:border-teal-400 dark:border-teal-700 dark:bg-slate-800 dark:text-teal-400 dark:hover:bg-teal-900/30'
+              }`}>
               {term}
             </button>
           ))}
