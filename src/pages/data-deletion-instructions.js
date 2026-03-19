@@ -39,8 +39,8 @@ export default function DataDeletionInstructions() {
                 <h2 className="text-xl font-semibold text-teal-700 mb-3">Option 2: Contact us directly</h2>
                 <p className="text-gray-700">If you're having trouble deleting your account through your settings, you can send an email to:</p>
                 <p className="my-2">
-                  <a href="mailto:privacy@pares.com" className="text-teal-600 hover:text-teal-800 font-medium">
-                    privacy@pares.com
+                  <a href="mailto:support@parealestatesolutions.com" className="text-teal-600 hover:text-teal-800 font-medium">
+                    support@parealestatesolutions.com
                   </a>
                 </p>
                 <p className="text-gray-700">Please include the subject line "Account Deletion Request" and provide the email address associated with your account.</p>
@@ -81,7 +81,7 @@ export default function DataDeletionInstructions() {
               
               <p className="text-gray-700">
                 If you have any questions about data deletion, please contact our privacy team at 
-                <a href="mailto:privacy@pares.com" className="text-teal-600 hover:text-teal-800 mx-1">privacy@pares.com</a>.
+                <a href="mailto:support@parealestatesolutions.com" className="text-teal-600 hover:text-teal-800 mx-1">support@parealestatesolutions.com</a>.
               </p>
               
               <p className="text-xs text-gray-500 mt-8">

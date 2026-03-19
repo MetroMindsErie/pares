@@ -1,8 +1,36 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
+  const [subEmail, setSubEmail] = useState('');
+  const [subStatus, setSubStatus] = useState(null); // 'success' | 'error' | 'loading'
+  const [subMessage, setSubMessage] = useState('');
+
+  const handleSubscribe = async (e) => {
+    e.preventDefault();
+    if (!subEmail) return;
+    setSubStatus('loading');
+    try {
+      const res = await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: subEmail }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSubStatus('success');
+        setSubMessage('You\'re subscribed! Check your inbox for updates.');
+        setSubEmail('');
+      } else {
+        setSubStatus('error');
+        setSubMessage(data.error || 'Something went wrong.');
+      }
+    } catch {
+      setSubStatus('error');
+      setSubMessage('Network error. Please try again.');
+    }
+  };
 
   return (
     <footer className="bg-gradient-to-br from-slate-900 via-teal-900 to-black text-white pt-12">
@@ -80,27 +108,36 @@ const Footer = () => {
                   Questions about a listing or need help with search? Reach out or subscribe for curated updates.
                 </p>
 
-                <form className="mt-4 w-full max-w-md" onSubmit={(e) => e.preventDefault()}>
+                <form className="mt-4 w-full max-w-md" onSubmit={handleSubscribe}>
                   <label htmlFor="footer-email" className="sr-only">Email address</label>
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                     <input
                       id="footer-email"
                       type="email"
+                      required
+                      value={subEmail}
+                      onChange={(e) => { setSubEmail(e.target.value); setSubStatus(null); }}
                       placeholder="you@company.com"
                       className="w-full rounded-full border border-transparent px-4 py-2 text-sm bg-slate-700 text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-400"
                     />
                     <button
                       type="submit"
-                      className="mt-0 sm:mt-0 flex-shrink-0 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-teal-500 to-green-500 px-4 py-2 text-sm font-semibold text-white shadow-lg hover:brightness-105 transition"
+                      disabled={subStatus === 'loading'}
+                      className="mt-0 sm:mt-0 flex-shrink-0 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-teal-500 to-green-500 px-4 py-2 text-sm font-semibold text-white shadow-lg hover:brightness-105 transition disabled:opacity-60"
                     >
-                      Subscribe
+                      {subStatus === 'loading' ? 'Subscribing…' : 'Subscribe'}
                     </button>
                   </div>
+                  {subStatus && (
+                    <p className={`mt-2 text-xs ${subStatus === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+                      {subMessage}
+                    </p>
+                  )}
                 </form>
 
                 <div className="mt-6">
                   <p className="text-xs text-slate-400">
-                    Or email <a href="mailto:support@pares.homes" className="text-teal-300 hover:underline">support@pares.homes</a>
+                    Or email <a href="mailto:support@parealestatesolutions.com" className="text-teal-300 hover:underline">support@parealestatesolutions.com</a>
                   </p>
                 </div>
               </div>
