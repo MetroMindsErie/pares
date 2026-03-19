@@ -396,7 +396,7 @@ export default function DashboardPage() {
 
           {/* Main content */}
           <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-3 mb-6 sm:mb-8">
+            <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 mb-6 sm:mb-8">
               <StatsCard
                 title="Saved Properties"
                 value={savedProperties.length.toString()}
@@ -408,12 +408,6 @@ export default function DashboardPage() {
                 value={String(propertyStats.liked || 0)}
                 change={0}
                 icon="heart"
-              />
-              <StatsCard
-                title="Connections"
-                value={String(propertyStats.connections || 0)}
-                change={0}
-                icon="handshake"
               />
             </div>
 
