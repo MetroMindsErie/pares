@@ -110,7 +110,7 @@ export default function Navbar() {
           style={{ zIndex: 80 }}
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between h-24" />
+            <div className="flex justify-between h-24 sm:h-28" />
           </div>
         </nav>
       </React.Fragment>
@@ -138,7 +138,7 @@ export default function Navbar() {
         style={{ zIndex: 80 }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-24">
+          <div className="flex justify-between h-24 sm:h-28">
             {/* Left side - Logo and navigation links */}
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
@@ -149,7 +149,7 @@ export default function Navbar() {
                   <img
                     src="/pares_homes_v5.png"
                     alt="pares.homes"
-                    className="h-24 sm:h-28 w-auto object-contain"
+                    className="h-28 sm:h-32 w-auto object-contain scale-[1.35] origin-left transform-gpu"
                   />
                 </Link>
               </div>

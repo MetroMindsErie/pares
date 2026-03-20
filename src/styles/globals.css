@@ -681,8 +681,8 @@ header, footer {
 
 /* Add navbar & partners sizing variables for consistent placement */
 :root {
-  --navbar-height: 96px; /* navbar now uses h-24 */
-  --partners-nav-gap: 12px;
+  --navbar-height: 112px; /* aligns ticker below nav at sm+ where nav is h-28 */
+  --partners-nav-gap: 8px;
   --partners-height-mobile: 64px;
   --partners-height-desktop: 104px;
 }

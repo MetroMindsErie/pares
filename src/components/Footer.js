@@ -61,7 +61,7 @@ const Footer = () => {
                   <img
                     src="/pares_homes_v5.png"
                     alt="pares.homes"
-                    className="h-24 sm:h-28 w-auto object-contain"
+                    className="h-28 sm:h-32 w-auto object-contain scale-[1.35] origin-left transform-gpu"
                   />
                 </Link>
 
@@ -164,7 +164,7 @@ const Footer = () => {
             {/* Legal */}
             <div className="mt-8 pt-6 border-t border-white/6">
               <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                <p className="text-sm text-slate-400">© {currentYear} pares.homes — Real Estate Solutions. All rights reserved.</p>
+                <p className="text-sm text-slate-400">© {currentYear} pares.homes — Pennsylvania Real Estate Solutions. All rights reserved.</p>
 
                 <div className="flex items-center gap-4">
                   <Link href="/privacy" className="text-sm text-slate-300 hover:text-white transition">Privacy</Link>
