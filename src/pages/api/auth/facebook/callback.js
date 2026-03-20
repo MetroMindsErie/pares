@@ -1048,4 +1048,12 @@ export const ensureUserRecord = async (userId) => {
   }
 };
 
+// Required default export for Next.js Pages Router API route
+export default function handler() {
+  return new Response(JSON.stringify({ error: 'Use named exports from this module' }), {
+    status: 404,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
 export const runtime = 'edge';
