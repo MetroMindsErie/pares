@@ -64,9 +64,9 @@ const SignupForm = () => {
     setLoading(true);
     setError('');
     try {
-      const redirectTo = process.env.NODE_ENV === 'development'
-        ? 'http://localhost:3000/auth/callback'
-        : 'https://www.parealestatesolutions.com/auth/callback'; // Hardcoded
+      const redirectTo = typeof window !== 'undefined'
+        ? `${window.location.origin}/auth/callback`
+        : `${process.env.NEXT_PUBLIC_BASE_URL}/auth/callback`;
   
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
