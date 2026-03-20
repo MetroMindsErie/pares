@@ -4,13 +4,24 @@ import { edgeHandler } from '../../../lib/edgeHandler';
 async function getCallerRole(authHeader) {
   if (!authHeader?.startsWith('Bearer ')) return null;
   const token = authHeader.slice(7);
-  const supabase = createClient(
+  const authClient = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   );
-  const { data: { user }, error } = await supabase.auth.getUser(token);
+  const { data: { user }, error } = await authClient.auth.getUser(token);
   if (error || !user) return null;
-  const { data } = await supabase
+
+  // Prefer explicit role from JWT metadata when available.
+  const metadataRole = user.app_metadata?.role || user.user_metadata?.role;
+  if (metadataRole) return metadataRole;
+
+  // Read role from users table using service key to avoid anon/RLS read failures.
+  const adminClient = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY
+  );
+
+  const { data } = await adminClient
     .from('users')
     .select('role')
     .eq('id', user.id)
