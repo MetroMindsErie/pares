@@ -149,7 +149,7 @@ export default function Navbar() {
                   <img
                     src="/pares_homes.png"
                     alt="pares.homes"
-                    className="h-44 w-auto object-contain"
+                    className="h-10 sm:h-12 w-auto object-contain"
                   />
                 </Link>
               </div>
@@ -244,10 +244,10 @@ export default function Navbar() {
             <div className="-mr-2 flex items-center sm:hidden">
               <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
-                aria-expanded="false"
+                className="inline-flex items-center justify-center p-2.5 min-w-[44px] min-h-[44px] rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
+                aria-expanded={isOpen}
+                aria-label="Open main menu"
               >
-                <span className="sr-only">Open main menu</span>
                 {!isOpen ? (
                   <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
@@ -270,7 +270,7 @@ export default function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="block w-full px-4 py-2 text-base font-medium rounded-md text-gray-100 hover:bg-gray-800 transition-colors"
+                className="block w-full px-4 py-3 text-base font-medium rounded-md text-gray-100 hover:bg-gray-800 transition-colors"
               >
                 {link.label}
               </Link>
@@ -289,9 +289,9 @@ export default function Navbar() {
                     <Link
                       key={item.href}
                       href={item.href}
-                      className="flex items-center px-4 py-2 text-base font-medium rounded-md text-gray-100 hover:bg-gray-800 transition-colors"
+                      className="flex items-center px-4 py-3 text-base font-medium rounded-md text-gray-100 hover:bg-gray-800 transition-colors"
                     >
-                      <svg className="w-5 h-5 mr-3 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="mr-3 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
                       </svg>
                       {item.label}
@@ -303,7 +303,7 @@ export default function Navbar() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className="block w-full px-4 py-2 text-base font-medium rounded-md text-gray-100 hover:bg-gray-800 text-center transition-colors"
+                    className="block w-full px-4 py-3 text-base font-medium rounded-md text-gray-100 hover:bg-gray-800 text-center transition-colors"
                   >
                     {link.label}
                   </Link>
@@ -311,20 +311,20 @@ export default function Navbar() {
 
                 <button
                   onClick={handleLogout}
-                  className="block w-full px-4 py-2 text-base font-medium rounded-md text-gray-100 hover:bg-gray-800 transition-colors"
+                  className="block w-full px-4 py-3 text-base font-medium rounded-md text-gray-100 hover:bg-gray-800 transition-colors"
                 >
                   Sign out
                 </button>
               </div>
             ) : (
               <div className="space-y-1 px-2">
-                <Link href="/pricing" className="block w-full px-4 py-2 text-base font-medium rounded-md text-gray-100 hover:bg-gray-800 transition-colors">
+                <Link href="/pricing" className="block w-full px-4 py-3 text-base font-medium rounded-md text-gray-100 hover:bg-gray-800 transition-colors">
                   Pricing
                 </Link>
-                <Link href="/login" className="block w-full px-4 py-2 text-base font-medium rounded-md text-gray-100 hover:bg-gray-800 transition-colors">
+                <Link href="/login" className="block w-full px-4 py-3 text-base font-medium rounded-md text-gray-100 hover:bg-gray-800 transition-colors">
                   Log in
                 </Link>
-                <Link href="/register" className="block w-full px-4 py-2 text-base font-medium rounded-md text-gray-100 hover:bg-gray-800 transition-colors">
+                <Link href="/register" className="block w-full px-4 py-3 text-base font-medium rounded-md text-gray-100 hover:bg-gray-800 transition-colors">
                   Sign up
                 </Link>
               </div>

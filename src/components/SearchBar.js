@@ -84,7 +84,7 @@ const FilterDropdown = ({ label, value, displayValue, isOpen, onToggle, children
       </svg>
     </button>
     {isOpen && (
-      <div className="absolute top-full left-0 mt-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-50 min-w-[220px] py-1 animate-in fade-in slide-in-from-top-1 duration-150">
+      <div className="absolute top-full left-0 mt-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-50 w-[min(220px,90vw)] py-1 animate-in fade-in slide-in-from-top-1 duration-150">
         {children}
       </div>
     )}
@@ -443,7 +443,7 @@ const SearchBar = ({
           {/* Autocomplete Dropdown */}
           {showSuggestions && allSuggestions.length > 0 && (
             <div ref={suggestionsRef}
-              className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl z-50 max-h-[400px] overflow-y-auto">
+              className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl z-50 max-h-[min(400px,60vh)] overflow-y-auto">
               {searchParams.location.length < 2 && recentSearches.length > 0 && (
                 <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 dark:border-gray-700">
                   <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Recent Searches</span>
@@ -569,14 +569,14 @@ const SearchBar = ({
               : 'Beds & Baths'
             }
             isOpen={openDropdown === 'bedsbaths'} onToggle={() => toggleDropdown('bedsbaths')}>
-            <div className="px-4 py-3 space-y-3 min-w-[260px]">
+            <div className="px-4 py-3 space-y-3 w-[min(260px,90vw)]">
               <div>
                 <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Bedrooms</p>
                 <div className="flex gap-1">
                   {['', '1', '2', '3', '4', '5'].map(val => (
                     <button key={`bed-${val}`} type="button"
                       onClick={() => setSearchParams(prev => ({ ...prev, beds: val }))}
-                      className={`flex-1 py-1.5 text-sm font-semibold rounded-lg border transition-colors ${
+                      className={`flex-1 py-2.5 text-sm font-semibold rounded-lg border transition-colors ${
                         searchParams.beds === val
                           ? 'bg-teal-600 text-white border-teal-600 dark:bg-teal-500 dark:border-teal-500'
                           : 'bg-white text-slate-600 border-slate-200 hover:bg-teal-50 hover:border-teal-300 hover:text-teal-700 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600 dark:hover:bg-teal-900/20'
@@ -592,7 +592,7 @@ const SearchBar = ({
                   {['', '1', '2', '3', '4'].map(val => (
                     <button key={`bath-${val}`} type="button"
                       onClick={() => setSearchParams(prev => ({ ...prev, baths: val }))}
-                      className={`flex-1 py-1.5 text-sm font-semibold rounded-lg border transition-colors ${
+                      className={`flex-1 py-2.5 text-sm font-semibold rounded-lg border transition-colors ${
                         searchParams.baths === val
                           ? 'bg-teal-600 text-white border-teal-600 dark:bg-teal-500 dark:border-teal-500'
                           : 'bg-white text-slate-600 border-slate-200 hover:bg-teal-50 hover:border-teal-300 hover:text-teal-700 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600 dark:hover:bg-teal-900/20'

@@ -11,7 +11,7 @@ const ProfileWizard = ({ steps, currentStep, setCurrentStep }) => {
           <div key={step.title} className="flex flex-col items-center w-1/5">
             <button
               onClick={() => setCurrentStep(index + 1)}
-              className={`w-8 h-8 rounded-full flex items-center justify-center 
+              className={`w-10 h-10 rounded-full flex items-center justify-center 
                 ${currentStep > index + 1 ? 'bg-green-500 text-white' : 
                 currentStep === index + 1 ? 'bg-teal-600 text-white' : 
                 'bg-gray-200 text-gray-500'}`}

@@ -61,7 +61,7 @@ const Footer = () => {
                   <img
                     src="/pares_homes.png"
                     alt="pares.homes"
-                    className="h-34 w-auto object-contain brightness-0 invert"
+                    className="h-32 w-auto object-contain brightness-0 invert"
                   />
                 </Link>
 
@@ -70,17 +70,17 @@ const Footer = () => {
                 </p>
 
                 <div className="mt-6 flex items-center gap-3">
-                  <a href="#" aria-label="Facebook" className="inline-flex items-center justify-center w-10 h-10 rounded-md bg-white/5 border border-white/6 shadow hover:bg-white/6 hover:scale-105 transition">
+                  <a href="#" aria-label="Facebook" className="inline-flex items-center justify-center w-11 h-11 rounded-md bg-white/5 border border-white/6 shadow hover:bg-white/6 hover:scale-105 transition">
                     <svg className="w-5 h-5 text-sky-400" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                       <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" />
                     </svg>
                   </a>
-                  <a href="#" aria-label="Twitter" className="inline-flex items-center justify-center w-10 h-10 rounded-md bg-white/5 border border-white/6 shadow hover:bg-white/6 hover:scale-105 transition">
+                  <a href="#" aria-label="Twitter" className="inline-flex items-center justify-center w-11 h-11 rounded-md bg-white/5 border border-white/6 shadow hover:bg-white/6 hover:scale-105 transition">
                     <svg className="w-5 h-5 text-teal-400" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                       <path d="M23 3a10.9 10.9 0 01-3.14 1.53A4.48 4.48 0 0016 3a4.5 4.5 0 00-4.47 4.47c0 .35.04.69.11 1.01A12.94 12.94 0 013 4.1s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5 0-.17 0-.34-.01-.51A7.72 7.72 0 0023 3z" />
                     </svg>
                   </a>
-                  <a href="#" aria-label="LinkedIn" className="inline-flex items-center justify-center w-10 h-10 rounded-md bg-white/5 border border-white/6 shadow hover:bg-white/6 hover:scale-105 transition">
+                  <a href="#" aria-label="LinkedIn" className="inline-flex items-center justify-center w-11 h-11 rounded-md bg-white/5 border border-white/6 shadow hover:bg-white/6 hover:scale-105 transition">
                     <svg className="w-5 h-5 text-teal-400" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                       <path d="M19 3A2 2 0 0 1 21 5v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14zm-9 7H7v7h3v-7zm-1.5-3a1.5 1.5 0 1 0 .001-3.001A1.5 1.5 0 0 0 8.5 7zM17 10c-1.11 0-1.82.6-2.15 1.02V10h-3v7h3v-3c0-.8.5-2 1.74-2 1.22 0 1.26 1.09 1.26 2.06V17h3v-3.5C21 11.5 19.5 10 17 10z" />
                     </svg>

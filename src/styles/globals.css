@@ -25,6 +25,9 @@ h2 { font-size: 34px; line-height: 1.2; }
 h3 { font-size: 24px; line-height: 1.3; }
 h4 { font-size: 20px; }
 
+/* Responsive image — prevent any image from breaking layout */
+img, svg { max-width: 100%; height: auto; }
+
 p {
   font-size: 16px;
   line-height: 1.7;
@@ -83,7 +86,15 @@ body {
 
 /* Section spacing */
 section {
-  padding: 4rem 0;
+  padding: 2rem 0;
+}
+
+@media (min-width: 640px) {
+  section { padding: 3rem 0; }
+}
+
+@media (min-width: 1024px) {
+  section { padding: 4rem 0; }
 }
 
 /* Header and footer spacing */
@@ -109,6 +120,8 @@ header, footer {
 @media (max-width: 768px) {
     h1 { font-size: 38px; }
     h2 { font-size: 28px; }
+    h3 { font-size: 20px; }
+    h4 { font-size: 17px; }
     body { font-size: 16px; }
 }
 

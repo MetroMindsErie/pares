@@ -169,8 +169,8 @@ export default function JohnEasterAgent() {
                   <form className="mt-6" onSubmit={handleSubmit}>
                     <h3 className="text-sm font-semibold text-teal-200">Contact {AGENT.name}</h3>
                     <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <input name="name" value={form.name} onChange={handleChange} placeholder="Your name" className="px-3 py-2 rounded-md bg-white/10 border border-white/6 text-white text-sm focus:outline-none" />
-                      <input name="email" value={form.email} onChange={handleChange} placeholder="Your email" className="px-3 py-2 rounded-md bg-white/10 border border-white/6 text-white text-sm focus:outline-none" />
+                      <input name="name" value={form.name} onChange={handleChange} placeholder="Your name" className="px-3 py-3 rounded-md bg-white/10 border border-white/6 text-white text-sm focus:outline-none" />
+                      <input name="email" value={form.email} onChange={handleChange} placeholder="Your email" className="px-3 py-3 rounded-md bg-white/10 border border-white/6 text-white text-sm focus:outline-none" />
                       <input name="propertyUrl" value={form.propertyUrl} onChange={handleChange} placeholder="Property URL (optional)" className="col-span-1 sm:col-span-2 px-3 py-2 rounded-md bg-white/10 border border-white/6 text-white text-sm focus:outline-none" />
                       <textarea name="message" value={form.message} onChange={handleChange} rows="4" placeholder="Write a short message..." className="col-span-1 sm:col-span-2 px-3 py-2 rounded-md bg-white/10 border border-white/6 text-white text-sm focus:outline-none" />
                     </div>

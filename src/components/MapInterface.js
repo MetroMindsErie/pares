@@ -30,7 +30,7 @@ export default function PropertyMap({ listings }) {
   };
 
   return (
-    <div className="h-[600px] w-full rounded-lg overflow-hidden shadow-lg border border-gray-200">
+    <div className="h-[50vh] md:h-[600px] min-h-[300px] w-full rounded-lg overflow-hidden shadow-lg border border-gray-200">
       <MapContainer 
         center={getCenter()} 
         zoom={13} 
@@ -49,7 +49,7 @@ export default function PropertyMap({ listings }) {
               icon={listing.StandardStatus === 'Closed' ? SoldIcon : DefaultIcon}
             >
               <Popup>
-                <div className="min-w-[250px]">
+                <div className="max-w-[min(250px,80vw)]">
                   <h3 className="font-semibold text-lg">{listing.UnparsedAddress}</h3>
                   <p className="text-gray-600">
                     {listing.BedroomsTotal} beds · {listing.BathroomsTotalInteger} baths

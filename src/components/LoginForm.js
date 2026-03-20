@@ -92,7 +92,7 @@ const Login = () => {
 
   // Return the form interface
   return (
-    <div className="max-w-md mx-auto p-8 bg-white/80 backdrop-blur-md rounded-2xl shadow-xl mt-10">
+    <div className="max-w-md mx-auto p-4 sm:p-8 bg-white/80 backdrop-blur-md rounded-2xl shadow-xl mt-10">
       {showVerifyModal && (
         <EmailVerificationModal
           email={username}
@@ -165,8 +165,9 @@ const Login = () => {
       {/* Email/Password form */}
       <form onSubmit={handleLogin} className="space-y-6">
         <input
-          type="text"
+          type="email"
           placeholder="Email"
+          autoComplete="email"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 transition"

@@ -23,7 +23,7 @@ import { AIAssistantPanel } from '../components/AIAssistantPanel';
 import { getUserActivity } from '../utils/activityStorage';
 
 export default function DashboardPage() {
-  const { user, loading: authLoading } = useAuth(); // ensure proper destructure
+  const { user, loading: authLoading, isSuperAdmin } = useAuth(); // ensure proper destructure
   const [profile, setProfile] = useState(null);
   const [activities, setActivities] = useState([]);
   const [activitiesLoading, setActivitiesLoading] = useState(true);
@@ -437,6 +437,23 @@ export default function DashboardPage() {
             <div className="mb-6 sm:mb-8">
               <UpgradeCTA />
             </div>
+
+            {/* Admin shortcut */}
+            {isSuperAdmin && isSuperAdmin() && (
+              <div className="mb-6">
+                <a
+                  href="/admin"
+                  className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-violet-600/20 to-teal-600/20 border border-violet-500/30 hover:border-violet-400/60 transition"
+                >
+                  <span className="text-2xl">🛡️</span>
+                  <div>
+                    <p className="text-sm font-semibold text-white">Admin Dashboard</p>
+                    <p className="text-xs text-slate-400">View contact submissions and newsletter subscribers</p>
+                  </div>
+                  <span className="ml-auto text-slate-400 text-lg">→</span>
+                </a>
+              </div>
+            )}
           </div>
         </main>
       </Layout>

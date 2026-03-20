@@ -85,7 +85,7 @@ const SignupForm = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto p-8 bg-white/80 backdrop-blur-md rounded-2xl shadow-xl mt-10">
+    <div className="max-w-md mx-auto p-4 sm:p-8 bg-white/80 backdrop-blur-md rounded-2xl shadow-xl mt-10">
       <h2 className="text-3xl font-semibold mb-6 text-center text-gray-800">Sign Up</h2>
       
       {error && (

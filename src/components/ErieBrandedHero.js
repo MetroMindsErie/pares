@@ -31,7 +31,7 @@ const ErieBrandedHero = ({ onSearchResults, onSearchStart }) => {
       transition={{ duration: 1.2 }}
       // allow overflow so large headings aren't clipped by overlays, and add mobile top padding
       className="relative overflow-visible"
-      style={{ minHeight: '85vh' }}
+      style={{ minHeight: 'auto' }}
     >
       {/* Partners ticker (separate component) */}
       {/* <PartnersTicker /> */}
@@ -92,7 +92,7 @@ const ErieBrandedHero = ({ onSearchResults, onSearchStart }) => {
       {/* add mobile padding-top so sticky navbar / ticker don't overlap the heading; remove padding on lg+ */}
       <div className="relative z-10 h-full flex items-center pt-20 lg:pt-0">
          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-          <div className="grid lg:grid-cols-2 lg:[grid-template-columns:1fr_1.25fr] gap-12 items-center min-h-[80vh]">
+          <div className="grid lg:grid-cols-2 lg:[grid-template-columns:1fr_1.25fr] gap-6 lg:gap-12 items-center py-12 lg:min-h-[80vh]">
             
             {/* Left Column - Hero Text */}
             <motion.div 
@@ -101,7 +101,7 @@ const ErieBrandedHero = ({ onSearchResults, onSearchStart }) => {
               transition={{ delay: 0.5, duration: 1 }}
               className="text-white"
             >
-              <h1 className="font-heading font-bold text-5xl md:text-6xl lg:text-7xl mb-6 leading-[1.1] tracking-tight">
+              <h1 className="font-heading font-bold text-4xl sm:text-5xl md:text-6xl lg:text-7xl mb-6 leading-[1.1] tracking-tight">
                 <span className="block">Discover Your</span>
                 <span className="block text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-green-300">
                   Perfect Home
@@ -123,15 +123,15 @@ const ErieBrandedHero = ({ onSearchResults, onSearchStart }) => {
               >
                 <div className="text-center">
                   <div className="text-3xl font-bold text-white mb-1 tabular-nums tracking-tight">500+</div>
-                  <div className="text-[0.6rem] text-teal-300 uppercase tracking-[0.18em] font-semibold mt-0.5">Active Listings</div>
+                  <div className="text-[0.65rem] sm:text-xs text-teal-300 uppercase tracking-[0.18em] font-semibold mt-0.5">Active Listings</div>
                 </div>
                 <div className="text-center">
                   <div className="text-3xl font-bold text-white mb-1 tabular-nums tracking-tight">98%</div>
-                  <div className="text-[0.6rem] text-teal-300 uppercase tracking-[0.18em] font-semibold mt-0.5">Client Satisfaction</div>
+                  <div className="text-[0.65rem] sm:text-xs text-teal-300 uppercase tracking-[0.18em] font-semibold mt-0.5">Client Satisfaction</div>
                 </div>
                 <div className="text-center">
                   <div className="text-3xl font-bold text-white mb-1 tabular-nums tracking-tight">15+</div>
-                  <div className="text-[0.6rem] text-teal-300 uppercase tracking-[0.18em] font-semibold mt-0.5">Years Experience</div>
+                  <div className="text-[0.65rem] sm:text-xs text-teal-300 uppercase tracking-[0.18em] font-semibold mt-0.5">Years Experience</div>
                 </div>
               </motion.div>
             </motion.div>
@@ -143,7 +143,7 @@ const ErieBrandedHero = ({ onSearchResults, onSearchStart }) => {
               transition={{ delay: 0.8, duration: 1 }}
               className="lg:pl-8"
             >
-              <div className="bg-white backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-slate-100">
+              <div className="bg-white backdrop-blur-lg rounded-2xl p-4 sm:p-6 lg:p-8 shadow-2xl border border-slate-100">
                 <div className="mb-6">
                   <h2 className="font-heading font-bold text-slate-900 text-2xl mb-1.5 tracking-tight">
                     Start Your Property Search

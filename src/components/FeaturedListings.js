@@ -45,13 +45,13 @@ export function FeaturedListings({ listings, title }) {
           <div className="flex gap-2">
             <button
               onClick={() => handleScroll('prev')}
-              className="w-8 h-8 rounded-full border border-slate-200 bg-white shadow-sm hover:border-teal-400 hover:text-teal-600 transition-colors flex items-center justify-center text-slate-400 text-sm"
+              className="w-10 h-10 rounded-full border border-slate-200 bg-white shadow-sm hover:border-teal-400 hover:text-teal-600 transition-colors flex items-center justify-center text-slate-400 text-sm"
             >
               ←
             </button>
             <button
               onClick={() => handleScroll('next')}
-              className="w-8 h-8 rounded-full border border-slate-200 bg-white shadow-sm hover:border-teal-400 hover:text-teal-600 transition-colors flex items-center justify-center text-slate-400 text-sm"
+              className="w-10 h-10 rounded-full border border-slate-200 bg-white shadow-sm hover:border-teal-400 hover:text-teal-600 transition-colors flex items-center justify-center text-slate-400 text-sm"
             >
               →
             </button>
