@@ -4,6 +4,7 @@ import Layout from '../../components/Layout';
 import BuyerAgent from '../../components/Property/BuyerAgent';
 import AgentPropertiesSection from '../../components/AgentPropertiesSection';
 import { getAgentProperties } from '../../services/trestleServices';
+import Turnstile from '../../components/Turnstile';
 
 const AGENT = {
   name: 'John D. Easter',
@@ -18,7 +19,9 @@ const AGENT = {
 
 export default function JohnEasterAgent() {
   const [form, setForm] = useState({ name: '', email: '', message: '', propertyUrl: '' });
-  const [sent, setSent] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const [submitStatus, setSubmitStatus] = useState(null); // null | 'loading' | 'success' | 'error'
+  const [submitMessage, setSubmitMessage] = useState('');
   const [agentProperties, setAgentProperties] = useState([]);
   const [loadingProperties, setLoadingProperties] = useState(true);
 
@@ -41,21 +44,51 @@ export default function JohnEasterAgent() {
 
   const handleChange = (e) => setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
-  // Opens user's mail client with prefilled subject/body
-  const handleMailTo = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const subject = encodeURIComponent(`Inquiry for ${AGENT.name}`);
-    const bodyParts = [
-      form.name ? `Name: ${form.name}` : '',
-      form.email ? `Email: ${form.email}` : '',
-      form.propertyUrl ? `Property: ${form.propertyUrl}` : '',
-      '',
-      form.message || 'Hi John — I would like to learn more about your services.'
-    ].filter(Boolean).join('\n');
-    const body = encodeURIComponent(bodyParts);
-    window.location.href = `mailto:${AGENT.email}?subject=${subject}&body=${body}`;
-    setSent(true);
-    setTimeout(() => setSent(false), 4000);
+    if (!form.message.trim()) {
+      setSubmitStatus('error');
+      setSubmitMessage('Please enter a message.');
+      return;
+    }
+    if (!turnstileToken) {
+      setSubmitStatus('error');
+      setSubmitMessage('Please complete the security check.');
+      return;
+    }
+    setSubmitStatus('loading');
+    setSubmitMessage('');
+    try {
+      const tvRes = await fetch('/api/turnstile/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: turnstileToken }),
+      });
+      if (!tvRes.ok) {
+        setSubmitStatus('error');
+        setSubmitMessage('Security verification failed. Please try again.');
+        setTurnstileToken('');
+        return;
+      }
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, agentEmail: AGENT.email }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSubmitStatus('success');
+        setSubmitMessage('Message sent! John will be in touch soon.');
+        setForm({ name: '', email: '', message: '', propertyUrl: '' });
+        setTurnstileToken('');
+      } else {
+        setSubmitStatus('error');
+        setSubmitMessage(data.error || 'Something went wrong. Please try again.');
+      }
+    } catch {
+      setSubmitStatus('error');
+      setSubmitMessage('Network error. Please try again.');
+    }
   };
 
   return (
@@ -133,7 +166,7 @@ export default function JohnEasterAgent() {
                   </div>
 
                   {/* Contact form */}
-                  <form onSubmit={handleMailTo} className="mt-6">
+                  <form className="mt-6" onSubmit={handleSubmit}>
                     <h3 className="text-sm font-semibold text-teal-200">Contact {AGENT.name}</h3>
                     <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <input name="name" value={form.name} onChange={handleChange} placeholder="Your name" className="px-3 py-2 rounded-md bg-white/10 border border-white/6 text-white text-sm focus:outline-none" />
@@ -142,15 +175,34 @@ export default function JohnEasterAgent() {
                       <textarea name="message" value={form.message} onChange={handleChange} rows="4" placeholder="Write a short message..." className="col-span-1 sm:col-span-2 px-3 py-2 rounded-md bg-white/10 border border-white/6 text-white text-sm focus:outline-none" />
                     </div>
 
-                    <div className="mt-4 flex items-center gap-3">
-                      <button type="submit" className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-gradient-to-r from-teal-400 to-green-500 text-white font-semibold shadow hover:scale-[1.02] transition">
-                        Send Message
-                      </button>
-                      <button type="button" onClick={() => { setForm({ name:'', email:'', message:'', propertyUrl:'' }); }} className="px-3 py-2 rounded-md border border-white/10 text-white">
-                        Clear
-                      </button>
+                    <Turnstile onVerify={setTurnstileToken} theme="dark" size="compact" className="mt-3" />
 
-                      {sent && <span className="ml-3 text-sm text-green-300">Mail client opened — complete your message to send.</span>}
+                    <div className="mt-4 flex flex-col gap-3">
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="submit"
+                          disabled={submitStatus === 'loading'}
+                          className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-gradient-to-r from-teal-400 to-green-500 text-white font-semibold shadow hover:scale-[1.02] transition disabled:opacity-60"
+                        >
+                          {submitStatus === 'loading' ? 'Sending…' : 'Send Message'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setForm({ name:'', email:'', message:'', propertyUrl:'' }); setSubmitStatus(null); setTurnstileToken(''); }}
+                          className="px-3 py-2 rounded-md border border-white/10 text-white"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                      {submitStatus === 'success' && (
+                        <p className="text-sm text-green-300">{submitMessage}</p>
+                      )}
+                      {submitStatus === 'error' && (
+                        <p className="text-sm text-red-400">{submitMessage}</p>
+                      )}
+                      <p className="text-xs text-slate-400">
+                        Or email directly: <a href={`mailto:${AGENT.email}`} className="text-teal-300 hover:underline">{AGENT.email}</a>
+                      </p>
                     </div>
                   </form>
 

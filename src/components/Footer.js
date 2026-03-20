@@ -172,6 +172,9 @@ const Footer = () => {
                   <Link href="/sitemap.xml" className="text-sm text-slate-300 hover:text-white transition">Sitemap</Link>
                 </div>
               </div>
+              <div className="mt-4 text-center">
+                <p className="text-xs text-slate-500">Powered By Metro Minds Technology Inc.</p>
+              </div>
             </div>
           </div>
         </div>
