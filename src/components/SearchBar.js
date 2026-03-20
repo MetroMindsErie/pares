@@ -411,7 +411,7 @@ const SearchBar = ({
               placeholder="Search address, city, county, or ZIP..."
               autoComplete="off"
               style={{fontFamily:'var(--font-poppins, Poppins), sans-serif'}}
-              className="flex-1 px-2 py-3.5 sm:py-4 text-sm sm:text-base bg-transparent border-0 focus:ring-0 focus:outline-none text-slate-800 dark:text-slate-100 placeholder-slate-400"
+              className="flex-1 min-w-0 px-2 py-3.5 sm:py-4 text-sm sm:text-base bg-transparent border-0 focus:ring-0 focus:outline-none text-slate-800 dark:text-slate-100 placeholder-slate-400"
             />
 
             {/* Clear */}

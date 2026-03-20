@@ -149,7 +149,7 @@ export default function Navbar() {
                   <img
                     src="/pares_homes.png"
                     alt="pares.homes"
-                    className="h-10 sm:h-12 w-auto object-contain"
+                    className="h-14 sm:h-12 w-auto object-contain"
                   />
                 </Link>
               </div>

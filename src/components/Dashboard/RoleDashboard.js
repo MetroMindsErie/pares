@@ -52,17 +52,10 @@ export function SubscriptionBadge() {
 
 // ─── Quick Actions (Role-Aware) ──────────────────────────────────────────────
 export function QuickActions({ router }) {
-  const { user, isProfessional } = useAuth();
-  const { canAccess: canList } = useFeatureAccess('list:properties');
-  const { canAccess: canManageAgents } = useFeatureAccess('manage:agents');
-  const { canAccess: canViewAnalytics } = useFeatureAccess('view:analytics');
-  const { canAccess: canManagePortfolio } = useFeatureAccess('portfolio:management');
-
   return (
     <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-5">
       <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Quick Actions</h3>
       <div className="space-y-2">
-        {/* Always available */}
         <button
           onClick={() => {
             if (typeof window !== 'undefined') {
@@ -82,64 +75,12 @@ export function QuickActions({ router }) {
         >
           View Saved Properties
         </button>
-
-        {/* Professional: List Properties */}
-        {canList && (
-          <button
-            onClick={() => router.push('/dashboard/list-property')}
-            className="w-full px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
-          >
-            List a Property
-          </button>
-        )}
-
-        {/* Broker: Manage Agents */}
-        {canManageAgents && (
-          <button
-            onClick={() => router.push('/dashboard/agents')}
-            className="w-full px-4 py-2.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm"
-          >
-            Manage Agents
-          </button>
-        )}
-
-        {/* Professional: Analytics */}
-        {canViewAnalytics && (
-          <button
-            onClick={() => router.push('/dashboard/analytics')}
-            className="w-full px-4 py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-sm"
-          >
-            View Analytics
-          </button>
-        )}
-
-        {/* Investor: Portfolio */}
-        {canManagePortfolio && (
-          <button
-            onClick={() => router.push('/dashboard/portfolio')}
-            className="w-full px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm"
-          >
-            My Portfolio
-          </button>
-        )}
-
-        {/* Always available */}
         <button
           onClick={() => router.push('/profile/settings')}
           className="w-full px-4 py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-sm"
         >
           Profile Settings
         </button>
-
-        {/* Pricing / Upgrade */}
-        {user?.subscription_tier !== SUBSCRIPTION_TIERS.PREMIUM && (
-          <button
-            onClick={() => router.push('/pricing')}
-            className="w-full px-4 py-2.5 border-2 border-teal-500 text-teal-600 rounded-lg hover:bg-teal-50 transition-colors text-sm font-medium"
-          >
-            Upgrade Plan
-          </button>
-        )}
       </div>
     </div>
   );
