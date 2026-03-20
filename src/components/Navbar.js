@@ -106,11 +106,11 @@ export default function Navbar() {
     return (
       <React.Fragment>
         <nav
-          className="backdrop-blur-md bg-white/20 dark:bg-gray-900/20 border-b border-white/10 sticky top-0"
+          className="bg-slate-900/20 backdrop-blur-sm border-b border-white/10 shadow-[0_4px_14px_rgba(2,6,23,0.22)] sticky top-0"
           style={{ zIndex: 80 }}
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between h-16" />
+            <div className="flex justify-between h-24" />
           </div>
         </nav>
       </React.Fragment>
@@ -122,7 +122,7 @@ export default function Navbar() {
   ];
   
   // single shared style: thin blue border, transparent background — matches Pares logo border
-  const borderedButtonClass = "inline-flex items-center h-10 leading-none px-4 py-2 border border-teal-300/60 text-[0.68rem] font-semibold rounded-md text-teal-700 bg-transparent hover:bg-teal-50/10 tracking-[0.1em] uppercase transition-colors";
+  const borderedButtonClass = "inline-flex items-center h-10 leading-none px-4 py-2 border border-teal-400 text-[0.68rem] font-semibold rounded-md text-white bg-blue-700 hover:bg-blue-800 hover:border-teal-300 tracking-[0.1em] uppercase transition-colors";
 
   const authedLinks = [
     { href: '/dashboard', label: 'Dashboard' },
@@ -134,11 +134,11 @@ export default function Navbar() {
     <React.Fragment>
       {/* place navbar above ticker/hero overlays — inline zIndex ensures it's above partners-ticker (z-index:70) */}
       <nav
-        className="backdrop-blur-md bg-white/20 dark:bg-gray-900/20 border-b border-white/10 sticky top-0"
+        className="bg-slate-900/20 backdrop-blur-sm border-b border-white/10 shadow-[0_4px_14px_rgba(2,6,23,0.22)] sticky top-0"
         style={{ zIndex: 80 }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
+          <div className="flex justify-between h-24">
             {/* Left side - Logo and navigation links */}
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
@@ -147,9 +147,9 @@ export default function Navbar() {
                   className="flex items-center gap-2 px-2 py-1 rounded-md hover:opacity-90 transition duration-300"
                 >
                   <img
-                    src="/pares_homes.png"
+                    src="/pares_homes_v5.png"
                     alt="pares.homes"
-                    className="h-14 sm:h-12 w-auto object-contain"
+                    className="h-24 sm:h-28 w-auto object-contain"
                   />
                 </Link>
               </div>

@@ -59,9 +59,9 @@ const Footer = () => {
               <div className="md:col-span-5">
                 <Link href="/" className="inline-flex items-center gap-3">
                   <img
-                    src="/pares_homes.png"
+                    src="/pares_homes_v5.png"
                     alt="pares.homes"
-                    className="h-32 w-auto object-contain brightness-0 invert"
+                    className="h-24 sm:h-28 w-auto object-contain"
                   />
                 </Link>
 

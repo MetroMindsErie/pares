@@ -74,7 +74,7 @@ body {
   background-color: #fff;
   color: #1a1a1a;
   line-height: 1.65;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /* Container for consistent width and horizontal padding */
@@ -681,7 +681,8 @@ header, footer {
 
 /* Add navbar & partners sizing variables for consistent placement */
 :root {
-  --navbar-height: 72px; /* adjust if your navbar differs */
+  --navbar-height: 96px; /* navbar now uses h-24 */
+  --partners-nav-gap: 12px;
   --partners-height-mobile: 64px;
   --partners-height-desktop: 104px;
 }
@@ -712,7 +713,7 @@ header, footer {
 @media (min-width: 640px) {
   .partners-ticker {
     position: absolute;
-    top: var(--navbar-height);
+    top: calc(var(--navbar-height) + var(--partners-nav-gap));
     left: 0;
     right: 0;
     width: 100%;
@@ -721,9 +722,11 @@ header, footer {
   }
 }
 
-/* Ensure top-level wrappers don't allow horizontal scroll */
+/* Ensure top-level wrappers don't allow horizontal scroll.
+   Use `clip` instead of `hidden` on html — `overflow-x: hidden` on <html>
+   creates a new scroll container which breaks `position: sticky` on the navbar. */
 html, body, #__next {
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /* Vertically center the tracks inside the ticker */
