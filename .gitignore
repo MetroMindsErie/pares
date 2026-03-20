@@ -46,6 +46,11 @@ next-env.d.ts
 node_modules/
 .env
 
+# cloudflare build artifacts
+.open-next/
+.wrangler/
+.vercel/
+
 # Add to your existing .gitignore
 /pages
 

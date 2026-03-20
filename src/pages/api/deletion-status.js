@@ -1,4 +1,6 @@
-export default async function handler(req, res) {
+import { edgeHandler } from '../../lib/edgeHandler';
+
+export default edgeHandler(async function handler(req, res) {
   // Check if this is a status request from Facebook
   if (req.method === 'GET') {
     const confirmationCode = req.query.confirmation_code;
@@ -20,3 +22,7 @@ export default async function handler(req, res) {
     documentation: 'https://developers.facebook.com/docs/development/create-an-app/data-deletion-callback'
   });
 }
+
+);
+
+export const runtime = 'edge';

@@ -1,5 +1,7 @@
+import { edgeHandler } from '../../../../lib/edgeHandler';
+
 // Update the scope parameter in your Facebook OAuth URL
-export default async function handler(req, res) {
+export default edgeHandler(async function handler(req, res) {
   try {
     const clientId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID;
     if (!clientId) {
@@ -25,3 +27,7 @@ export default async function handler(req, res) {
     res.status(500).json({ error: 'Authentication failed' });
   }
 }
+
+);
+
+export const runtime = 'edge';

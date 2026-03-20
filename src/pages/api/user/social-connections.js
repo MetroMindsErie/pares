@@ -1,20 +1,30 @@
-import { getServerSession } from "next-auth/next";
 import supabase from "../../../lib/supabase-setup";
+import { createClient } from '@supabase/supabase-js';
+import { edgeHandler } from '../../../lib/edgeHandler';
 
-export default async function handler(req, res) {
+
+export default edgeHandler(async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    // Get the user's session
-    const session = await getServerSession(req, res);
-    
-    if (!session || !session.user) {
+    // Get the user from the Supabase auth token in the request
+    const token = (req.headers.authorization || '').replace('Bearer ', '') ||
+      req.cookies?.['sb-access-token'] || req.cookies?.['supabase-auth-token'];
+    if (!token) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    const sb = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    );
+    const { data: { user }, error: authError } = await sb.auth.getUser(token);
+    if (authError || !user) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const userId = session.user.id;
+    const userId = user.id;
 
     // Query the user's social connections from the database
     const { data, error } = await supabase
@@ -44,3 +54,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Internal server error' });
   }
 }
+
+);
+
+export const runtime = 'edge';

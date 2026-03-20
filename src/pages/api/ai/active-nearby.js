@@ -1,4 +1,6 @@
 import { fetchTrestleOData } from '../../../lib/trestleServer.js';
+import { edgeHandler } from '../../../lib/edgeHandler';
+
 
 function odataEscape(val) {
   if (val === undefined || val === null) return '';
@@ -74,7 +76,7 @@ function computePriceBand(subjectPrice) {
   return { min, max };
 }
 
-export default async function handler(req, res) {
+export default edgeHandler(async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
     return res.status(405).json({ error: 'Method not allowed' });
@@ -165,3 +167,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Active nearby lookup failed', details: e?.message || String(e) });
   }
 }
+
+);
+
+export const runtime = 'edge';

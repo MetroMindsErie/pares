@@ -1,4 +1,3 @@
-import crypto from 'crypto';
 import { getSupabaseAdminClient } from './supabaseAdmin';
 
 function stableStringify(value) {
@@ -9,8 +8,10 @@ function stableStringify(value) {
   return `{${keys.map((k) => JSON.stringify(k) + ':' + stableStringify(value[k])).join(',')}}`;
 }
 
-function sha256(text) {
-  return crypto.createHash('sha256').update(text).digest('hex');
+async function sha256(text) {
+  const data = new TextEncoder().encode(text);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 function asDate(value) {
@@ -47,7 +48,7 @@ function pickSnapshotFields(property) {
   };
 }
 
-function computeSnapshotHash(fields) {
+async function computeSnapshotHash(fields) {
   // Only hash the fields we care about for change detection.
   const hashBasis = {
     standard_status: fields.standard_status,
@@ -62,7 +63,7 @@ function computeSnapshotHash(fields) {
     off_market_date: fields.off_market_date,
     modification_timestamp: fields.modification_timestamp
   };
-  return sha256(stableStringify(hashBasis));
+  return await sha256(stableStringify(hashBasis));
 }
 
 function chooseEventAt(preferredIso, fallbackIso) {
@@ -104,7 +105,7 @@ export async function recordPropertyViewSnapshot(property) {
     }
   };
 
-  const snapshotHash = computeSnapshotHash(fields);
+  const snapshotHash = await computeSnapshotHash(fields);
 
   // Fetch previous snapshot (latest)
   const { data: prev, error: prevErr } = await supabase

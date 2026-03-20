@@ -129,7 +129,7 @@ export const supabaseAuth = {
       if (!supabaseInstance?.auth) return { error: new Error('Supabase auth not available') };
       
       if (typeof supabaseInstance.auth.signOut === 'function') {
-        return await supabaseInstance.auth.signOut();
+        return await supabaseInstance.auth.signOut({ scope: 'local' });
       }
       return { error: new Error('No compatible signOut method found') };
     } catch (error) {

@@ -1,4 +1,6 @@
 import { fetchTrestleOData } from '../../../../lib/trestleServer.js';
+import { edgeHandler } from '../../../../lib/edgeHandler';
+
 
 function odataEscape(val) {
   if (val === undefined || val === null) return '';
@@ -53,7 +55,7 @@ function shouldDebug() {
   return process.env.NODE_ENV !== 'production' || process.env.DEBUG_PRICING === '1';
 }
 
-export default async function handler(req, res) {
+export default edgeHandler(async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
     return res.status(405).json({ error: 'Method not allowed' });
@@ -124,3 +126,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Subject lookup failed', details: e?.message || String(e) });
   }
 }
+
+);
+
+export const runtime = 'edge';

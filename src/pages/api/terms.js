@@ -1,4 +1,6 @@
-export default function handler(req, res) {
+import { edgeHandler } from '../../lib/edgeHandler';
+
+export default edgeHandler(function handler(req, res) {
   if (req.method === 'GET') {
     // Return a JSON response with a link to the full Terms of Service page
     // This endpoint can be used as the "Terms URL" for Facebook and other platforms
@@ -14,3 +16,7 @@ export default function handler(req, res) {
   res.setHeader('Allow', ['GET']);
   res.status(405).end(`Method ${req.method} Not Allowed`);
 }
+
+);
+
+export const runtime = 'edge';

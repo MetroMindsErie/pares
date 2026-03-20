@@ -121,7 +121,7 @@ export const AuthProvider = ({ children }) => {
                 error.name === 'AuthRetryableFetchError') {
               console.warn('Clearing potentially corrupted auth session');
               try {
-                await supabaseClient.auth.signOut();
+                await supabaseClient.auth.signOut({ scope: 'local' });
                 localStorage.removeItem('pares-auth-storage');
                 sessionStorage.clear();
               } catch (e) {
@@ -376,7 +376,7 @@ export const AuthProvider = ({ children }) => {
         cacheRemove(makeUserCacheKey({ namespace: 'userActivity', version: 'v1', userId: userIdToClear }));
       }
       
-      const { error } = await supabaseClient.auth.signOut();
+      const { error } = await supabaseClient.auth.signOut({ scope: 'local' });
       
       if (error) {
         console.error('Error during signOut API call:', error);

@@ -1,8 +1,10 @@
+import { edgeHandler } from '../../lib/edgeHandler';
+
 /**
  * API route that acts as a proxy for fetching images from external sources
  * This helps bypass CORS restrictions when fetching Facebook profile pictures
  */
-export default async function handler(req, res) {
+export default edgeHandler(async function handler(req, res) {
   const { url } = req.query;
 
   if (!url) {
@@ -33,3 +35,7 @@ export default async function handler(req, res) {
     res.status(500).json({ error: 'Failed to proxy image' });
   }
 }
+
+);
+
+export const runtime = 'edge';

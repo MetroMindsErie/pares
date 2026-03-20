@@ -1,5 +1,7 @@
 import { getTrestleToken, buildTrestleODataUrl } from '../../lib/trestleServer';
 import { searchCacheByAddress } from '../../lib/propertyCache';
+import { edgeHandler } from '../../lib/edgeHandler';
+
 
 // Known cities/townships in GEBOR MLS tri-county area
 const AREA_CITIES = [
@@ -42,7 +44,7 @@ function odataEscape(val) {
   return String(val || '').replace(/'/g, "''");
 }
 
-export default async function handler(req, res) {
+export default edgeHandler(async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -200,3 +202,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ suggestions: [] });
   }
 }
+
+);
+
+export const runtime = 'edge';

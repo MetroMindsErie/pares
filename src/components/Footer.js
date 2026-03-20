@@ -1,17 +1,34 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Turnstile from './Turnstile';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
   const [subEmail, setSubEmail] = useState('');
-  const [subStatus, setSubStatus] = useState(null); // 'success' | 'error' | 'loading'
+  const [subStatus, setSubStatus] = useState(null);
   const [subMessage, setSubMessage] = useState('');
+  const [turnstileToken, setTurnstileToken] = useState('');
 
   const handleSubscribe = async (e) => {
     e.preventDefault();
     if (!subEmail) return;
+    if (!turnstileToken) {
+      setSubStatus('error');
+      setSubMessage('Please complete the security check.');
+      return;
+    }
     setSubStatus('loading');
     try {
+      const tvRes = await fetch('/api/turnstile/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: turnstileToken }),
+      });
+      if (!tvRes.ok) {
+        setSubStatus('error');
+        setSubMessage('Security verification failed.');
+        return;
+      }
       const res = await fetch('/api/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -133,6 +150,7 @@ const Footer = () => {
                       {subMessage}
                     </p>
                   )}
+                  <Turnstile onVerify={setTurnstileToken} theme="dark" size="compact" className="mt-3" />
                 </form>
 
                 <div className="mt-6">

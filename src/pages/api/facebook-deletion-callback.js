@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
-import crypto from 'crypto';
+import { edgeHandler } from '../../lib/edgeHandler';
+
 
 // Initialize Supabase admin client for data deletion
 const supabase = createClient(
@@ -9,7 +10,7 @@ const supabase = createClient(
 
 const FACEBOOK_APP_SECRET = process.env.SUPABASE_AUTH_FACEBOOK_SECRET;
 
-export default async function handler(req, res) {
+export default edgeHandler(async function handler(req, res) {
   // Handle Facebook webhook verification during setup
   if (req.method === 'GET') {
     // Facebook sends a challenge to verify the webhook
@@ -36,3 +37,7 @@ export default async function handler(req, res) {
   
   return res.redirect(302, deletionInstructionsUrl);
 }
+
+);
+
+export const runtime = 'edge';

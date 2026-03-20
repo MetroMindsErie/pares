@@ -1,4 +1,6 @@
 import { fetchTrestleOData } from '../../../lib/trestleServer.js';
+import { edgeHandler } from '../../../lib/edgeHandler';
+
 
 function odataEscape(val) {
   if (val === undefined || val === null) return '';
@@ -338,7 +340,7 @@ async function fetchClosedCompsForMarket({ sinceDays, cityToken, county, zip, pr
   return { comps, closePrices };
 }
 
-export default async function handler(req, res) {
+export default edgeHandler(async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
     return res.status(405).json({ error: 'Method not allowed' });
@@ -890,3 +892,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Pricing failed', details: e?.message || String(e) });
   }
 }
+
+);
+
+export const runtime = 'edge';

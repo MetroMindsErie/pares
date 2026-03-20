@@ -1,29 +1,23 @@
 import { buildTrestleODataUrl, getTrestleToken } from '../../../lib/trestleServer';
 
-function redact(value) {
-  if (!value) return value;
-  const str = String(value);
-  if (str.length <= 8) return '***';
-  return `${str.slice(0, 3)}***${str.slice(-3)}`;
-}
+const json = (data, status = 200) =>
+  new Response(JSON.stringify(data), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
 
-function buildUpstreamUrl(pathParts, query) {
-  const joined = Array.isArray(pathParts) ? pathParts.join('/') : String(pathParts || '');
+function buildUpstreamUrl(pathParts, searchParams) {
+  const joined = pathParts.join('/');
 
-  // Allowlist only the trestle endpoints we actually use
-  // Examples: /api/trestle/odata/Property, /api/trestle/odata/Media, /api/trestle/odata/Lookup
   if (!joined.startsWith('odata/')) {
     return null;
   }
 
-  // Reapply querystring as-is (excluding the Next.js catch-all param)
   const params = {};
-  Object.entries(query || {}).forEach(([k, v]) => {
-    if (k === 'path') return;
-    if (v === undefined || v === null) return;
-    if (Array.isArray(v)) params[k] = v[v.length - 1];
-    else params[k] = v;
-  });
+  for (const [k, v] of searchParams.entries()) {
+    if (k === 'path') continue;
+    params[k] = v;
+  }
 
   try {
     return buildTrestleODataUrl(joined, params);
@@ -32,30 +26,22 @@ function buildUpstreamUrl(pathParts, query) {
   }
 }
 
-export default async function handler(req, res) {
-  const pathParts = req.query.path;
-  const upstreamUrl = buildUpstreamUrl(pathParts, req.query);
+export default async function handler(req) {
+  const url = new URL(req.url, 'http://localhost');
+  // Extract path segments after /api/trestle/
+  const fullPath = url.pathname.replace(/^\/api\/trestle\/?/, '');
+  const pathParts = fullPath.split('/').filter(Boolean);
+  const upstreamUrl = buildUpstreamUrl(pathParts, url.searchParams);
 
   if (!upstreamUrl) {
-    return res.status(400).json({ error: 'Invalid Trestle proxy path' });
+    return json({ error: 'Invalid Trestle proxy path' }, 400);
   }
 
-  const method = (req.method || 'GET').toUpperCase();
-  if (method !== 'GET') {
-    res.setHeader('Allow', ['GET']);
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  // Only log when explicitly enabled. Requests can contain addresses/PII.
-  const shouldLog = process.env.TRESTLE_LOG_REQUESTS === 'true';
-  if (shouldLog) {
-    const safe = new URL(upstreamUrl.toString());
-    // Just in case anything sensitive slips into query (shouldn't), redact obvious keys
-    ['client_secret', 'clientSecret', 'access_token', 'token'].forEach((k) => {
-      if (safe.searchParams.has(k)) safe.searchParams.set(k, redact(safe.searchParams.get(k)));
+  if ((req.method || 'GET').toUpperCase() !== 'GET') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: { Allow: 'GET', 'Content-Type': 'application/json' },
     });
-
-    // eslint-disable-next-line no-console
   }
 
   try {
@@ -70,7 +56,7 @@ export default async function handler(req, res) {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,
-          Accept: req.headers.accept || 'application/json'
+          Accept: req.headers.get('accept') || 'application/json',
         },
         signal: ac.signal,
       });
@@ -80,12 +66,16 @@ export default async function handler(req, res) {
 
     const buf = await upstream.arrayBuffer();
 
-    res.status(upstream.status);
-    res.setHeader('Content-Type', upstream.headers.get('content-type') || 'application/json');
-    res.setHeader('Cache-Control', 'no-store');
-    return res.send(Buffer.from(buf));
+    return new Response(buf, {
+      status: upstream.status,
+      headers: {
+        'Content-Type': upstream.headers.get('content-type') || 'application/json',
+        'Cache-Control': 'no-store',
+      },
+    });
   } catch (e) {
-    // Avoid leaking URLs/headers/tokens in logs. Bubble up a generic error.
-    return res.status(500).json({ error: 'Trestle proxy failed' });
+    return json({ error: 'Trestle proxy failed' }, 500);
   }
 }
+
+export const runtime = 'edge';

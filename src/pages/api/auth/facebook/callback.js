@@ -1047,3 +1047,5 @@ export const ensureUserRecord = async (userId) => {
     return false;
   }
 };
+
+export const runtime = 'edge';

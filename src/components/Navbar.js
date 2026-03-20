@@ -55,44 +55,37 @@ export default function Navbar() {
     try {
       // Set the logout flag
       sessionStorage.setItem('isLoggingOut', 'true');
-      
-      // Clear any search cache immediately
+
+      // Set a timeout to prevent infinite loading state
+      const timeoutId = setTimeout(() => {
+        window.location.href = '/';
+      }, 3000);
+
+      // Call logout FIRST — before clearing any storage.
+      // Clearing supabase storage before signOut causes AuthSessionMissingError.
+      await logout();
+
+      clearTimeout(timeoutId);
+
+      // Now clear caches AFTER signOut has completed
       clearCachedSearchResults();
-      
-      // Clear other relevant caches
-      for (const key in localStorage) {
-        if (key.includes('pares_') || key.includes('supabase')) {
+      for (const key of Object.keys(localStorage)) {
+        if (key.includes('pares_') || key.includes('pares-auth')) {
           localStorage.removeItem(key);
         }
       }
-      
-      // Set a timeout to prevent infinite loading state
-      const timeoutId = setTimeout(() => {
-
-        // Force full page reload and redirect to home
-        window.location.href = '/';
-      }, 3000);
-      
-      const result = await logout();
-      
-      // Clear the timeout if logout completes normally
-      clearTimeout(timeoutId);
-      
       sessionStorage.removeItem('isLoggingOut');
-      
-      // Check if there was an error during logout
-      if (result && result.error) {
-        console.error('Error during logout:', result.error);
-      }
-      
-      // Always do a full page reload to clear any React state
-      // and redirect to home page
+
+      // Full page reload to clear React state
       window.location.href = '/';
     } catch (err) {
       console.error('Unexpected error during logout:', err);
-      // Clean up logout flag
-      sessionStorage.removeItem('isLoggingOut');
-      // Force full page reload even if there's an error
+      // Clean up even on error — force-clear auth storage
+      try {
+        localStorage.removeItem('pares-auth-storage');
+        clearCachedSearchResults();
+        sessionStorage.removeItem('isLoggingOut');
+      } catch (_) { /* ignore */ }
       window.location.href = '/';
     }
   };

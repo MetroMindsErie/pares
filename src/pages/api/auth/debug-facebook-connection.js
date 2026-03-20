@@ -1,9 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
+import { edgeHandler } from '../../../lib/edgeHandler';
 
-export default async function handler(req, res) {
-  // Apply CORS middleware
-  await corsMiddleware(req, res);
 
+export default edgeHandler(async function handler(req, res) {
   try {
     // Extract token from Authorization header
     const authHeader = req.headers.authorization;
@@ -76,3 +75,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Debug error', details: error.message });
   }
 }
+
+);
+
+export const runtime = 'edge';

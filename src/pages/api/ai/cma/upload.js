@@ -1,5 +1,4 @@
-import formidable from 'formidable';
-import fs from 'node:fs';
+import { edgeHandler } from '../../../../lib/edgeHandler';
 
 export const config = {
   api: {
@@ -13,14 +12,33 @@ function json(res, status, body) {
   res.end(JSON.stringify(body));
 }
 
+/**
+ * Parse a multipart file upload using the Web FormData API.
+ * Works on edge runtime (no filesystem / formidable needed).
+ */
+async function parseMultipart(req) {
+  // If the raw Web Request is available (via edgeHandler shim), use it directly
+  if (req._raw && typeof req._raw.formData === 'function') {
+    return await req._raw.formData();
+  }
+  // Fallback: Build a web-standard Request so we can call .formData()
+  const headers = {};
+  for (const [k, v] of Object.entries(req.headers || {})) {
+    if (typeof v === 'string') headers[k] = v;
+  }
+  const webReq = new Request('https://localhost', {
+    method: 'POST',
+    headers,
+    body: req.body || req,
+  });
+  const formData = await webReq.formData();
+  return formData;
+}
+
 async function readFileAsText(file) {
-  const filepath = file?.filepath;
-  if (!filepath) return '';
+  const originalName = String(file?.name || '').toLowerCase();
+  const mime = String(file?.type || '').toLowerCase();
 
-  const originalName = String(file?.originalFilename || '').toLowerCase();
-  const mime = String(file?.mimetype || '').toLowerCase();
-
-  // Basic support: .txt/.md/.json
   if (
     originalName.endsWith('.txt') ||
     originalName.endsWith('.md') ||
@@ -28,19 +46,19 @@ async function readFileAsText(file) {
     mime.includes('text/') ||
     mime.includes('application/json')
   ) {
-    return fs.readFileSync(filepath, 'utf8');
+    return await file.text();
   }
 
-  // PDF support (optional dependency)
   if (originalName.endsWith('.pdf') || mime.includes('pdf')) {
     let pdfParse;
     try {
-      pdfParse = (await import('pdf-parse')).default;
+      // Use indirect import to prevent webpack static analysis in edge builds
+      const mod = 'pdf-parse';
+      pdfParse = (await import(/* webpackIgnore: true */ mod)).default;
     } catch {
       throw new Error('PDF parsing not available. Install pdf-parse or upload a .txt/.md file.');
     }
-
-    const buf = fs.readFileSync(filepath);
+    const buf = Buffer.from(await file.arrayBuffer());
     const parsed = await pdfParse(buf);
     return String(parsed?.text || '');
   }
@@ -48,7 +66,7 @@ async function readFileAsText(file) {
   throw new Error(`Unsupported CMA file type: ${originalName || mime || 'unknown'}`);
 }
 
-export default async function handler(req, res) {
+export default edgeHandler(async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
     return json(res, 405, { error: 'Method not allowed' });
@@ -57,19 +75,13 @@ export default async function handler(req, res) {
   const ragBase = process.env.RAG_API_URL || 'http://127.0.0.1:3001';
 
   try {
-    const form = formidable({ multiples: false });
-    const { fields, files } = await new Promise((resolve, reject) => {
-      form.parse(req, (err, fields, files) => {
-        if (err) return reject(err);
-        resolve({ fields, files });
-      });
-    });
-
-    const file = files?.file;
-    if (!file) return json(res, 400, { error: 'Missing file (form field: file)' });
+    const formData = await parseMultipart(req);
+    const file = formData.get('file');
+    if (!file || typeof file === 'string') return json(res, 400, { error: 'Missing file (form field: file)' });
 
     const text = await readFileAsText(file);
-    const name = String(fields?.name || file?.originalFilename || 'CMA');
+    const nameField = formData.get('name');
+    const name = String(nameField || file?.name || 'CMA');
 
     if (!text || text.trim().length < 50) {
       return json(res, 400, { error: 'CMA text too short after parsing. Try a different file.' });
@@ -89,3 +101,7 @@ export default async function handler(req, res) {
     return json(res, 500, { error: 'CMA upload failed', details: e?.message || String(e) });
   }
 }
+
+);
+
+export const runtime = 'edge';

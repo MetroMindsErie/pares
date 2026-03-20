@@ -181,11 +181,10 @@ export default function BiggerPocketsSection() {
         setError(null);
 
         const response = await fetch('/api/biggerpockets');
-        const data = await response.json();
-
         if (!response.ok) {
-          throw new Error(data.error || 'Failed to fetch BiggerPockets posts');
+          throw new Error(`Server error: ${response.status}`);
         }
+        const data = await response.json();
 
         setPosts(data.posts || []);
       } catch (err) {

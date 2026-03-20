@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../context/auth-context';
 import EmailVerificationModal from './EmailVerificationModal';
+import Turnstile from './Turnstile';
 
 const RegisterForm = () => {
   const [email, setEmail] = useState('');
@@ -10,6 +11,7 @@ const RegisterForm = () => {
   const [formError, setFormError] = useState(null);
   const [localLoading, setLocalLoading] = useState(false);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState('');
   
   const { signup, loginWithProvider, loading: authLoading, error: authError, user } = useAuth();
   const router = useRouter();
@@ -87,8 +89,29 @@ const RegisterForm = () => {
       setFormError('Password must be at least 8 characters long');
       return;
     }
+
+    if (!turnstileToken) {
+      setFormError('Please complete the security check');
+      return;
+    }
     
     setLocalLoading(true);
+    try {
+      const tvRes = await fetch('/api/turnstile/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: turnstileToken }),
+      });
+      if (!tvRes.ok) {
+        setFormError('Security verification failed. Please try again.');
+        setLocalLoading(false);
+        return;
+      }
+    } catch {
+      setFormError('Security verification failed. Please try again.');
+      setLocalLoading(false);
+      return;
+    }
     try {
       const { error } = await signup(email, password);
       
@@ -284,11 +307,13 @@ const RegisterForm = () => {
           </div>
         </div>
 
+        <Turnstile onVerify={setTurnstileToken} theme="light" className="flex justify-center" />
+
         {/* Submit button with explicit onClick handler */}
         <div>
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || !turnstileToken}
             onClick={handleButtonClick}
             className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
               isLoading ? 'bg-blue-400 cursor-not-allowed' : 'bg-teal-600 hover:bg-teal-700 cursor-pointer'

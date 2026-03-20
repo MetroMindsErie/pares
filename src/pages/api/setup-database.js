@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
+import { edgeHandler } from '../../lib/edgeHandler';
+
 
 // Only use service role client for admin operations
 const adminSupabase = createClient(
@@ -6,7 +8,7 @@ const adminSupabase = createClient(
   process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ADMIN_KEY
 );
 
-export default async function handler(req, res) {
+export default edgeHandler(async function handler(req, res) {
   // Ensure this is only accessible by admins - add proper authorization checks
   if (!req.headers.authorization) {
     return res.status(401).json({ error: 'Unauthorized' });
@@ -36,3 +38,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Internal server error' });
   }
 }
+
+);
+
+export const runtime = 'edge';

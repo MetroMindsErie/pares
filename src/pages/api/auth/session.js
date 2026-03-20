@@ -1,6 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
+import { edgeHandler } from '../../../lib/edgeHandler';
 
-export default async function handler(req, res) {
+
+export default edgeHandler(async function handler(req, res) {
   // Only allow GET requests
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -43,3 +45,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Internal server error' });
   }
 }
+
+);
+
+export const runtime = 'edge';

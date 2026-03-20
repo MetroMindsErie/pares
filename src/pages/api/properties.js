@@ -1,3 +1,5 @@
+import { edgeHandler } from '../../lib/edgeHandler';
+
 // Helper function to get Trestle OAuth token
 async function getTrestleToken() {
   const tokenUrl = process.env.NEXT_PUBLIC_TRESTLE_TOKEN_URL;
@@ -29,7 +31,7 @@ async function getTrestleToken() {
   return data.access_token;
 }
 
-export default async function handler(req, res) {
+export default edgeHandler(async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -242,7 +244,7 @@ export default async function handler(req, res) {
     
     return res.status(500).json({ error: 'Failed to fetch properties. Please try again later.' });
   }
-}
+});
 
 // Helper function to generate mock listings for development
 function getMockListings(query) {
@@ -334,3 +336,5 @@ function getMockListings(query) {
   
   return mockProperties;
 }
+
+export const runtime = 'edge';

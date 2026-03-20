@@ -1,8 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
+import { edgeHandler } from '../../../lib/edgeHandler';
+
 // Fix the relative import path
 // import { processReelsForUser } from '';
 
-export default async function handler(req, res) {
+export default edgeHandler(async function handler(req, res) {
 
   
   // Initialize Supabase client with the request context
@@ -131,4 +133,6 @@ export default async function handler(req, res) {
   }
 }
 
+);
 
+export const runtime = 'edge';

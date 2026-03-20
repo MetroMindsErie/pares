@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../context/auth-context';
 import EmailVerificationModal from './EmailVerificationModal';
+import Turnstile from './Turnstile';
 
 // Safe import of Supabase client only on client side
 let supabaseClient = null;
@@ -12,6 +13,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState('');
   const router = useRouter();
   
   // Initialize supabase client only on client side
@@ -46,8 +48,22 @@ const Login = () => {
       setError('Please enter both email and password');
       return;
     }
-    
+
+    if (!turnstileToken) {
+      setError('Please complete the security check');
+      return;
+    }
+
     try {
+      const tvRes = await fetch('/api/turnstile/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: turnstileToken }),
+      });
+      if (!tvRes.ok) {
+        setError('Security verification failed. Please try again.');
+        return;
+      }
 
       const { data: loginData, error } = await login(username, password);
       if (error) throw error;
@@ -162,9 +178,10 @@ const Login = () => {
           onChange={(e) => setPassword(e.target.value)}
           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 transition"
         />
+        <Turnstile onVerify={setTurnstileToken} theme="light" className="flex justify-center" />
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || !turnstileToken}
           className={`w-full bg-gradient-to-r from-teal-500 to-green-500 text-white py-3 rounded-lg hover:from-teal-600 hover:to-green-600 transition-colors ${loading ? 'bg-teal-400' : ''}`}
         >
           {loading ? 'Signing in...' : 'Login'}

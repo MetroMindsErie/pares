@@ -235,8 +235,9 @@ export const signOut = async () => {
     // Clear ALL application caches
     clearAllCacheData();
     
-    // Perform the actual sign out
-    const { error } = await supabase.auth.signOut();
+    // Perform the actual sign out — use 'local' scope so logout
+    // succeeds even when the server session is already expired/gone
+    const { error } = await supabase.auth.signOut({ scope: 'local' });
     
     if (error) throw error;
     

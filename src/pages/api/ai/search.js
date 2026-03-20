@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { fetchTrestleOData } from '../../../lib/trestleServer';
-import crypto from 'node:crypto';
+import { edgeHandler } from '../../../lib/edgeHandler';
+
 
 const ALLOWED_COUNTIES = ['Erie', 'Warren', 'Crawford'];
 const ALLOWED_ROLES = new Set(['seller', 'buyer', 'investor', 'realtor']);
@@ -292,7 +293,7 @@ function getSupabaseAdmin() {
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
-export default async function handler(req, res) {
+export default edgeHandler(async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
     return res.status(405).json({ error: 'Method not allowed' });
@@ -737,3 +738,7 @@ export default async function handler(req, res) {
     });
   }
 }
+
+);
+
+export const runtime = 'edge';

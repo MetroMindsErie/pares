@@ -1,1 +1,3 @@
 // ...existing code from old facebook-callback.js file...
+
+export const runtime = 'edge';

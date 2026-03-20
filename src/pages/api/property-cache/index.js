@@ -14,29 +14,38 @@ import {
 } from '../../../lib/propertyCache';
 import { fetchTrestleOData } from '../../../lib/trestleServer';
 
-export default async function handler(req, res) {
+const json = (data, status = 200) =>
+  new Response(JSON.stringify(data), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+export default async function handler(req) {
   if (req.method === 'GET') {
-    return handleGet(req, res);
+    return handleGet(req);
   } else if (req.method === 'POST') {
-    return handlePost(req, res);
+    return handlePost(req);
   }
-  return res.status(405).json({ error: 'Method not allowed' });
+  return json({ error: 'Method not allowed' }, 405);
 }
 
 /* GET — search with cache-first strategy */
-async function handleGet(req, res) {
-  const q        = req.query.q        || '';
-  const location = req.query.location  || q;
-  const city     = req.query.city      || '';
-  const county   = req.query.county    || '';
-  const zip      = req.query.zip       || '';
-  const status   = req.query.status    || '';
-  const minPrice = req.query.minPrice  || '';
-  const maxPrice = req.query.maxPrice  || '';
-  const beds     = req.query.beds      || '';
-  const baths    = req.query.baths     || '';
-  const sort     = req.query.sort      || 'relevance';
-  const limit    = Math.min(Number(req.query.limit) || 50, 100);
+async function handleGet(req) {
+  const url = new URL(req.url, 'http://localhost');
+  const sp = url.searchParams;
+
+  const q        = sp.get('q')        || '';
+  const location = sp.get('location')  || q;
+  const city     = sp.get('city')      || '';
+  const county   = sp.get('county')    || '';
+  const zip      = sp.get('zip')       || '';
+  const status   = sp.get('status')    || '';
+  const minPrice = sp.get('minPrice')  || '';
+  const maxPrice = sp.get('maxPrice')  || '';
+  const beds     = sp.get('beds')      || '';
+  const baths    = sp.get('baths')     || '';
+  const sort     = sp.get('sort')      || 'relevance';
+  const limit    = Math.min(Number(sp.get('limit')) || 50, 100);
 
   try {
     // 1. Quick address fuzzy search if q looks like an address
@@ -44,7 +53,7 @@ async function handleGet(req, res) {
     if (looksLikeAddress) {
       const cached = await searchCacheByAddress(q, limit);
       if (cached.properties.length > 0) {
-        return res.status(200).json({
+        return json({
           properties: cached.properties,
           total: cached.properties.length,
           source: 'cache',
@@ -60,7 +69,7 @@ async function handleGet(req, res) {
     });
 
     if (cached.properties.length > 0) {
-      return res.status(200).json({
+      return json({
         properties: cached.properties,
         total: cached.properties.length,
         source: 'cache',
@@ -76,7 +85,7 @@ async function handleGet(req, res) {
       );
     }
 
-    return res.status(200).json({
+    return json({
       properties: trestleResult.properties,
       total: trestleResult.properties.length,
       nextLink: trestleResult.nextLink || null,
@@ -84,20 +93,20 @@ async function handleGet(req, res) {
     });
   } catch (err) {
     console.error('Property cache search error:', err);
-    return res.status(500).json({ error: 'Search failed' });
+    return json({ error: 'Search failed' }, 500);
   }
 }
 
 /* POST — warm the cache for a county */
-async function handlePost(req, res) {
+async function handlePost(req) {
   try {
-    const body = req.body;
+    const body = await req.json();
     const county = body.county || 'Erie';
     const maxPages = Math.min(body.maxPages || 5, 20);
 
     const warm = await isCacheWarm(county);
     if (warm) {
-      return res.status(200).json({ message: `Cache already warm for ${county}`, skipped: true });
+      return json({ message: `Cache already warm for ${county}`, skipped: true });
     }
 
     let total = 0;
@@ -129,10 +138,10 @@ async function handlePost(req, res) {
       if (!nextLink) break;
     }
 
-    return res.status(200).json({ message: `Cached ${total} properties for ${county}`, total });
+    return json({ message: `Cached ${total} properties for ${county}`, total });
   } catch (err) {
     console.error('Cache warm error:', err);
-    return res.status(500).json({ error: 'Cache warm failed' });
+    return json({ error: 'Cache warm failed' }, 500);
   }
 }
 
@@ -190,3 +199,5 @@ async function fetchFromTrestle({ location, city, county, zip, status, minPrice,
     nextLink: data?.['@odata.nextLink'] || null,
   };
 }
+
+export const runtime = 'edge';

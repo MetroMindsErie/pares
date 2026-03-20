@@ -1,11 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
+import { edgeHandler } from '../../lib/edgeHandler';
+
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY
 );
 
-export default async function handler(req, res) {
+export default edgeHandler(async function handler(req, res) {
   // Handle token operations
   if (req.method === 'GET') {
     // Get token for a user
@@ -110,3 +112,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 }
+
+);
+
+export const runtime = 'edge';
