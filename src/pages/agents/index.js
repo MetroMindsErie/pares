@@ -52,3 +52,5 @@ const AgentsPage = ({ agents }) => {
 };
 
 export default AgentsPage;
+
+export const runtime = 'experimental-edge';

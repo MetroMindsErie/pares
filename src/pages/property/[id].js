@@ -1235,3 +1235,5 @@ export default function PropertyDetail({ property, isSold, taxData, historyData 
     </>
   );
 }
+
+export const runtime = 'experimental-edge';

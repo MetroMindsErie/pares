@@ -29,3 +29,5 @@ export async function getServerSideProps() {
 }
 
 export default LoginPage;
+
+export const runtime = 'experimental-edge';

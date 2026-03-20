@@ -42,3 +42,5 @@ export async function getServerSideProps() {
 }
 
 export default Register;
+
+export const runtime = 'experimental-edge';
