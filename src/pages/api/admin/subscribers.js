@@ -44,10 +44,36 @@ export default edgeHandler(async function handler(req, res) {
     process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY
   );
 
-  const { data, error } = await supabase
-    .from('newsletter_subscribers')
-    .select('*')
-    .order('created_at', { ascending: false });
+  const tableCandidates = ['newsletter_subscribers', 'subscribers'];
+  let data = null;
+  let error = null;
+
+  for (const table of tableCandidates) {
+    const primary = await supabase
+      .from(table)
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (!primary.error) {
+      data = primary.data || [];
+      error = null;
+      break;
+    }
+
+    // If created_at doesn't exist, retry without ordering.
+    if (primary.error.message?.toLowerCase().includes('created_at')) {
+      const fallbackNoOrder = await supabase.from(table).select('*');
+      if (!fallbackNoOrder.error) {
+        data = fallbackNoOrder.data || [];
+        error = null;
+        break;
+      }
+      error = fallbackNoOrder.error;
+      continue;
+    }
+
+    error = primary.error;
+  }
 
   if (error) {
     console.error('Admin subscribers fetch error:', error);
