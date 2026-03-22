@@ -85,5 +85,8 @@ export function shouldRequireTurnstile(riskResult) {
 
 export function shouldBlockRequest(riskResult) {
   const blockThreshold = riskResult.policy?.blockRiskThreshold ?? SECURITY_CONFIG.blockRiskThreshold;
-  return riskResult.rateLimited || riskResult.score >= blockThreshold;
+  // Use score only — rateLimited already contributes +40 to score, so score-based
+  // blocking naturally accounts for rate violations without blocking authenticated
+  // users whose only "crime" is hitting the rate window.
+  return riskResult.score >= blockThreshold;
 }

@@ -30,6 +30,11 @@ export function getUserAgent(headers) {
 
 export function hasSessionCookies(headers) {
   const cookie = String(getHeaderValue(headers, 'cookie') || '');
+  const auth = String(getHeaderValue(headers, 'authorization') || '');
+
+  // Accept a Bearer token (Supabase JWT sent by dashboard API calls) as proof of session.
+  if (auth.toLowerCase().startsWith('bearer ') && auth.length > 30) return true;
+
   if (!cookie) return false;
 
   // Supabase cookies + app session hints.

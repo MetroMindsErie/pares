@@ -38,7 +38,7 @@ export const SECURITY_CONFIG = {
       prefix: '/api/admin',
       riskThreshold: parseIntOr(process.env.RATE_LIMIT_ADMIN_RISK_THRESHOLD, 20),
       blockRiskThreshold: parseIntOr(process.env.RATE_LIMIT_ADMIN_BLOCK_THRESHOLD, 80),
-      rateLimitPerMin: parseIntOr(process.env.RATE_LIMIT_ADMIN_PER_MIN, 12),
+      rateLimitPerMin: parseIntOr(process.env.RATE_LIMIT_ADMIN_PER_MIN, 60),
     },
     {
       prefix: '/api/contact',
