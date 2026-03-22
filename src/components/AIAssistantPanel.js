@@ -625,7 +625,7 @@ export function AIAssistantPanel() {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') onPricing();
                     }}
-                    placeholder="818 Clifton Dr"
+                    placeholder=""
                     className="w-full pr-9 px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 text-sm"
                   />
                   {pricingStreet.trim() ? (
