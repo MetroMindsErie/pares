@@ -4,7 +4,7 @@ import Layout from '../../components/Layout';
 import BuyerAgent from '../../components/Property/BuyerAgent';
 import AgentPropertiesSection from '../../components/AgentPropertiesSection';
 import { getAgentProperties } from '../../services/trestleServices';
-import Turnstile from '../../components/Turnstile';
+import RiskBasedTurnstile from '../../components/RiskBasedTurnstile';
 
 const AGENT = {
   name: 'John D. Easter',
@@ -20,6 +20,7 @@ const AGENT = {
 export default function JohnEasterAgent() {
   const [form, setForm] = useState({ name: '', email: '', message: '', propertyUrl: '' });
   const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileRequired, setTurnstileRequired] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null); // null | 'loading' | 'success' | 'error'
   const [submitMessage, setSubmitMessage] = useState('');
   const [agentProperties, setAgentProperties] = useState([]);
@@ -51,7 +52,7 @@ export default function JohnEasterAgent() {
       setSubmitMessage('Please enter a message.');
       return;
     }
-    if (!turnstileToken) {
+    if (turnstileRequired && !turnstileToken) {
       setSubmitStatus('error');
       setSubmitMessage('Please complete the security check.');
       return;
@@ -59,21 +60,10 @@ export default function JohnEasterAgent() {
     setSubmitStatus('loading');
     setSubmitMessage('');
     try {
-      const tvRes = await fetch('/api/turnstile/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: turnstileToken }),
-      });
-      if (!tvRes.ok) {
-        setSubmitStatus('error');
-        setSubmitMessage('Security verification failed. Please try again.');
-        setTurnstileToken('');
-        return;
-      }
       const res = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, agentEmail: AGENT.email }),
+        body: JSON.stringify({ ...form, agentEmail: AGENT.email, turnstileToken }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -175,7 +165,14 @@ export default function JohnEasterAgent() {
                       <textarea name="message" value={form.message} onChange={handleChange} rows="4" placeholder="Write a short message..." className="col-span-1 sm:col-span-2 px-3 py-2 rounded-md bg-white/10 border border-white/6 text-white text-sm focus:outline-none" />
                     </div>
 
-                    <Turnstile onVerify={setTurnstileToken} theme="dark" size="compact" className="mt-3" />
+                    <RiskBasedTurnstile
+                      action="contact"
+                      onTokenChange={setTurnstileToken}
+                      onRequirementChange={setTurnstileRequired}
+                      theme="dark"
+                      size="compact"
+                      className="mt-3"
+                    />
 
                     <div className="mt-4 flex flex-col gap-3">
                       <div className="flex items-center gap-3">

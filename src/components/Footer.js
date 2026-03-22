@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
-import Turnstile from './Turnstile';
+import RiskBasedTurnstile from './RiskBasedTurnstile';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -8,37 +8,29 @@ const Footer = () => {
   const [subStatus, setSubStatus] = useState(null);
   const [subMessage, setSubMessage] = useState('');
   const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileRequired, setTurnstileRequired] = useState(false);
 
   const handleSubscribe = async (e) => {
     e.preventDefault();
     if (!subEmail) return;
-    if (!turnstileToken) {
+    if (turnstileRequired && !turnstileToken) {
       setSubStatus('error');
       setSubMessage('Please complete the security check.');
       return;
     }
     setSubStatus('loading');
     try {
-      const tvRes = await fetch('/api/turnstile/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: turnstileToken }),
-      });
-      if (!tvRes.ok) {
-        setSubStatus('error');
-        setSubMessage('Security verification failed.');
-        return;
-      }
       const res = await fetch('/api/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: subEmail }),
+        body: JSON.stringify({ email: subEmail, turnstileToken }),
       });
       const data = await res.json();
       if (res.ok) {
         setSubStatus('success');
         setSubMessage('You\'re subscribed! Check your inbox for updates.');
         setSubEmail('');
+        setTurnstileToken('');
       } else {
         setSubStatus('error');
         setSubMessage(data.error || 'Something went wrong.');
@@ -150,7 +142,14 @@ const Footer = () => {
                       {subMessage}
                     </p>
                   )}
-                  <Turnstile onVerify={setTurnstileToken} theme="dark" size="compact" className="mt-3" />
+                  <RiskBasedTurnstile
+                    action="subscribe"
+                    onTokenChange={setTurnstileToken}
+                    onRequirementChange={setTurnstileRequired}
+                    theme="dark"
+                    size="compact"
+                    className="mt-3"
+                  />
                 </form>
 
                 <div className="mt-6">

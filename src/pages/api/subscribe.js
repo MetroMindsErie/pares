@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { edgeHandler } from '../../lib/edgeHandler';
+import { enforceRiskBasedTurnstile } from '../../lib/security/turnstile';
 
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -10,7 +11,15 @@ export default edgeHandler(async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { email } = req.body;
+  const { email, turnstileToken } = req.body;
+
+  const security = await enforceRiskBasedTurnstile({
+    req,
+    res,
+    pathname: '/api/subscribe',
+    token: turnstileToken,
+  });
+  if (!security.ok) return security.response;
 
   if (!email || typeof email !== 'string') {
     return res.status(400).json({ error: 'Email is required' });

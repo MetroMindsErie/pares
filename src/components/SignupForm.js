@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../context/auth-context';
 import supabase from '../lib/supabase-setup';
 import { useRouter } from 'next/router';
-import Turnstile from './Turnstile';
+import RiskBasedTurnstile from './RiskBasedTurnstile';
 
 const SignupForm = () => {
   const [email, setEmail] = useState('');
@@ -11,6 +11,7 @@ const SignupForm = () => {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileRequired, setTurnstileRequired] = useState(false);
   
   const { signup } = useAuth();
   const router = useRouter();
@@ -20,22 +21,24 @@ const SignupForm = () => {
     setLoading(true);
     setError('');
 
-    if (!turnstileToken) {
+    if (turnstileRequired && !turnstileToken) {
       setError('Please complete the security check');
       setLoading(false);
       return;
     }
 
     try {
-      const tvRes = await fetch('/api/turnstile/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: turnstileToken }),
-      });
-      if (!tvRes.ok) {
-        setError('Security verification failed. Please try again.');
-        setLoading(false);
-        return;
+      if (turnstileRequired) {
+        const tvRes = await fetch('/api/turnstile/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: turnstileToken, action: 'signup' }),
+        });
+        if (!tvRes.ok) {
+          setError('Security verification failed. Please try again.');
+          setLoading(false);
+          return;
+        }
       }
 
       const { user, error } = await signup(email, password);
@@ -153,10 +156,16 @@ const SignupForm = () => {
           />
         </div>
         
-        <Turnstile onVerify={setTurnstileToken} theme="light" className="flex justify-center" />
+        <RiskBasedTurnstile
+          action="signup"
+          onTokenChange={setTurnstileToken}
+          onRequirementChange={setTurnstileRequired}
+          theme="light"
+          className="flex justify-center"
+        />
         <button
           type="submit"
-          disabled={loading || !turnstileToken}
+          disabled={loading || (turnstileRequired && !turnstileToken)}
           className="w-full bg-gradient-to-r from-teal-500 to-green-500 text-white py-3 rounded-lg hover:from-teal-600 hover:to-green-600 transition-colors disabled:opacity-50"
         >
           {loading ? 'Loading...' : 'Sign Up'}
