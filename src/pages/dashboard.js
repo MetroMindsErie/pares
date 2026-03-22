@@ -378,14 +378,22 @@ export default function DashboardPage() {
                       e.target.src = '/default-avatar.png';
                     }}
                   />
-                  <div className="text-white">
+                  <div className="relative text-white">
+                    <img
+                      src="/pares_homes_v5.png"
+                      alt=""
+                      aria-hidden="true"
+                      className="pointer-events-none absolute left-1/2 top-1/2 hidden h-24 w-auto -translate-x-1/2 -translate-y-1/2 opacity-15 sm:block md:h-32 lg:h-36"
+                    />
                     <div className="flex items-center gap-3">
-                      <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">
+                      <h1 className="relative z-10 text-xl sm:text-2xl md:text-3xl font-bold">
                         Welcome back, {profile.first_name}!
                       </h1>
-                      <SubscriptionBadge />
+                      <div className="relative z-10">
+                        <SubscriptionBadge />
+                      </div>
                     </div>
-                    <p className="mt-1 sm:mt-2 text-teal-100 text-xs sm:text-sm md:text-base">
+                    <p className="relative z-10 mt-1 sm:mt-2 text-teal-100 text-xs sm:text-sm md:text-base">
                       Here&apos;s what&apos;s happening with your saved properties
                     </p>
                   </div>
