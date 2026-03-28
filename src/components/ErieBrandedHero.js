@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import SearchBar from './SearchBar';
-import PartnersTicker from './PartnersTicker';
 
 const ErieBrandedHero = ({ onSearchResults, onSearchStart }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -12,7 +11,12 @@ const ErieBrandedHero = ({ onSearchResults, onSearchStart }) => {
     '/images/erie-downtown-1.jpg',
     '/images/erie-downtown-2.jpg', 
     '/images/erie-downtown-3.jpg',
-    '/images/erie-downtown-4.jpg'
+    '/images/erie-downtown-5.jpg',
+    '/images/erie-downtown-6.jpg',
+    '/images/erie-downtown-7.jpg',
+    '/images/erie-downtown-8.jpg',
+    '/images/erie-downtown-9.jpg',
+
   ];
 
   // Auto-rotate hero images
