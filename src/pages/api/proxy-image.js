@@ -14,6 +14,7 @@
 
 // Trust any subdomain of these corporate domains.
 const ALLOWED_SUFFIXES = [
+  '.cotality.com',      // Trestle MLS media CDN (CoreLogic rebranded)
   '.corelogic.com',
   '.trestle.io',
   '.fbcdn.net',
