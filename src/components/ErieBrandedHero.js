@@ -106,7 +106,9 @@ const ErieBrandedHero = ({ onSearchResults, onSearchStart }) => {
                 <span className="block text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-green-300">
                   Perfect Home
                 </span>
-                <span className="block">in Erie</span>
+                <span className="block">in Erie
+                  <span className="block text-2xl sm:text-3xl md:text-4xl font-normal text-teal-200/80 mt-1">& Surrounding Areas</span>
+                </span>
               </h1>
               
               <p className="text-base md:text-lg text-teal-100/90 mb-8 leading-relaxed max-w-lg font-light tracking-wide">
