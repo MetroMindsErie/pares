@@ -34,6 +34,19 @@ const getImageSrc = (listing) =>
   listing?.Media?.[0]?.MediaURLLarge ||
   '/fallback-property.jpg';
 
+// Route external MLS image URLs through the local proxy so they are cached at
+// the browser and Cloudflare CDN, and optionally resized/converted to WebP.
+const proxyImageUrl = (src, width = 480) => {
+  if (!src || src.startsWith('/')) return src;
+  try {
+    const parsed = new URL(src);
+    if (parsed.protocol !== 'https:') return src;
+    return `/api/proxy-image?url=${encodeURIComponent(src)}&w=${width}`;
+  } catch {
+    return src;
+  }
+};
+
 const getStatus = (listing) => listing?.StandardStatus || listing?.Status || listing?.status;
 
 const extractSpecialListingConditions = (listing) =>
@@ -272,8 +285,8 @@ const SearchResults = ({
             {viewMode === 'grid' ? (
             <div className="transition-all duration-500 ease-in-out">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {visibleListings.map((listing) => {
-               const imageSrc = getImageSrc(listing);
+              {visibleListings.map((listing, idx) => {
+               const imageSrc = proxyImageUrl(getImageSrc(listing));
                const listingKey = getListingKey(listing);
                const status = getStatus(listing);
                const isReo = isReoLike(listing);
@@ -295,6 +308,8 @@ const SearchResults = ({
                       layout="fill"
                       className="object-cover transition-transform duration-700 group-hover:scale-105"
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      priority={idx < 3}
+                      loading={idx < 3 ? 'eager' : 'lazy'}
                     />
                     {(specialBadge || isReo || isForeclosure) && (
                       <div className="absolute top-2 left-2 z-20 flex flex-wrap gap-2">

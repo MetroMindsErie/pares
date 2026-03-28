@@ -70,7 +70,10 @@ export default async function handler(req) {
       status: upstream.status,
       headers: {
         'Content-Type': upstream.headers.get('content-type') || 'application/json',
-        'Cache-Control': 'no-store',
+        // Allow short-term edge/browser caching for successful reads (5 min).
+        // This lets Cloudflare serve repeated identical searches from cache
+        // without hitting the Trestle origin every time.
+        'Cache-Control': upstream.status === 200 ? 'public, max-age=300, s-maxage=300, stale-while-revalidate=60' : 'no-store',
       },
     });
   } catch (e) {

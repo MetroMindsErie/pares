@@ -50,6 +50,10 @@ export default function Document() {
         {/* Preconnect to improve performance */}
         <link rel="preconnect" href="https://www.googletagmanager.com" />
         <link rel="dns-prefetch" href="https://www.google-analytics.com" />
+        {/* MLS image CDN — early connection eliminates 200-400ms DNS+TCP+TLS penalty */}
+        <link rel="preconnect" href="https://api-trestle.corelogic.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://api-trestle.corelogic.com" />
+        <link rel="dns-prefetch" href="https://mlsimages.corelogic.com" />
       </Head>
       <body>
         {/* Google Tag Manager - NoScript fallback */}
