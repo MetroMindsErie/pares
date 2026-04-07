@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { fetchTrestleOData } from '../../../lib/trestleServer';
 import { edgeHandler } from '../../../lib/edgeHandler';
+import { getMediaUrls, getPrimaryPhotoUrl } from '../../../utils/mediaHelpers.js';
 
 
 const ALLOWED_COUNTIES = ['Erie', 'Warren', 'Crawford'];
@@ -243,26 +244,9 @@ function mapTrestlePropertyToListing(p) {
   const unparsed = p?.UnparsedAddress ? String(p.UnparsedAddress) : '';
   const fallbackAddress = `${p?.StreetNumber || ''} ${p?.StreetName || ''}`.trim();
 
-  // Extract media with preferred photo logic
   const mediaItems = Array.isArray(p?.Media) ? p.Media.slice() : [];
-  let primaryMedia = null;
-  if (mediaItems.length) {
-    const preferred = mediaItems.find(
-      (m) => m?.PreferredPhotoYN === true || m?.PreferredPhotoYN === 'Y' || m?.PreferredPhotoYN === 'Yes'
-    );
-    primaryMedia = preferred || mediaItems[0];
-  }
-
-  const mediaUrls = mediaItems
-    .slice()
-    .sort((a, b) => {
-      if (a?.Order !== undefined && b?.Order !== undefined) return a.Order - b.Order;
-      return 0;
-    })
-    .map((m) => m?.MediaURL)
-    .filter((url) => url && String(url).startsWith('http'));
-
-  const imageUrl = primaryMedia?.MediaURL || mediaUrls[0] || '/fallback-property.jpg';
+  const mediaUrls = getMediaUrls(mediaItems);
+  const imageUrl = getPrimaryPhotoUrl(mediaItems);
 
   return {
     id: String(p?.ListingKey || p?.ListingId || p?.ListingKeyNumeric || ''),
@@ -277,6 +261,7 @@ function mapTrestlePropertyToListing(p) {
     property_type: String(p?.PropertyType || ''),
     status: mapTrestleStatusToEasters(p?.StandardStatus || p?.MlsStatus || p?.Status),
     sqft: Number(p?.LivingArea ?? p?.LivingAreaSquareFeet ?? 0),
+    media: imageUrl,
     image_url: imageUrl,
     media_urls: mediaUrls,
   };

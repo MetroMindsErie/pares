@@ -7,11 +7,44 @@ import Image from 'next/legacy/image';
 import { getNextProperties } from '../services/trestleServices';
 import { getPrimaryPhotoUrl, getMediaUrls } from '../utils/mediaHelpers';
 
+const normalizeListingMedia = (listing) => {
+  const mediaFromExpand = Array.isArray(listing?.Media) ? listing.Media : [];
+  const derivedPrimary = mediaFromExpand.length > 0 ? getPrimaryPhotoUrl(mediaFromExpand) : null;
+  const derivedMediaUrls = mediaFromExpand.length > 0 ? getMediaUrls(mediaFromExpand) : [];
+  const explicitMediaUrls = Array.isArray(listing?.media_urls)
+    ? listing.media_urls.filter(Boolean)
+    : Array.isArray(listing?.mediaArray)
+      ? listing.mediaArray.filter(Boolean)
+      : [];
+  const primaryImage =
+    listing?.media ||
+    listing?.image_url ||
+    derivedPrimary ||
+    explicitMediaUrls[0] ||
+    '/fallback-property.jpg';
+
+  const mediaArray = explicitMediaUrls.length > 0
+    ? explicitMediaUrls
+    : derivedMediaUrls.length > 0
+      ? derivedMediaUrls
+      : primaryImage
+        ? [primaryImage]
+        : ['/fallback-property.jpg'];
+
+  return {
+    ...listing,
+    media: primaryImage,
+    image_url: primaryImage,
+    media_urls: mediaArray,
+    mediaArray,
+  };
+};
+
 const normalizeListings = (input) => {
   if (!input) return [];
-  if (Array.isArray(input)) return input;
-  if (Array.isArray(input.properties)) return input.properties;
-  if (Array.isArray(input.listings)) return input.listings;
+  if (Array.isArray(input)) return input.map(normalizeListingMedia);
+  if (Array.isArray(input.properties)) return input.properties.map(normalizeListingMedia);
+  if (Array.isArray(input.listings)) return input.listings.map(normalizeListingMedia);
   return [];
 };
 
@@ -30,8 +63,7 @@ const getImageSrc = (listing) =>
   listing?.media ||
   listing?.image_url ||
   (Array.isArray(listing?.media_urls) ? listing.media_urls[0] : null) ||
-  listing?.Media?.[0]?.MediaURL ||
-  listing?.Media?.[0]?.MediaURLLarge ||
+  (Array.isArray(listing?.Media) ? getPrimaryPhotoUrl(listing.Media) : null) ||
   '/fallback-property.jpg';
 
 // Route external MLS image URLs through the local proxy so they are cached at
@@ -161,12 +193,7 @@ const SearchResults = ({
     try {
       const { properties, nextLink: newNextLink } = await getNextProperties(nextLink);
       
-      // Ensure each property has the correct media structure using shared helpers
-      const processedProperties = properties.map(property => ({
-        ...property,
-        media: property.media || getPrimaryPhotoUrl(property.Media),
-        mediaArray: property.mediaArray || getMediaUrls(property.Media)
-      }));
+      const processedProperties = properties.map(normalizeListingMedia);
 
       setAllListings(prev => [...prev, ...processedProperties]);
       setNextLink(newNextLink);
