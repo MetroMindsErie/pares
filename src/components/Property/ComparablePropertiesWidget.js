@@ -209,6 +209,7 @@ export default function ComparablePropertiesWidget({ property, variant = 'scroll
         <div className={isSide ? 'mt-4 grid gap-3' : 'mt-4 flex gap-4 overflow-x-auto pb-2'}>
           {comps.slice(0, maxCards).map((comp) => {
             const compId = String(comp?.id || '');
+            const href = compId ? `/property/${compId}` : null;
             const beds = comp?.beds ?? '—';
             const baths = comp?.baths ?? '—';
             const sqft = formatNumber(comp?.sqft);
@@ -223,23 +224,38 @@ export default function ComparablePropertiesWidget({ property, variant = 'scroll
                     : 'w-64 shrink-0 border border-gray-200 rounded-lg overflow-hidden bg-white hover:shadow-sm transition-shadow'
                 }
               >
-                <div className={isSide ? 'hidden' : 'h-36 bg-gray-100'}>
-                  <img
-                    src={img}
-                    alt={comp?.address || 'Comparable property'}
-                    className="h-full w-full object-cover"
-                    loading="lazy"
-                  />
-                </div>
+                {!isSide && href ? (
+                  <Link
+                    href={href}
+                    className="block h-36 bg-gray-100 overflow-hidden focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-inset"
+                    aria-label={`View property details for ${comp?.address || 'this comparable property'}`}
+                  >
+                    <img
+                      src={img}
+                      alt={comp?.address || 'Comparable property'}
+                      className="h-full w-full object-cover transition-transform duration-200 hover:scale-[1.02]"
+                      loading="lazy"
+                    />
+                  </Link>
+                ) : (
+                  <div className={isSide ? 'hidden' : 'h-36 bg-gray-100'}>
+                    <img
+                      src={img}
+                      alt={comp?.address || 'Comparable property'}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                )}
                 <div className={isSide ? '' : 'p-3'}>
                   <div className="text-sm font-semibold text-gray-900 truncate">{comp?.address || 'Address unavailable'}</div>
                   <div className="text-xs text-gray-500">{comp?.city || ''}{comp?.zip ? `, ${comp.zip}` : ''}</div>
                   <div className="mt-2 text-sm font-semibold text-teal-700">{formatPrice(comp?.price)}</div>
                   <div className="text-xs text-gray-600">{beds} bd • {baths} ba • {sqft} sq ft</div>
                   <div className="text-xs text-gray-500">Status: {comp?.status || '—'}</div>
-                  {compId ? (
+                  {href ? (
                     <Link
-                      href={`/property/${compId}`}
+                      href={href}
                       className="inline-flex items-center mt-2 text-xs text-teal-600 hover:text-teal-700"
                     >
                       View details

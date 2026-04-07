@@ -1,5 +1,6 @@
 import { fetchTrestleOData } from '../../../lib/trestleServer.js';
 import { edgeHandler } from '../../../lib/edgeHandler';
+import { getMediaUrls, getPrimaryPhotoUrl } from '../../../utils/mediaHelpers.js';
 
 
 function odataEscape(val) {
@@ -71,24 +72,8 @@ function wantsDebug(req) {
 
 function mapTrestlePropertyToListing(p) {
   const mediaItems = Array.isArray(p?.Media) ? p.Media.slice() : [];
-  let primaryMedia = null;
-  if (mediaItems.length) {
-    const preferred = mediaItems.find(
-      (m) => m?.PreferredPhotoYN === true || m?.PreferredPhotoYN === 'Y' || m?.PreferredPhotoYN === 'Yes'
-    );
-    primaryMedia = preferred || mediaItems[0];
-  }
-
-  const mediaUrls = mediaItems
-    .slice()
-    .sort((a, b) => {
-      if (a?.Order !== undefined && b?.Order !== undefined) return a.Order - b.Order;
-      return 0;
-    })
-    .map((m) => m?.MediaURL)
-    .filter((url) => url && String(url).startsWith('http'));
-
-  const imageUrl = primaryMedia?.MediaURL || mediaUrls[0] || '/fallback-property.jpg';
+  const mediaUrls = getMediaUrls(mediaItems);
+  const imageUrl = getPrimaryPhotoUrl(mediaItems);
   const unparsed = p?.UnparsedAddress ? String(p.UnparsedAddress) : '';
   const fallbackAddress = `${p?.StreetNumber || ''} ${p?.StreetName || ''}`.trim();
 
