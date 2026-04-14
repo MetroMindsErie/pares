@@ -429,7 +429,6 @@ export function AIAssistantPanel() {
     if (!pricingStreet.trim() || !pricingCounty.trim() || !pricingZip.trim() || anyLoading) return;
     setError(null);
     setPricingLoading(true);
-    setLastResponse(null);
 
     try {
       const { data } = await supabase.auth.getSession();
@@ -437,27 +436,63 @@ export function AIAssistantPanel() {
 
       const address = `${pricingStreet.trim()}, ${pricingCounty.trim()} County, PA ${pricingZip.trim()}`;
 
-      const ac = new AbortController();
-      const timer = setTimeout(() => ac.abort(), 30000);
+      const payload = {
+        address,
+        county: pricingCounty.trim(),
+        zip: pricingZip.trim(),
+        market_type: pricingMarketType,
+      };
 
-      let res;
-      try {
-        res = await fetch('/api/ai/pricing', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {})
-          },
-          body: JSON.stringify({
-            address,
-            county: pricingCounty.trim(),
-            zip: pricingZip.trim(),
-            market_type: pricingMarketType,
-          }),
-          signal: ac.signal,
-        });
-      } finally {
-        clearTimeout(timer);
+      const retryableStatuses = new Set([408, 429, 500, 502, 503, 504]);
+      const attemptTimeouts = [30000, 45000];
+      let res = null;
+      let lastErr = null;
+
+      for (let i = 0; i < attemptTimeouts.length; i += 1) {
+        const timeoutMs = attemptTimeouts[i];
+        const isLastAttempt = i === attemptTimeouts.length - 1;
+        const ac = new AbortController();
+        const timer = setTimeout(() => ac.abort(), timeoutMs);
+        let hardTimer = null;
+
+        try {
+          const attemptRes = await Promise.race([
+            fetch('/api/ai/pricing', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                ...(token ? { Authorization: `Bearer ${token}` } : {})
+              },
+              body: JSON.stringify(payload),
+              signal: ac.signal,
+            }),
+            new Promise((_, reject) => {
+              hardTimer = setTimeout(() => {
+                ac.abort();
+                reject(new Error(`Pricing request timed out after ${Math.round(timeoutMs / 1000)}s`));
+              }, timeoutMs + 2000);
+            }),
+          ]);
+
+          if (!attemptRes.ok && retryableStatuses.has(attemptRes.status) && !isLastAttempt) {
+            continue;
+          }
+
+          res = attemptRes;
+          break;
+        } catch (err) {
+          lastErr = err;
+          const msg = String(err?.message || '');
+          const isNetworkish = err?.name === 'AbortError' || /Failed to fetch|NetworkError|fetch|timed out/i.test(msg);
+          if (!isNetworkish || isLastAttempt) throw err;
+        } finally {
+          clearTimeout(timer);
+          if (hardTimer) clearTimeout(hardTimer);
+        }
+      }
+
+      if (!res) {
+        throw lastErr || new Error('Pricing request failed before receiving a response.');
       }
 
       if (!res.ok) {
@@ -768,13 +803,21 @@ export function AIAssistantPanel() {
                 <button
                   onClick={onPricing}
                   disabled={!pricingStreet.trim() || !pricingCounty.trim() || !pricingZip.trim() || anyLoading}
-                  className="px-4 py-2 rounded-md bg-teal-600 text-white text-sm disabled:opacity-60"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-teal-600 text-white text-sm disabled:opacity-60"
                 >
-                  {pricingLoading ? 'Analyzing…' : 'Get pricing'}
+                  {pricingLoading ? (
+                    <>
+                      <span
+                        className="h-3.5 w-3.5 rounded-full border-2 border-white/35 border-t-white animate-spin"
+                        aria-hidden="true"
+                      />
+                      <span>Analyzing</span>
+                    </>
+                  ) : (
+                    'Get pricing'
+                  )}
                 </button>
               </div>
-
-              {pricingLoading ? <LoadingRow label="Building your CMA" /> : null}
             </>
           )}
 
