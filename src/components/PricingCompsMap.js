@@ -259,13 +259,20 @@ export default function PricingCompsMap({ subject, comps, onToggleComp, selected
   }, [comps, geoComps]);
 
   return (
-    <div className="mt-4">
-      <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Map</div>
-      <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+    <div className="mt-4 rounded-2xl border border-slate-200 bg-white shadow-[0_18px_40px_-30px_rgba(15,23,42,0.55)] overflow-hidden">
+      <div className="px-4 sm:px-5 py-3 border-b border-slate-200 bg-gradient-to-r from-slate-50 to-cyan-50/70 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div>
+          <div className="text-sm font-semibold text-slate-900">Comp Map View</div>
+          <div className="text-xs text-slate-600">Subject pin in blue, comparable sales in white.</div>
+        </div>
+        <div className="text-[11px] text-slate-600">Drag to explore. Zoom is fixed while browsing comps.</div>
+      </div>
+
+      <div className="overflow-hidden border-t border-slate-100">
         <MapContainer 
           center={center} 
           zoom={initialZoom} 
-          style={{ height: 360, width: '100%' }} 
+          style={{ height: 520, width: '100%' }} 
           scrollWheelZoom={false}
         >
           <TileLayer
@@ -312,20 +319,32 @@ export default function PricingCompsMap({ subject, comps, onToggleComp, selected
                     icon={compIcon}
                   >
                     <Popup>
-                      <div className="text-sm">
-                        <div className="font-semibold">Comp</div>
-                        <div>{c?.address}{c?.city ? `, ${c.city}` : ''}</div>
-                        <div className="text-xs text-gray-700">
-                          {formatMoney(c?.price)}
-                          {c?.beds ? ` • ${c.beds} bd` : ''}
+                      <div className="text-sm min-w-[220px]">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="font-semibold text-slate-900">Comparable Sale</div>
+                          {c?.close_date ? (
+                            <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                              Sold {c.close_date}
+                            </span>
+                          ) : null}
+                        </div>
+
+                        <div className="mt-1 text-slate-800">{c?.address}{c?.city ? `, ${c.city}` : ''}</div>
+
+                        <div className="mt-2 text-sm font-semibold text-slate-900">{formatMoney(c?.price)}</div>
+
+                        <div className="mt-1 text-xs text-slate-600">
+                          {c?.beds ? `${c.beds} bd` : ''}
                           {c?.baths ? ` • ${c.baths} ba` : ''}
                           {c?.sqft ? ` • ${Math.round(c.sqft).toLocaleString()} sqft` : ''}
+                          {c?.distance_miles != null ? ` • ${c.distance_miles} mi` : ''}
                         </div>
+
                         {c?.id ? (
-                          <div className="mt-2 flex items-center gap-3">
+                          <div className="mt-3 flex items-center gap-3">
                             <a
                               href={`/property/${encodeURIComponent(String(c.id))}`}
-                              className="text-teal-600 hover:underline"
+                              className="text-cyan-700 font-medium hover:underline"
                             >
                               View property
                             </a>
@@ -333,7 +352,7 @@ export default function PricingCompsMap({ subject, comps, onToggleComp, selected
                               <button
                                 type="button"
                                 onClick={() => onToggleComp(c)}
-                                className="text-teal-600 hover:underline"
+                                className="text-cyan-700 font-medium hover:underline"
                               >
                                 {selectedCompIds?.has(String(c.id)) ? 'Remove' : 'Compare'}
                               </button>
@@ -351,10 +370,10 @@ export default function PricingCompsMap({ subject, comps, onToggleComp, selected
           {subjectPoint ? (
             <Marker position={subjectPoint} icon={subjectIcon} zIndexOffset={1000} riseOnHover>
               <Popup>
-                <div className="text-sm">
-                  <div className="font-semibold">Your home</div>
-                  <div>{subject?.address}</div>
-                  <div className="text-xs text-gray-700">
+                <div className="text-sm min-w-[220px]">
+                  <div className="font-semibold text-slate-900">Subject Property</div>
+                  <div className="mt-1 text-slate-800">{subject?.address}</div>
+                  <div className="mt-2 text-xs text-slate-600">
                     {subject?.beds ? `${subject.beds} bd` : ''}{subject?.baths ? ` • ${subject.baths} ba` : ''}{subject?.sqft ? ` • ${Math.round(subject.sqft).toLocaleString()} sqft` : ''}
                   </div>
                 </div>
@@ -365,7 +384,7 @@ export default function PricingCompsMap({ subject, comps, onToggleComp, selected
       </div>
 
       {!subjectPoint ? (
-        <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
+        <div className="px-4 sm:px-5 py-2.5 text-xs text-slate-600 bg-slate-50 border-t border-slate-200">
           Mapping uses listing lat/lng when available; otherwise it geocodes addresses. Pins may appear over a few seconds.
         </div>
       ) : null}

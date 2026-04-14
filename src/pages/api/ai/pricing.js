@@ -94,6 +94,7 @@ function mapTrestlePropertyToListing(p) {
     property_type: String(p?.PropertyType || ''),
     status: String(p?.StandardStatus || ''),
     sqft: Number(p?.LivingArea ?? 0),
+    close_date: p?.CloseDate ? String(p.CloseDate).slice(0, 10) : null,
     lat: hasValidCoords ? lat : null,
     lng: hasValidCoords ? lng : null,
     image_url: imageUrl,
@@ -174,22 +175,22 @@ function computeAdjustedRangeFromComps({ comps, subjectSqft }) {
   const subjectArea = Number(subjectSqft);
   if (!Number.isFinite(subjectArea) || subjectArea <= 0) return null;
 
-  const ppsf = comps
+  const ppsfItems = comps
     .map((c) => {
       const price = Number(c?.price);
       const sqft = Number(c?.sqft);
       if (!Number.isFinite(price) || price <= 0) return null;
       if (!Number.isFinite(sqft) || sqft <= 0) return null;
-      return price / sqft;
+      return { value: price / sqft, weight: recencyWeight(c?.close_date) };
     })
-    .filter((n) => Number.isFinite(n) && n > 0)
-    .sort((a, b) => a - b);
+    .filter(Boolean)
+    .sort((a, b) => a.value - b.value);
 
-  if (ppsf.length < 3) return null;
+  if (ppsfItems.length < 3) return null;
 
-  const p25 = percentile(ppsf, 0.25);
-  const p50 = percentile(ppsf, 0.5);
-  const p75 = percentile(ppsf, 0.75);
+  const p25 = weightedPercentile(ppsfItems, 0.25);
+  const p50 = weightedPercentile(ppsfItems, 0.5);
+  const p75 = weightedPercentile(ppsfItems, 0.75);
 
   const low = Number.isFinite(p25) ? Math.round(p25 * subjectArea) : null;
   const mid = Number.isFinite(p50) ? Math.round(p50 * subjectArea) : null;
@@ -201,7 +202,7 @@ function computeAdjustedRangeFromComps({ comps, subjectSqft }) {
     low,
     mid,
     high,
-    ppsf_stats: { p25, p50, p75, n: ppsf.length },
+    ppsf_stats: { p25, p50, p75, n: ppsfItems.length },
   };
 }
 
@@ -213,6 +214,157 @@ function percentile(sorted, p) {
   if (lo === hi) return sorted[lo];
   const w = idx - lo;
   return sorted[lo] * (1 - w) + sorted[hi] * w;
+}
+
+/* ── Recency weighting helpers ──────────────────────────────────── */
+
+/**
+ * Compute a recency weight for a comp based on how recently it closed.
+ * Recent comps are weighted more heavily; older comps gradually decay.
+ *
+ *  0–6 months   → weight 1.0  (full weight – best comps)
+ *  6–12 months  → weight 0.85
+ *  12–24 months → weight 0.65
+ *  24–36 months → weight 0.45
+ *  36–60 months → weight 0.25
+ *  >60 months   → weight 0.10
+ */
+function recencyWeight(closeDateStr) {
+  if (!closeDateStr) return 0.5; // Unknown date gets a moderate weight
+  const closeDate = new Date(closeDateStr);
+  if (isNaN(closeDate.getTime())) return 0.5;
+  const now = new Date();
+  const monthsAgo = (now - closeDate) / (1000 * 60 * 60 * 24 * 30.44);
+  if (monthsAgo <= 6) return 1.0;
+  if (monthsAgo <= 12) return 0.85;
+  if (monthsAgo <= 24) return 0.65;
+  if (monthsAgo <= 36) return 0.45;
+  if (monthsAgo <= 60) return 0.25;
+  return 0.10;
+}
+
+/**
+ * Weighted percentile: like percentile() but each value carries a weight.
+ * Uses linear interpolation of the weighted empirical CDF.
+ *
+ * @param {{ value: number, weight: number }[]} items – must be sorted by value ascending.
+ * @param {number} p – target percentile (0–1).
+ */
+function weightedPercentile(items, p) {
+  if (!Array.isArray(items) || items.length === 0) return null;
+  if (items.length === 1) return items[0].value;
+
+  const totalWeight = items.reduce((s, i) => s + i.weight, 0);
+  if (totalWeight <= 0) return null;
+
+  // Build cumulative weight fractions (midpoint of each item's weight band).
+  let cumWeight = 0;
+  const points = items.map((item) => {
+    cumWeight += item.weight;
+    return { value: item.value, cdf: (cumWeight - item.weight / 2) / totalWeight };
+  });
+
+  // Clamp to endpoints.
+  if (p <= points[0].cdf) return points[0].value;
+  if (p >= points[points.length - 1].cdf) return points[points.length - 1].value;
+
+  // Interpolate between bracketing points.
+  for (let i = 1; i < points.length; i++) {
+    if (p <= points[i].cdf) {
+      const lo = points[i - 1];
+      const hi = points[i];
+      const t = (p - lo.cdf) / (hi.cdf - lo.cdf);
+      return lo.value + t * (hi.value - lo.value);
+    }
+  }
+  return points[points.length - 1].value;
+}
+
+/**
+ * Compute weighted p25/p50/p75 from an array of comps.
+ * Each comp's weight is determined by how recently it closed.
+ */
+function weightedPriceStats(comps) {
+  const items = comps
+    .map((c) => {
+      const price = Number(c?.price);
+      if (!Number.isFinite(price) || price <= 0) return null;
+      return { value: price, weight: recencyWeight(c?.close_date) };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.value - b.value);
+
+  if (items.length === 0) return { p25: null, p50: null, p75: null, count: 0 };
+  return {
+    p25: weightedPercentile(items, 0.25),
+    p50: weightedPercentile(items, 0.5),
+    p75: weightedPercentile(items, 0.75),
+    count: items.length,
+  };
+}
+
+/* ── End recency weighting helpers ──────────────────────────────── */
+
+function rankAndLimitCmaComps(comps, { subjectPrice, fallbackPrice, radiusMiles }) {
+  if (!Array.isArray(comps) || comps.length === 0) return [];
+
+  const refPrice = Number.isFinite(Number(subjectPrice)) && Number(subjectPrice) > 0
+    ? Number(subjectPrice)
+    : (Number.isFinite(Number(fallbackPrice)) && Number(fallbackPrice) > 0 ? Number(fallbackPrice) : null);
+
+  const refRadius = Number.isFinite(Number(radiusMiles)) && Number(radiusMiles) > 0
+    ? Number(radiusMiles)
+    : 10;
+
+  const ranked = comps
+    .map((c) => {
+      const compPrice = Number(c?.price);
+      const compDistance = Number(c?.distance_miles);
+
+      const priceScore = (refPrice && Number.isFinite(compPrice) && compPrice > 0)
+        ? Math.max(0, 1 - (Math.abs(compPrice - refPrice) / refPrice))
+        : 0.5;
+
+      const distanceScore = Number.isFinite(compDistance)
+        ? Math.max(0, 1 - (compDistance / refRadius))
+        : 0.35;
+
+      const recencyScore = recencyWeight(c?.close_date);
+
+      // Realtor-style ranking: most similar price + closest proximity, then recency.
+      const totalScore = (priceScore * 0.6) + (distanceScore * 0.3) + (recencyScore * 0.1);
+
+      return {
+        ...c,
+        _cma_score: totalScore,
+      };
+    })
+    .sort((a, b) => {
+      if (b._cma_score !== a._cma_score) return b._cma_score - a._cma_score;
+
+      const ad = Number(a?.distance_miles);
+      const bd = Number(b?.distance_miles);
+      const aDistValid = Number.isFinite(ad);
+      const bDistValid = Number.isFinite(bd);
+      if (aDistValid && bDistValid && ad !== bd) return ad - bd;
+      if (aDistValid && !bDistValid) return -1;
+      if (!aDistValid && bDistValid) return 1;
+
+      const aTs = a?.close_date ? Date.parse(a.close_date) : NaN;
+      const bTs = b?.close_date ? Date.parse(b.close_date) : NaN;
+      const aValid = Number.isFinite(aTs);
+      const bValid = Number.isFinite(bTs);
+      if (aValid && bValid) return bTs - aTs;
+      if (aValid) return -1;
+      if (bValid) return 1;
+      return 0;
+    });
+
+  const maxToShow = ranked.length >= 5 ? 10 : ranked.length;
+  return ranked.slice(0, Math.min(maxToShow, ranked.length)).map((c) => {
+    const { _cma_score, ...rest } = c;
+    return rest;
+  });
 }
 
 function classifyPrice(listPrice, low, high, mid) {
@@ -236,7 +388,138 @@ function computePriceBand(subjectPrice) {
   return { min, max };
 }
 
-async function fetchClosedComps({ sinceDays, subjectRaw, priceBand }) {
+function normalizeMarketType(value) {
+  const v = normalizeLoose(value || '');
+  if (!v) return null;
+  if (v === 'residential' || v === 'resi' || v === 'home') return 'residential';
+  if (v === 'commercial' || v === 'commercial property') return 'commercial';
+  if (v === 'retail') return 'retail';
+  if (v === 'land' || v === 'lot') return 'land';
+  if (v === 'industrial') return 'industrial';
+  if (v === 'multifamily' || v === 'multi family' || v === 'multi-family') return 'multifamily';
+  return null;
+}
+
+function buildPropertyTypeClause({ marketType, subjectType } = {}) {
+  const normalized = normalizeMarketType(marketType);
+  const clauses = [];
+
+  if (normalized === 'residential') {
+    clauses.push(`PropertyType eq 'Residential'`);
+    clauses.push(`PropertyType eq 'ResidentialIncome'`);
+  } else if (normalized === 'commercial') {
+    clauses.push(`PropertyType eq 'CommercialSale'`);
+    clauses.push(`PropertyType eq 'CommercialLease'`);
+    clauses.push(`PropertyType eq 'BusinessOpportunity'`);
+    clauses.push(`PropertyType eq 'Commercial'`);
+  } else if (normalized === 'retail') {
+    clauses.push(`PropertyType eq 'CommercialSale'`);
+    clauses.push(`PropertyType eq 'CommercialLease'`);
+    clauses.push(`contains(tolower(PropertySubType), 'retail')`);
+  } else if (normalized === 'land') {
+    clauses.push(`PropertyType eq 'Land'`);
+  } else if (normalized === 'industrial') {
+    clauses.push(`PropertyType eq 'CommercialSale'`);
+    clauses.push(`PropertyType eq 'CommercialLease'`);
+    clauses.push(`contains(tolower(PropertySubType), 'industrial')`);
+  } else if (normalized === 'multifamily') {
+    clauses.push(`PropertyType eq 'ResidentialIncome'`);
+    clauses.push(`contains(tolower(PropertySubType), 'multi')`);
+  }
+
+  if (clauses.length > 0) return `(${clauses.join(' or ')})`;
+
+  const pt = String(subjectType || '').trim();
+  if (!pt) return null;
+  return `PropertyType eq '${odataEscape(pt)}'`;
+}
+
+/* ── Geo-radius helpers ─────────────────────────────────────────── */
+
+function isValidCoord(v) {
+  const n = Number(v);
+  return Number.isFinite(n) && !(Math.abs(n) < 0.000001);
+}
+
+/** Haversine distance in miles between two lat/lng pairs. */
+function haversineDistanceMiles(lat1, lng1, lat2, lng2) {
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const R = 3958.8; // Earth radius in miles
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/**
+ * Classify area density and return an initial search radius in miles.
+ * Uses lot size as the primary signal; falls back to a moderate default.
+ *
+ *   Urban / inner-city  (lot ≤ 0.15 ac)  → 0.5 mi
+ *   Suburban             (lot ≤ 0.5 ac)   → 1.5 mi
+ *   Exurban              (lot ≤ 2 ac)     → 3 mi
+ *   Rural                (lot > 2 ac)     → 7 mi
+ *   Unknown lot size                      → 2 mi  (moderate default)
+ */
+function determineSearchRadius(subjectRaw) {
+  const lot = Number(subjectRaw?.LotSizeAcres ?? 0);
+
+  if (lot > 0 && lot <= 0.15) return { radiusMiles: 0.5, density: 'urban' };
+  if (lot > 0.15 && lot <= 0.5) return { radiusMiles: 1.5, density: 'suburban' };
+  if (lot > 0.5 && lot <= 2)   return { radiusMiles: 3, density: 'exurban' };
+  if (lot > 2)                 return { radiusMiles: 7, density: 'rural' };
+
+  // No lot-size data – use a moderate suburban-ish default.
+  return { radiusMiles: 2, density: 'unknown' };
+}
+
+/**
+ * Attach distance_miles to each comp and keep only those within an adaptive
+ * radius of the subject. The radius starts at `initialRadius` and expands
+ * through multipliers (1×, 1.5×, 2×, 3×, 5×) until we have at least
+ * `minComps` results or exhaust all candidates.
+ *
+ * Returns { filtered, radiusUsed, expandedRadius, density }.
+ * If the subject has no valid coordinates the comps pass through unchanged.
+ */
+function filterCompsByRadius(comps, subjectLat, subjectLng, initialRadius, density, minComps = 3) {
+  if (!isValidCoord(subjectLat) || !isValidCoord(subjectLng)) {
+    return { filtered: comps, radiusUsed: null, expandedRadius: false, density };
+  }
+
+  // Annotate every comp with its distance from the subject.
+  const withDist = comps.map((c) => {
+    if (!isValidCoord(c.lat) || !isValidCoord(c.lng)) return { ...c, distance_miles: null };
+    return { ...c, distance_miles: Math.round(haversineDistanceMiles(subjectLat, subjectLng, c.lat, c.lng) * 100) / 100 };
+  });
+
+  // Sort closest first; comps without coords go to the end.
+  withDist.sort((a, b) => {
+    if (a.distance_miles == null && b.distance_miles == null) return 0;
+    if (a.distance_miles == null) return 1;
+    if (b.distance_miles == null) return -1;
+    return a.distance_miles - b.distance_miles;
+  });
+
+  // Progressively widen the radius until we have enough comps.
+  const multipliers = [1, 1.5, 2, 3, 5];
+  for (const m of multipliers) {
+    const r = initialRadius * m;
+    const inRadius = withDist.filter((c) => c.distance_miles != null && c.distance_miles <= r);
+    if (inRadius.length >= minComps) {
+      return { filtered: inRadius, radiusUsed: r, expandedRadius: m > 1, density };
+    }
+  }
+
+  // Not enough comps even at max expansion – return all (sorted by distance).
+  return { filtered: withDist, radiusUsed: initialRadius * 5, expandedRadius: true, density };
+}
+
+/* ── End geo-radius helpers ─────────────────────────────────────── */
+
+async function fetchClosedComps({ sinceDays, subjectRaw, priceBand, marketType }) {
   const since = new Date();
   since.setDate(since.getDate() - sinceDays);
   const ymd = since.toISOString().slice(0, 10);
@@ -257,12 +540,11 @@ async function fetchClosedComps({ sinceDays, subjectRaw, priceBand }) {
   if (typeof bedsMin === 'number') compFilters.push(`BedroomsTotal ge ${bedsMin}`);
   if (typeof bedsMax === 'number') compFilters.push(`BedroomsTotal le ${bedsMax}`);
 
-  // Prefer same property type when possible.
-  const pt = String(subjectRaw?.PropertyType || '').trim();
-  if (pt) compFilters.push(`PropertyType eq '${odataEscape(pt)}'`);
+  const propertyTypeClause = buildPropertyTypeClause({ marketType, subjectType: subjectRaw?.PropertyType });
+  if (propertyTypeClause) compFilters.push(propertyTypeClause);
 
   const compsRes = await fetchTrestleOData('odata/Property', {
-    $top: '25',
+    $top: '50',
     $select:
       'ListingKey,UnparsedAddress,StreetNumber,StreetName,City,CountyOrParish,StateOrProvince,PostalCode,PropertyType,PropertySubType,BedroomsTotal,BathroomsTotalInteger,LivingArea,Latitude,Longitude,StandardStatus,ClosePrice,ListPrice,CloseDate',
     $expand: 'Media',
@@ -281,7 +563,7 @@ async function fetchClosedComps({ sinceDays, subjectRaw, priceBand }) {
   return { comps, closePrices };
 }
 
-async function fetchClosedCompsForMarket({ sinceDays, cityToken, county, zip, priceBand }) {
+async function fetchClosedCompsForMarket({ sinceDays, cityToken, county, zip, priceBand, marketType }) {
   const since = new Date();
   since.setDate(since.getDate() - sinceDays);
   const ymd = since.toISOString().slice(0, 10);
@@ -290,7 +572,8 @@ async function fetchClosedCompsForMarket({ sinceDays, cityToken, county, zip, pr
   compFilters.push(`StandardStatus eq 'Closed'`);
   compFilters.push(`CloseDate ge ${ymd}`);
   compFilters.push(`ClosePrice ge 10000`);
-  compFilters.push(`PropertyType eq 'Residential'`);
+  const propertyTypeClause = buildPropertyTypeClause({ marketType, subjectType: 'Residential' });
+  if (propertyTypeClause) compFilters.push(propertyTypeClause);
   if (priceBand?.min) compFilters.push(`ClosePrice ge ${priceBand.min}`);
   if (priceBand?.max) compFilters.push(`ClosePrice le ${priceBand.max}`);
 
@@ -306,7 +589,7 @@ async function fetchClosedCompsForMarket({ sinceDays, cityToken, county, zip, pr
   }
 
   const compsRes = await fetchTrestleOData('odata/Property', {
-    $top: '25',
+    $top: '50',
     $select:
       'ListingKey,UnparsedAddress,StreetNumber,StreetName,City,CountyOrParish,StateOrProvince,PostalCode,PropertyType,PropertySubType,BedroomsTotal,BathroomsTotalInteger,LivingArea,Latitude,Longitude,StandardStatus,ClosePrice,ListPrice,CloseDate',
     $expand: 'Media',
@@ -339,6 +622,8 @@ export default edgeHandler(async function handler(req, res) {
     const subjectId = body?.subject_id;
     const county = body?.county;
     const zip = body?.zip;
+    const marketTypeRaw = typeof body?.market_type === 'string' ? body.market_type.trim() : '';
+    const requestedMarketType = normalizeMarketType(marketTypeRaw);
 
     if (subjectId && typeof subjectId !== 'string') {
       return res.status(400).json({ error: 'Invalid request: subject_id must be a string' });
@@ -348,6 +633,9 @@ export default edgeHandler(async function handler(req, res) {
     }
     if (zip && typeof zip !== 'string') {
       return res.status(400).json({ error: 'Invalid request: zip must be a string' });
+    }
+    if (marketTypeRaw && !requestedMarketType) {
+      return res.status(400).json({ error: 'Invalid request: market_type must be one of residential, commercial, retail, land, industrial, multifamily' });
     }
     if (!address || typeof address !== 'string') {
       return res.status(400).json({ error: 'Invalid request: address must be a string' });
@@ -439,28 +727,38 @@ export default edgeHandler(async function handler(req, res) {
       let comps = [];
       let closePrices = [];
       let expanded = false;
+      let searchWindowLabel = '6 months';
 
       if (subjectAnyStatus) {
         subject = mapTrestlePropertyToListing(subjectAnyStatus);
         const priceBand = computePriceBand(subjectAnyStatus?.ListPrice ?? subjectAnyStatus?.ClosePrice);
 
-        // Attempt 6mo -> 12mo using subject-based filters.
-        const sixMonth = await fetchClosedComps({ sinceDays: 183, subjectRaw: subjectAnyStatus, priceBand });
-        comps = sixMonth.comps;
-        closePrices = sixMonth.closePrices;
+        // Progressive time-window expansion: 6mo → 12mo → 24mo → 36mo → 60mo (5 yrs).
+        // Recent sales are weighted most heavily in the final price calculation.
+        const timeSteps = [
+          { days: 183, label: '6 months' },
+          { days: 365, label: '12 months' },
+          { days: 730, label: '2 years' },
+          { days: 1095, label: '3 years' },
+          { days: 1825, label: '5 years' },
+        ];
 
-        if (closePrices.length < 3) {
-          const twelveMonth = await fetchClosedComps({ sinceDays: 365, subjectRaw: subjectAnyStatus, priceBand });
-          comps = twelveMonth.comps;
-          closePrices = twelveMonth.closePrices;
+        for (const step of timeSteps) {
+          const result = await fetchClosedComps({ sinceDays: step.days, subjectRaw: subjectAnyStatus, priceBand, marketType: requestedMarketType });
+          comps = result.comps;
+          closePrices = result.closePrices;
+          searchWindowLabel = step.label;
+          if (closePrices.length >= 3) break;
           expanded = true;
         }
 
+        // If still thin, try without price band across 5 years.
         if (closePrices.length < 3 && priceBand) {
-          const twelveMonth = await fetchClosedComps({ sinceDays: 365, subjectRaw: subjectAnyStatus });
-          comps = twelveMonth.comps;
-          closePrices = twelveMonth.closePrices;
+          const wide = await fetchClosedComps({ sinceDays: 1825, subjectRaw: subjectAnyStatus, marketType: requestedMarketType });
+          comps = wide.comps;
+          closePrices = wide.closePrices;
           expanded = true;
+          searchWindowLabel = '5 years';
           relaxation.push('Relaxed pricing comps: widened price band to find more comps.');
         }
 
@@ -477,42 +775,52 @@ export default edgeHandler(async function handler(req, res) {
           relaxation.push('ZIP code looks inconsistent with the selected county/city; ignoring ZIP to avoid pulling the wrong comps.');
         }
 
-        const sixMonth = await fetchClosedCompsForMarket({ sinceDays: 183, county: normalizedCounty, zip: zipUsed, priceBand });
-        comps = sixMonth.comps;
-        closePrices = sixMonth.closePrices;
-        expanded = false;
+        // Progressive time-window expansion for market comps.
+        const marketTimeSteps = [
+          { days: 183, label: '6 months' },
+          { days: 365, label: '12 months' },
+          { days: 730, label: '2 years' },
+          { days: 1095, label: '3 years' },
+          { days: 1825, label: '5 years' },
+        ];
 
-        if (closePrices.length < 3) {
-          const twelveMonth = await fetchClosedCompsForMarket({ sinceDays: 365, county: normalizedCounty, zip: zipUsed, priceBand });
-          comps = twelveMonth.comps;
-          closePrices = twelveMonth.closePrices;
+        expanded = false;
+        for (const step of marketTimeSteps) {
+          const result = await fetchClosedCompsForMarket({ sinceDays: step.days, county: normalizedCounty, zip: zipUsed, priceBand, marketType: requestedMarketType });
+          comps = result.comps;
+          closePrices = result.closePrices;
+          searchWindowLabel = step.label;
+          if (closePrices.length >= 3) break;
           expanded = true;
         }
 
         if (closePrices.length < 3 && priceBand) {
-          const twelveMonth = await fetchClosedCompsForMarket({ sinceDays: 365, county: normalizedCounty, zip: zipUsed });
-          comps = twelveMonth.comps;
-          closePrices = twelveMonth.closePrices;
+          const wide = await fetchClosedCompsForMarket({ sinceDays: 1825, county: normalizedCounty, zip: zipUsed, marketType: requestedMarketType });
+          comps = wide.comps;
+          closePrices = wide.closePrices;
           expanded = true;
+          searchWindowLabel = '5 years';
           relaxation.push('Relaxed pricing comps: widened price band to find more comps.');
         }
 
         // 2) Relax: drop zip, use county + city (if we have it)
         if (closePrices.length < 3 && cityToken) {
           relaxation.push('Relaxed pricing comps: dropped ZIP; using county + city.');
-          const twelveMonth = await fetchClosedCompsForMarket({ sinceDays: 365, county: normalizedCounty, zip: null, cityToken, priceBand });
-          comps = twelveMonth.comps;
-          closePrices = twelveMonth.closePrices;
+          const countyCity = await fetchClosedCompsForMarket({ sinceDays: 1825, county: normalizedCounty, zip: null, cityToken, priceBand, marketType: requestedMarketType });
+          comps = countyCity.comps;
+          closePrices = countyCity.closePrices;
           expanded = true;
+          searchWindowLabel = '5 years';
         }
 
         // 3) Relax: county only
         if (closePrices.length < 3) {
           relaxation.push('Relaxed pricing comps: using county-wide comps.');
-          const twelveMonth = await fetchClosedCompsForMarket({ sinceDays: 365, county: normalizedCounty, zip: null, cityToken: null, priceBand });
-          comps = twelveMonth.comps;
-          closePrices = twelveMonth.closePrices;
+          const countyOnly = await fetchClosedCompsForMarket({ sinceDays: 1825, county: normalizedCounty, zip: null, cityToken: null, priceBand, marketType: requestedMarketType });
+          comps = countyOnly.comps;
+          closePrices = countyOnly.closePrices;
           expanded = true;
+          searchWindowLabel = '5 years';
         }
       }
 
@@ -523,9 +831,26 @@ export default edgeHandler(async function handler(req, res) {
         if (inferred) subject.city = inferred;
       }
 
-      const p25 = percentile(closePrices, 0.25);
-      const p50 = percentile(closePrices, 0.5);
-      const p75 = percentile(closePrices, 0.75);
+      // ── Radius filtering ───────────────────────────────────────────
+      const subjectCoords = { lat: Number(subject?.lat), lng: Number(subject?.lng) };
+      const { radiusMiles: initialRadius, density: areaDensity } = determineSearchRadius(subjectAnyStatus);
+      const radiusResult = filterCompsByRadius(comps, subjectCoords.lat, subjectCoords.lng, initialRadius, areaDensity);
+      comps = radiusResult.filtered;
+      // Recompute closePrices from radius-filtered comps.
+      closePrices = comps
+        .map((c) => Number(c.price))
+        .filter((n) => Number.isFinite(n) && n > 0)
+        .sort((a, b) => a - b);
+      if (radiusResult.expandedRadius) {
+        relaxation.push('Expanded proximity search to find enough comps.');
+      }
+      // ── End radius filtering ───────────────────────────────────────
+
+      // Use recency-weighted percentiles so recent comps count more than older ones.
+      const wStats = weightedPriceStats(comps);
+      const p25 = wStats.p25;
+      const p50 = wStats.p50;
+      const p75 = wStats.p75;
 
       // If we have a subject sqft, compute an adjusted estimate using $/sqft so the midpoint is tailored to the home size.
       const adjusted = computeAdjustedRangeFromComps({ comps, subjectSqft: subject?.sqft });
@@ -563,10 +888,11 @@ export default edgeHandler(async function handler(req, res) {
         subjectAnyStatus
           ? `Subject lookup: ${subject.address}${subject.city ? `, ${subject.city}` : ''}${subject.zip ? ` ${subject.zip}` : ''} • ${subject.property_type || 'Residential'} • ${subject.beds || 0} bd / ${subject.baths || 0} ba • ${subject.sqft ? `${Math.round(subject.sqft).toLocaleString()} sqft` : 'sqft unknown'} (status: ${subject.status || 'Unknown'}).`
           : `Subject lookup: no MLS record found for this address; using area comps.`,
+        `Market type: ${requestedMarketType || 'residential (default)'}.`,
         `Using comps in PA near: ${normalizedCounty || countyTrim} County${zip5 ? `, ${zip5}` : ''}.`,
         expanded
-          ? `Pulled ${comps.length} closed comps from the last 12 months (expanded from 6 months due to low comp count).`
-          : `Pulled ${comps.length} closed comps from the last 6 months.`,
+          ? `Pulled ${comps.length} closed comps from the last ${searchWindowLabel} (expanded to find enough comps). Recent sales weighted more heavily.`
+          : `Pulled ${comps.length} closed comps from the last ${searchWindowLabel}. Recent sales weighted more heavily.`,
       ];
 
       if (relaxation.length) {
@@ -580,6 +906,13 @@ export default edgeHandler(async function handler(req, res) {
             : `Price range (low/mid/high from comps): $${low.toLocaleString()} / $${mid.toLocaleString()} / $${high.toLocaleString()}`
         );
       }
+
+      const selectedComps = rankAndLimitCmaComps(comps, {
+        subjectPrice: subject?.price,
+        fallbackPrice: mid,
+        radiusMiles: radiusResult.radiusUsed,
+      });
+      reasoning.push(`Showing top ${selectedComps.length} comps ranked by closest price and proximity.`);
 
       if (cmaChunks.length > 0) {
         reasoning.push('CMA playbook guidance (methodology excerpts):');
@@ -613,6 +946,10 @@ export default edgeHandler(async function handler(req, res) {
           comps: comps.length,
           usable_prices: closePrices.length,
           adjusted_method: adjusted ? 'ppsf' : 'closeprice',
+          radius_miles: radiusResult.radiusUsed,
+          radius_expanded: radiusResult.expandedRadius,
+          area_density: areaDensity,
+          market_type: requestedMarketType || 'residential',
         }
         : undefined;
 
@@ -621,9 +958,11 @@ export default edgeHandler(async function handler(req, res) {
         reasoning,
         subject,
         price_range: low && mid && high ? { low, mid, high } : null,
-        comp_stats: { p25, p50, p75, comps: comps.length },
+        comp_stats: { p25, p50, p75, comps: selectedComps.length, candidate_comps: comps.length },
+        market_type: requestedMarketType || 'residential',
+        radius: { miles: radiusResult.radiusUsed, density: areaDensity, expanded: radiusResult.expandedRadius },
         deal_quality: null,
-        listings: comps,
+        listings: selectedComps,
         ...(debug ? { debug } : {}),
       });
     }
@@ -662,7 +1001,7 @@ export default edgeHandler(async function handler(req, res) {
     logPricing('subjectFilter:', subjectFilter);
 
     const subjectSelect =
-      'ListingKey,UnparsedAddress,StreetNumber,StreetName,City,CountyOrParish,StateOrProvince,PostalCode,PropertyType,PropertySubType,BedroomsTotal,BathroomsTotalInteger,LivingArea,Latitude,Longitude,StandardStatus,ClosePrice,ListPrice,CloseDate,MLSAreaMajor,ModificationTimestamp';
+      'ListingKey,UnparsedAddress,StreetNumber,StreetName,City,CountyOrParish,StateOrProvince,PostalCode,PropertyType,PropertySubType,BedroomsTotal,BathroomsTotalInteger,LivingArea,LotSizeAcres,Latitude,Longitude,StandardStatus,ClosePrice,ListPrice,CloseDate,MLSAreaMajor,ModificationTimestamp';
 
     let subjectRes;
     if (subjectId && subjectId.trim()) {
@@ -696,29 +1035,39 @@ export default edgeHandler(async function handler(req, res) {
     let closePrices = [];
     let expanded = false;
     let usedMarketFallback = false;
+    let searchWindowLabel2 = '6 months';
 
     if (subjectRaw) {
       subject = mapTrestlePropertyToListing(subjectRaw);
       const priceBand = computePriceBand(subjectRaw?.ListPrice ?? subjectRaw?.ClosePrice);
 
       // 2) Pull closed comps near the subject.
-      // Playbook default: last 6 months; extend to 12 months if < 3 usable comps.
-      const sixMonth = await fetchClosedComps({ sinceDays: 183, subjectRaw, priceBand });
-      comps = sixMonth.comps;
-      closePrices = sixMonth.closePrices;
+      // Progressive time-window expansion: 6mo → 12mo → 24mo → 36mo → 60mo (5 yrs).
+      // Recent sales are weighted most heavily in the final price calculation.
+      const timeSteps = [
+        { days: 183, label: '6 months' },
+        { days: 365, label: '12 months' },
+        { days: 730, label: '2 years' },
+        { days: 1095, label: '3 years' },
+        { days: 1825, label: '5 years' },
+      ];
 
-      if (closePrices.length < 3) {
-        const twelveMonth = await fetchClosedComps({ sinceDays: 365, subjectRaw, priceBand });
-        comps = twelveMonth.comps;
-        closePrices = twelveMonth.closePrices;
+      for (const step of timeSteps) {
+        const result = await fetchClosedComps({ sinceDays: step.days, subjectRaw, priceBand, marketType: requestedMarketType });
+        comps = result.comps;
+        closePrices = result.closePrices;
+        searchWindowLabel2 = step.label;
+        if (closePrices.length >= 3) break;
         expanded = true;
       }
 
+      // If still thin, try without price band across 5 years.
       if (closePrices.length < 3 && priceBand) {
-        const twelveMonth = await fetchClosedComps({ sinceDays: 365, subjectRaw });
-        comps = twelveMonth.comps;
-        closePrices = twelveMonth.closePrices;
+        const wide = await fetchClosedComps({ sinceDays: 1825, subjectRaw, marketType: requestedMarketType });
+        comps = wide.comps;
+        closePrices = wide.closePrices;
         expanded = true;
+        searchWindowLabel2 = '5 years';
       }
     } else {
       // The user's home often isn't an MLS listing. Don't fail; instead, use city/zip-based comps.
@@ -750,21 +1099,42 @@ export default edgeHandler(async function handler(req, res) {
         lng: null,
       };
 
-      const sixMonth = await fetchClosedCompsForMarket({ sinceDays: 183, cityToken, county: '', zip });
-      comps = sixMonth.comps;
-      closePrices = sixMonth.closePrices;
+      // Progressive time-window expansion for market comps.
+      const marketTimeSteps = [
+        { days: 183, label: '6 months' },
+        { days: 365, label: '12 months' },
+        { days: 730, label: '2 years' },
+        { days: 1095, label: '3 years' },
+        { days: 1825, label: '5 years' },
+      ];
 
-      if (closePrices.length < 3) {
-        const twelveMonth = await fetchClosedCompsForMarket({ sinceDays: 365, cityToken, county: '', zip });
-        comps = twelveMonth.comps;
-        closePrices = twelveMonth.closePrices;
+      for (const step of marketTimeSteps) {
+        const result = await fetchClosedCompsForMarket({ sinceDays: step.days, cityToken, county: '', zip, marketType: requestedMarketType });
+        comps = result.comps;
+        closePrices = result.closePrices;
+        searchWindowLabel2 = step.label;
+        if (closePrices.length >= 3) break;
         expanded = true;
       }
     }
 
-    const p25 = percentile(closePrices, 0.25);
-    const p50 = percentile(closePrices, 0.5);
-    const p75 = percentile(closePrices, 0.75);
+    // ── Radius filtering ───────────────────────────────────────────
+    const subjectCoords2 = { lat: Number(subject?.lat), lng: Number(subject?.lng) };
+    const { radiusMiles: initialRadius2, density: areaDensity2 } = determineSearchRadius(subjectRaw);
+    const radiusResult2 = filterCompsByRadius(comps, subjectCoords2.lat, subjectCoords2.lng, initialRadius2, areaDensity2);
+    comps = radiusResult2.filtered;
+    // Recompute closePrices from radius-filtered comps.
+    closePrices = comps
+      .map((c) => Number(c.price))
+      .filter((n) => Number.isFinite(n) && n > 0)
+      .sort((a, b) => a - b);
+    // ── End radius filtering ───────────────────────────────────────
+
+    // Use recency-weighted percentiles so recent comps count more than older ones.
+    const wStats2 = weightedPriceStats(comps);
+    const p25 = wStats2.p25;
+    const p50 = wStats2.p50;
+    const p75 = wStats2.p75;
 
     const suggested = p50 ? Math.round(p50) : null;
 
@@ -797,9 +1167,10 @@ export default edgeHandler(async function handler(req, res) {
       subjectRaw
         ? `Matched subject property: ${subject.address}${subject.city ? `, ${subject.city}` : ''}`
         : `No exact MLS record found for this address; using market-level comps for ${subject.city || subject.zip || 'the provided area'}.`,
+      `Market type: ${requestedMarketType || 'residential (default)'}.`,
       expanded
-        ? `Pulled ${comps.length} closed comps from the last 12 months (expanded from 6 months due to low comp count).`
-        : `Pulled ${comps.length} closed comps from the last 6 months.`,
+        ? `Pulled ${comps.length} closed comps from the last ${searchWindowLabel2} (expanded to find enough comps). Recent sales weighted more heavily.`
+        : `Pulled ${comps.length} closed comps from the last ${searchWindowLabel2}. Recent sales weighted more heavily.`,
     ];
 
     const low = Number.isFinite(p25) ? Math.round(p25) : null;
@@ -809,6 +1180,13 @@ export default edgeHandler(async function handler(req, res) {
     if (mid && low && high) {
       reasoning.push(`Price range (low/mid/high from comps): $${low.toLocaleString()} / $${mid.toLocaleString()} / $${high.toLocaleString()}`);
     }
+
+    const selectedComps = rankAndLimitCmaComps(comps, {
+      subjectPrice: subject?.price,
+      fallbackPrice: mid,
+      radiusMiles: radiusResult2.radiusUsed,
+    });
+    reasoning.push(`Showing top ${selectedComps.length} comps ranked by closest price and proximity.`);
 
     if (cmaChunks.length > 0) {
       reasoning.push('CMA playbook guidance (methodology excerpts):');
@@ -855,9 +1233,11 @@ export default edgeHandler(async function handler(req, res) {
       reasoning,
       subject,
       price_range: low && mid && high ? { low, mid, high } : null,
-      comp_stats: { p25, p50, p75, comps: comps.length },
+      comp_stats: { p25, p50, p75, comps: selectedComps.length, candidate_comps: comps.length },
+      market_type: requestedMarketType || 'residential',
+      radius: { miles: radiusResult2.radiusUsed, density: areaDensity2, expanded: radiusResult2.expandedRadius },
       deal_quality: verdict,
-      listings: comps,
+      listings: selectedComps,
       ...(debug
         ? {
           debug: {
@@ -869,6 +1249,10 @@ export default edgeHandler(async function handler(req, res) {
             comps: comps.length,
             usable_prices: closePrices.length,
             duration_ms: durationMs,
+            radius_miles: radiusResult2.radiusUsed,
+            radius_expanded: radiusResult2.expandedRadius,
+            area_density: areaDensity2,
+            market_type: requestedMarketType || 'residential',
           },
         }
         : {}),

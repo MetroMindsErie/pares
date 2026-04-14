@@ -61,6 +61,60 @@ function computePriceBand(subjectPrice) {
   return { min, max };
 }
 
+/* ── Geo-radius helpers ─────────────────────────────────────── */
+
+function isValidCoord(v) {
+  const n = Number(v);
+  return Number.isFinite(n) && !(Math.abs(n) < 0.000001);
+}
+
+function haversineDistanceMiles(lat1, lng1, lat2, lng2) {
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const R = 3958.8;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function determineSearchRadius(subjectRaw) {
+  const lot = Number(subjectRaw?.LotSizeAcres ?? 0);
+  if (lot > 0 && lot <= 0.15) return { radiusMiles: 0.5, density: 'urban' };
+  if (lot > 0.15 && lot <= 0.5) return { radiusMiles: 1.5, density: 'suburban' };
+  if (lot > 0.5 && lot <= 2)   return { radiusMiles: 3, density: 'exurban' };
+  if (lot > 2)                 return { radiusMiles: 7, density: 'rural' };
+  return { radiusMiles: 2, density: 'unknown' };
+}
+
+function filterCompsByRadius(comps, subjectLat, subjectLng, initialRadius, density, minComps = 3) {
+  if (!isValidCoord(subjectLat) || !isValidCoord(subjectLng)) {
+    return { filtered: comps, radiusUsed: null, expandedRadius: false, density };
+  }
+  const withDist = comps.map((c) => {
+    if (!isValidCoord(c.lat) || !isValidCoord(c.lng)) return { ...c, distance_miles: null };
+    return { ...c, distance_miles: Math.round(haversineDistanceMiles(subjectLat, subjectLng, c.lat, c.lng) * 100) / 100 };
+  });
+  withDist.sort((a, b) => {
+    if (a.distance_miles == null && b.distance_miles == null) return 0;
+    if (a.distance_miles == null) return 1;
+    if (b.distance_miles == null) return -1;
+    return a.distance_miles - b.distance_miles;
+  });
+  const multipliers = [1, 1.5, 2, 3, 5];
+  for (const m of multipliers) {
+    const r = initialRadius * m;
+    const inRadius = withDist.filter((c) => c.distance_miles != null && c.distance_miles <= r);
+    if (inRadius.length >= minComps) {
+      return { filtered: inRadius, radiusUsed: r, expandedRadius: m > 1, density };
+    }
+  }
+  return { filtered: withDist, radiusUsed: initialRadius * 5, expandedRadius: true, density };
+}
+
+/* ── End geo-radius helpers ─────────────────────────────────── */
+
 export default edgeHandler(async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
@@ -84,7 +138,7 @@ export default edgeHandler(async function handler(req, res) {
       const subjectRes = await fetchTrestleOData('odata/Property', {
         $top: '1',
         $select:
-          'ListingKey,UnparsedAddress,StreetNumber,StreetName,City,CountyOrParish,StateOrProvince,PostalCode,MLSAreaMajor,PropertyType,PropertySubType,BedroomsTotal,BathroomsTotalInteger,LivingArea,Latitude,Longitude,StandardStatus,ClosePrice,ListPrice',
+          'ListingKey,UnparsedAddress,StreetNumber,StreetName,City,CountyOrParish,StateOrProvince,PostalCode,MLSAreaMajor,PropertyType,PropertySubType,BedroomsTotal,BathroomsTotalInteger,LivingArea,LotSizeAcres,Latitude,Longitude,StandardStatus,ClosePrice,ListPrice',
         $expand: 'Media',
         $filter: byIdFilter,
       });
@@ -134,7 +188,7 @@ export default edgeHandler(async function handler(req, res) {
       if (attempt.includeBedsBaths && subjectBaths) compFilters.push(`BathroomsTotalInteger le ${subjectBaths + 1}`);
 
       const compsRes = await fetchTrestleOData('odata/Property', {
-        $top: '20',
+        $top: '40',
         $select:
           'ListingKey,UnparsedAddress,StreetNumber,StreetName,City,CountyOrParish,StateOrProvince,PostalCode,MLSAreaMajor,PropertyType,PropertySubType,BedroomsTotal,BathroomsTotalInteger,LivingArea,Latitude,Longitude,StandardStatus,ListPrice,ModificationTimestamp',
         $expand: 'Media',
@@ -147,7 +201,15 @@ export default edgeHandler(async function handler(req, res) {
       if (listings.length > 0) break;
     }
 
-    return res.json({ listings });
+    // ── Radius filtering ───────────────────────────────────────
+    const subjectLat = Number(subjectRaw?.Latitude);
+    const subjectLng = Number(subjectRaw?.Longitude);
+    const { radiusMiles, density } = determineSearchRadius(subjectRaw);
+    const radiusResult = filterCompsByRadius(listings, subjectLat, subjectLng, radiusMiles, density);
+    listings = radiusResult.filtered;
+    // ── End radius filtering ───────────────────────────────────
+
+    return res.json({ listings, radius: { miles: radiusResult.radiusUsed, density, expanded: radiusResult.expandedRadius } });
   } catch (e) {
     return res.status(500).json({ error: 'Active nearby lookup failed', details: e?.message || String(e) });
   }

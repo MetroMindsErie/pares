@@ -21,6 +21,23 @@ function isValidLatLng(lat, lng) {
   return true;
 }
 
+function formatUsd(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return '—';
+  return `$${Math.round(n).toLocaleString()}`;
+}
+
+function formatUsdCompact(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return '—';
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(n);
+}
+
 function storageKeyForUser(userId) {
   return userId ? `aiAssistant:lastSearch:v1:${userId}` : null;
 }
@@ -54,6 +71,15 @@ const COUNTY_OPTIONS = [
   { value: 'Erie', label: 'Erie' },
   { value: 'Crawford', label: 'Crawford' },
   { value: 'Warren', label: 'Warren' },
+];
+
+const MARKET_TYPE_OPTIONS = [
+  { value: 'residential', label: 'Residential' },
+  { value: 'commercial', label: 'Commercial' },
+  { value: 'retail', label: 'Retail' },
+  { value: 'land', label: 'Land' },
+  { value: 'industrial', label: 'Industrial' },
+  { value: 'multifamily', label: 'Multifamily' },
 ];
 
 const COUNTY_ZIP_OPTIONS = {
@@ -134,6 +160,7 @@ export function AIAssistantPanel() {
   const [pricingStreet, setPricingStreet] = useState('');
   const [pricingCounty, setPricingCounty] = useState('');
   const [pricingZip, setPricingZip] = useState('');
+  const [pricingMarketType, setPricingMarketType] = useState('residential');
   const [isCompareOpen, setIsCompareOpen] = useState(false);
   const [compareProps, setCompareProps] = useState([]);
   const [selectedComps, setSelectedComps] = useState([]);
@@ -240,6 +267,26 @@ export function AIAssistantPanel() {
     return { subject, comps: listings };
   }, [lastResponse?.subject, lastResponse?.listings]);
 
+  const pricingHero = useMemo(() => {
+    if (tab !== 'pricing') return null;
+    const low = Number(lastResponse?.price_range?.low);
+    const high = Number(lastResponse?.price_range?.high);
+    const midRaw = Number(lastResponse?.price_range?.mid);
+    const mid = Number.isFinite(midRaw) && midRaw > 0
+      ? midRaw
+      : (Number.isFinite(low) && Number.isFinite(high) ? Math.round((low + high) / 2) : null);
+    if (!Number.isFinite(mid) || mid <= 0) return null;
+    const listings = Array.isArray(lastResponse?.listings) ? lastResponse.listings : [];
+    const comps = listings.length;
+    return {
+      low: Number.isFinite(low) && low > 0 ? low : null,
+      mid,
+      high: Number.isFinite(high) && high > 0 ? high : null,
+      comps,
+      marketType: String(lastResponse?.market_type || 'residential'),
+    };
+  }, [tab, lastResponse?.price_range, lastResponse?.listings, lastResponse?.market_type]);
+
   useEffect(() => {
     setSelectedComps([]);
   }, [lastResponse?.listings]);
@@ -292,6 +339,9 @@ export function AIAssistantPanel() {
       setPricingStreet('');
       setPricingCounty('');
       setPricingZip('');
+      const savedMarketType = String(winner.payload?.pricingMarketType || '').trim();
+      const isKnownMarket = MARKET_TYPE_OPTIONS.some((opt) => opt.value === savedMarketType);
+      setPricingMarketType(isKnownMarket ? savedMarketType : 'residential');
     }
   }, [user?.id]);
 
@@ -402,6 +452,7 @@ export function AIAssistantPanel() {
             address,
             county: pricingCounty.trim(),
             zip: pricingZip.trim(),
+            market_type: pricingMarketType,
           }),
           signal: ac.signal,
         });
@@ -434,13 +485,14 @@ export function AIAssistantPanel() {
         street: pricingStreet.trim(),
         county: pricingCounty.trim(),
         zip: pricingZip.trim(),
+        marketType: pricingMarketType,
         savedAt: new Date().toISOString(),
       };
       setPricingHistory((prev) => {
         const next = [newPricingItem, ...(Array.isArray(prev) ? prev : [])]
           .filter((item, idx, arr) =>
             arr.findIndex((i) =>
-              i.street === item.street && i.county === item.county && i.zip === item.zip
+              i.street === item.street && i.county === item.county && i.zip === item.zip && (i.marketType || 'residential') === (item.marketType || 'residential')
             ) === idx
           )
           .slice(0, 3);
@@ -464,6 +516,7 @@ export function AIAssistantPanel() {
               pricingStreet: pricingStreet.trim(),
               pricingCounty: pricingCounty.trim(),
               pricingZip: pricingZip.trim(),
+              pricingMarketType,
               response: json,
             },
             { ttlMs: ASSISTANT_CACHE_TTL_MS }
@@ -477,6 +530,7 @@ export function AIAssistantPanel() {
           meta: {
             county: pricingCounty.trim(),
             zip: pricingZip.trim(),
+            market_type: pricingMarketType,
           },
         });
       }
@@ -608,12 +662,14 @@ export function AIAssistantPanel() {
                           setPricingStreet(item.street || '');
                           setPricingCounty(item.county || '');
                           setPricingZip(item.zip || '');
+                          setPricingMarketType(item.marketType || 'residential');
                         }}
                         className="px-2 py-1 rounded-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-900"
                       >
                         {(item.street || 'Address')}
                         {item.county ? ` • ${item.county}` : ''}
                         {item.zip ? ` ${item.zip}` : ''}
+                        {item.marketType ? ` • ${item.marketType}` : ''}
                       </button>
                     ))}
                   </div>
@@ -643,7 +699,7 @@ export function AIAssistantPanel() {
                 </div>
               </div>
 
-              <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-2">
+              <div className="mt-3 grid grid-cols-1 md:grid-cols-4 gap-2">
                 <div>
                   <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">County</label>
                   <select
@@ -679,6 +735,18 @@ export function AIAssistantPanel() {
                     <option value="">{pricingCounty ? 'Select zip' : 'Select county first'}</option>
                     {pricingZipOptions.map((zip) => (
                       <option key={zip} value={zip}>{zip}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Market type</label>
+                  <select
+                    value={pricingMarketType}
+                    onChange={(e) => setPricingMarketType(e.target.value)}
+                    className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 text-sm"
+                  >
+                    {MARKET_TYPE_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
                     ))}
                   </select>
                 </div>
@@ -732,16 +800,45 @@ export function AIAssistantPanel() {
             </div>
           ) : null}
 
+          {pricingHero ? (
+            <div className="mt-4 rounded-2xl border border-slate-200 dark:border-gray-700 bg-gradient-to-br from-slate-950 via-slate-900 to-cyan-950 p-5 sm:p-6 text-white shadow-[0_30px_60px_-35px_rgba(3,7,18,0.9)]">
+              <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.16em] text-cyan-200">Estimated Market Value</div>
+                  <div className="mt-2 text-5xl sm:text-6xl lg:text-7xl font-semibold leading-none">
+                    {formatUsdCompact(pricingHero.mid)}
+                  </div>
+                  <div className="mt-2 text-sm text-slate-200">
+                    {pricingHero.low && pricingHero.high
+                      ? `${formatUsd(pricingHero.low)} to ${formatUsd(pricingHero.high)} suggested range`
+                      : 'Range unavailable'}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 sm:gap-3 min-w-[220px]">
+                  <div className="rounded-xl bg-white/10 border border-white/20 px-3 py-2">
+                    <div className="text-[10px] uppercase tracking-wide text-slate-200">Comps</div>
+                    <div className="text-xl font-semibold">{pricingHero.comps || '—'}</div>
+                  </div>
+                  <div className="rounded-xl bg-white/10 border border-white/20 px-3 py-2">
+                    <div className="text-[10px] uppercase tracking-wide text-slate-200">Market Type</div>
+                    <div className="text-xl font-semibold capitalize">{pricingHero.marketType}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
           {lastResponse?.answer ? (
-            <div className="mt-4 text-sm text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+            <div className="mt-4 text-sm text-slate-800 dark:text-gray-100 bg-gradient-to-r from-slate-50 to-cyan-50/60 dark:from-gray-800/60 dark:to-gray-800/40 border border-slate-200 dark:border-gray-700 rounded-xl p-4">
               {lastResponse.answer}
             </div>
           ) : null}
 
           {Array.isArray(lastResponse?.reasoning) && lastResponse.reasoning.length > 0 ? (
-            <div className="mt-4">
-              <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Reasoning</div>
-              <ul className="list-disc pl-5 text-sm text-gray-700 dark:text-gray-300 space-y-1">
+            <div className="mt-4 rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900/60 p-4">
+              <div className="text-sm font-semibold text-slate-900 dark:text-gray-100 mb-2">How This Price Was Built</div>
+              <ul className="list-disc pl-5 text-sm text-slate-700 dark:text-gray-300 space-y-1">
                 {lastResponse.reasoning.slice(0, 8).map((r, i) => (
                   <li key={i}>{r}</li>
                 ))}
@@ -757,9 +854,9 @@ export function AIAssistantPanel() {
           ) : null}
 
           {Array.isArray(lastResponse?.listings) && lastResponse.listings.length > 0 ? (
-            <div className="mt-4">
+            <div className="mt-4 rounded-2xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900/60 p-3 sm:p-4">
               {relaxationNotes.length > 0 ? (
-                <div className="mb-3 text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                <div className="mb-3 text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3">
                   <div className="font-semibold">Search expanded</div>
                   <ul className="list-disc pl-5 mt-1 space-y-1">
                     {relaxationNotes.map((n, i) => (
@@ -770,76 +867,92 @@ export function AIAssistantPanel() {
               ) : null}
 
               {tab === 'pricing' && pricingMapData ? (
-                <PricingCompsMap
-                  subject={pricingMapData.subject}
-                  comps={pricingMapData.comps}
-                  onToggleComp={handleCompareComp}
-                  selectedCompIds={new Set(selectedComps.map((c) => String(c?.id || '')))}
-                />
-              ) : null}
-
-              <div className="flex items-center justify-between gap-3 mb-2">
-                <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">Listings</div>
-                <button
-                  type="button"
-                  onClick={handleCompareSelected}
-                  disabled={selectedComps.length === 0}
-                  className="text-xs px-3 py-1.5 rounded-md bg-teal-600 text-white disabled:opacity-60"
-                >
-                  Compare selected ({selectedComps.length})
-                </button>
-              </div>
-
-              {pricingMapData?.subject?.id ? (
-                <label className="mb-2 flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300">
-                  <input
-                    type="checkbox"
-                    checked={includeSubjectInCompare}
-                    onChange={(e) => setIncludeSubjectInCompare(e.target.checked)}
+                <div className="mt-2 grid grid-cols-1 xl:grid-cols-[1.35fr_0.9fr] gap-4 items-start">
+                  <PricingCompsMap
+                    subject={pricingMapData.subject}
+                    comps={pricingMapData.comps}
+                    onToggleComp={handleCompareComp}
+                    selectedCompIds={new Set(selectedComps.map((c) => String(c?.id || '')))}
                   />
-                  Include subject in comparison
-                </label>
-              ) : (
-                <div className="mb-2 text-xs text-gray-500 dark:text-gray-400">
-                  Subject is not in MLS; comparing comps only.
-                </div>
-              )}
 
-              <div className="space-y-2">
-                {lastResponse.listings.map((l) => (
-                  <div
-                    key={l.id}
-                    className="flex items-center justify-between gap-3 border border-gray-200 dark:border-gray-700 rounded-md p-3 bg-white dark:bg-gray-900"
-                  >
-                    <label className="flex items-start gap-3 min-w-0">
-                      <input
-                        type="checkbox"
-                        checked={selectedComps.some((c) => String(c?.id) === String(l?.id))}
-                        onChange={() => handleCompareComp(l)}
-                        className="mt-1"
-                      />
-                      <div className="min-w-0">
-                        <div className="text-sm text-gray-900 dark:text-gray-100 truncate">
-                          {l.address}{l.city ? ` • ${l.city}` : ''}
-                        </div>
-                        <div className="text-xs text-gray-600 dark:text-gray-400">
-                          {l.property_type ? l.property_type : ''}
-                          {typeof l.price === 'number' ? ` • $${Number(l.price).toLocaleString()}` : ''}
-                          {typeof l.beds === 'number' ? ` • ${l.beds} bd` : ''}
-                          {typeof l.baths === 'number' ? ` • ${l.baths} ba` : ''}
-                          {l.status ? ` • ${l.status}` : ''}
-                        </div>
+                  <div className="rounded-xl border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-800/50 p-3 sm:p-4 xl:sticky xl:top-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+                      <div>
+                        <div className="text-sm font-semibold text-slate-900 dark:text-gray-100">Comparable Listings</div>
+                        <div className="text-xs text-slate-600 dark:text-gray-400">Ranked by closest price and proximity, then recency.</div>
                       </div>
-                    </label>
-                    <Link
-                      href={`/property/${encodeURIComponent(l.id)}`}
-                      className="shrink-0 text-xs text-teal-600 dark:text-teal-400"
-                    >
-                      View
-                    </Link>
+                      <button
+                        type="button"
+                        onClick={handleCompareSelected}
+                        disabled={selectedComps.length === 0}
+                        className="text-xs px-3 py-1.5 rounded-lg bg-cyan-700 text-white disabled:opacity-60"
+                      >
+                        Compare selected ({selectedComps.length})
+                      </button>
+                    </div>
+
+                    {pricingMapData?.subject?.id ? (
+                      <label className="mb-3 flex items-center gap-2 text-xs text-slate-700 dark:text-gray-300">
+                        <input
+                          type="checkbox"
+                          checked={includeSubjectInCompare}
+                          onChange={(e) => setIncludeSubjectInCompare(e.target.checked)}
+                        />
+                        Include subject in comparison
+                      </label>
+                    ) : (
+                      <div className="mb-3 text-xs text-slate-500 dark:text-gray-400">
+                        Subject is not in MLS; comparing comps only.
+                      </div>
+                    )}
+
+                    <div className="space-y-2 max-h-[560px] overflow-auto pr-1">
+                      {lastResponse.listings.map((l) => (
+                        <div
+                          key={l.id}
+                          className="flex items-start justify-between gap-3 border border-slate-200 dark:border-gray-700 rounded-xl p-3 bg-white dark:bg-gray-900"
+                        >
+                          <label className="flex items-start gap-3 min-w-0">
+                            <input
+                              type="checkbox"
+                              checked={selectedComps.some((c) => String(c?.id) === String(l?.id))}
+                              onChange={() => handleCompareComp(l)}
+                              className="mt-1"
+                            />
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium text-slate-900 dark:text-gray-100 truncate">
+                                {l.address}{l.city ? ` • ${l.city}` : ''}
+                              </div>
+                              <div className="mt-1 text-xs text-slate-600 dark:text-gray-400">
+                                {l.property_type ? l.property_type : 'Residential'}
+                                {typeof l.beds === 'number' ? ` • ${l.beds} bd` : ''}
+                                {typeof l.baths === 'number' ? ` • ${l.baths} ba` : ''}
+                                {typeof l.sqft === 'number' ? ` • ${Number(l.sqft).toLocaleString()} sf` : ''}
+                              </div>
+                              <div className="mt-1 text-xs text-slate-500 dark:text-gray-400">
+                                {l.close_date ? `Sold ${l.close_date}` : 'Sold date unavailable'}
+                                {l.distance_miles != null ? ` • ${l.distance_miles} mi away` : ''}
+                              </div>
+                            </div>
+                          </label>
+
+                          <div className="shrink-0 flex flex-col items-end gap-1.5">
+                            <div className="text-sm font-semibold text-slate-900 dark:text-gray-100">
+                              {typeof l.price === 'number' ? `$${Number(l.price).toLocaleString()}` : '—'}
+                            </div>
+                            <Link
+                              href={`/property/${encodeURIComponent(l.id)}`}
+                              className="text-xs text-cyan-700 dark:text-cyan-400 font-medium"
+                            >
+                              View listing
+                            </Link>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              ) : null}
             </div>
           ) : null}
 
