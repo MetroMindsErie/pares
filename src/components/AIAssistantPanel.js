@@ -52,13 +52,6 @@ function pricingHistoryKeyForUser(userId) {
 
 const ASSISTANT_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
 
-const ROLE_OPTIONS = [
-  { value: 'buyer', label: 'Buyer' },
-  { value: 'seller', label: 'Seller' },
-  { value: 'investor', label: 'Investor' },
-  { value: 'realtor', label: 'Realtor' },
-];
-
 function buildZipRange(start, end) {
   const out = [];
   for (let i = start; i <= end; i += 1) {
@@ -127,30 +120,9 @@ const COUNTY_ZIP_OPTIONS = {
   ],
 };
 
-function LoadingRow({ label }) {
-  return (
-    <div className="mt-3 flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
-      <div className="h-5 w-5 rounded-full border-2 border-gray-300 dark:border-gray-700 border-t-teal-600 animate-spin" />
-      <div className="flex items-center gap-1">
-        <span>{label}</span>
-        <span className="inline-flex gap-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-teal-600 animate-bounce" style={{ animationDelay: '0ms' }} />
-          <span className="w-1.5 h-1.5 rounded-full bg-teal-600 animate-bounce" style={{ animationDelay: '120ms' }} />
-          <span className="w-1.5 h-1.5 rounded-full bg-teal-600 animate-bounce" style={{ animationDelay: '240ms' }} />
-        </span>
-      </div>
-    </div>
-  );
-}
-
 export function AIAssistantPanel() {
   const { user } = useAuth();
-  const [tab, setTab] = useState('search');
-  const [input, setInput] = useState('');
-  const [lastSearchQuery, setLastSearchQuery] = useState('');
   const [pricingHistory, setPricingHistory] = useState([]);
-  const [role, setRole] = useState('buyer');
-  const [searchLoading, setSearchLoading] = useState(false);
   const [pricingLoading, setPricingLoading] = useState(false);
   const [error, setError] = useState(null);
   const [lastResponse, setLastResponse] = useState(null);
@@ -161,13 +133,16 @@ export function AIAssistantPanel() {
   const [pricingCounty, setPricingCounty] = useState('');
   const [pricingZip, setPricingZip] = useState('');
   const [pricingMarketType, setPricingMarketType] = useState('residential');
+  const [pricingBeds, setPricingBeds] = useState('');
+  const [pricingBaths, setPricingBaths] = useState('');
+  const [pricingSqft, setPricingSqft] = useState('');
+  const [pricingGarage, setPricingGarage] = useState('');
   const [isCompareOpen, setIsCompareOpen] = useState(false);
   const [compareProps, setCompareProps] = useState([]);
   const [selectedComps, setSelectedComps] = useState([]);
   const [includeSubjectInCompare, setIncludeSubjectInCompare] = useState(true);
 
-  const anyLoading = searchLoading || pricingLoading;
-  const isSearchComingSoon = true;
+  const anyLoading = pricingLoading;
 
   const relaxationNotes = useMemo(() => {
     if (!Array.isArray(lastResponse?.reasoning)) return [];
@@ -268,7 +243,6 @@ export function AIAssistantPanel() {
   }, [lastResponse?.subject, lastResponse?.listings]);
 
   const pricingHero = useMemo(() => {
-    if (tab !== 'pricing') return null;
     const low = Number(lastResponse?.price_range?.low);
     const high = Number(lastResponse?.price_range?.high);
     const midRaw = Number(lastResponse?.price_range?.mid);
@@ -285,7 +259,7 @@ export function AIAssistantPanel() {
       comps,
       marketType: String(lastResponse?.market_type || 'residential'),
     };
-  }, [tab, lastResponse?.price_range, lastResponse?.listings, lastResponse?.market_type]);
+  }, [lastResponse?.price_range, lastResponse?.listings, lastResponse?.market_type]);
 
   useEffect(() => {
     setSelectedComps([]);
@@ -297,21 +271,15 @@ export function AIAssistantPanel() {
     const key = storageKeyForUser(user.id);
     const pricingKey = pricingStorageKeyForUser(user.id);
     const pricingHistoryKey = pricingHistoryKeyForUser(user.id);
-    if (!key || !pricingKey) return;
+    if (!pricingKey) return;
 
-    const searchEntry = cacheGetEntry(key, { ttlMs: ASSISTANT_CACHE_TTL_MS });
     const pricingEntry = cacheGetEntry(pricingKey, { ttlMs: ASSISTANT_CACHE_TTL_MS });
     const pricingHistoryEntry = pricingHistoryKey
       ? cacheGetEntry(pricingHistoryKey, { ttlMs: ASSISTANT_CACHE_TTL_MS })
       : null;
 
-    const candidates = [
-      searchEntry?.data ? { kind: 'search', savedAt: searchEntry.savedAt, payload: searchEntry.data } : null,
-      pricingEntry?.data ? { kind: 'pricing', savedAt: pricingEntry.savedAt, payload: pricingEntry.data } : null,
-    ].filter(Boolean);
-
-    if (candidates.length === 0) {
-      cacheRemove(key);
+    if (!pricingEntry?.data) {
+      if (key) cacheRemove(key);
       cacheRemove(pricingKey);
       return;
     }
@@ -320,29 +288,19 @@ export function AIAssistantPanel() {
       setPricingHistory(pricingHistoryEntry.data.slice(0, 3));
     }
 
-    candidates.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
-    const winner = candidates[0];
+    setLastResponse(pricingEntry.data?.response || null);
+    setRestoredAt(pricingEntry.savedAt ? new Date(pricingEntry.savedAt).toISOString() : null);
 
-    setTab(winner.kind);
-    setLastResponse(winner.payload?.response || null);
-    setRestoredAt(winner.savedAt ? new Date(winner.savedAt).toISOString() : null);
-
-    if (winner.kind === 'search') {
-      if (typeof winner.payload?.role === 'string' && winner.payload.role) setRole(winner.payload.role);
-      if (typeof winner.payload?.query === 'string' && winner.payload.query) {
-        setLastSearchQuery(winner.payload.query);
-        setInput('');
-      }
-    }
-
-    if (winner.kind === 'pricing') {
-      setPricingStreet('');
-      setPricingCounty('');
-      setPricingZip('');
-      const savedMarketType = String(winner.payload?.pricingMarketType || '').trim();
-      const isKnownMarket = MARKET_TYPE_OPTIONS.some((opt) => opt.value === savedMarketType);
-      setPricingMarketType(isKnownMarket ? savedMarketType : 'residential');
-    }
+    setPricingStreet('');
+    setPricingCounty('');
+    setPricingZip('');
+    const savedMarketType = String(pricingEntry.data?.pricingMarketType || '').trim();
+    const isKnownMarket = MARKET_TYPE_OPTIONS.some((opt) => opt.value === savedMarketType);
+    setPricingMarketType(isKnownMarket ? savedMarketType : 'residential');
+    setPricingBeds(String(pricingEntry.data?.pricingBeds || '').trim());
+    setPricingBaths(String(pricingEntry.data?.pricingBaths || '').trim());
+    setPricingSqft(String(pricingEntry.data?.pricingSqft || '').trim());
+    setPricingGarage(String(pricingEntry.data?.pricingGarage || '').trim());
   }, [user?.id]);
 
   const clearAssistantState = () => {
@@ -355,74 +313,6 @@ export function AIAssistantPanel() {
     setRestoredAt(null);
     setLastResponse(null);
     setError(null);
-  };
-
-  const canSearch = useMemo(
-    () => input.trim().length > 0 && !anyLoading && !isSearchComingSoon,
-    [input, anyLoading, isSearchComingSoon]
-  );
-
-  const onSearch = async () => {
-    if (isSearchComingSoon) return;
-    if (!canSearch) return;
-    setError(null);
-    setSearchLoading(true);
-    setLastResponse(null);
-
-    try {
-      const { data } = await supabase.auth.getSession();
-      const token = data?.session?.access_token || null;
-
-      const res = await fetch('/api/ai/search', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify({ query: input.trim(), role })
-      });
-
-      if (!res.ok) {
-        const text = await res.text().catch(() => '');
-        let parsed;
-        try {
-          parsed = JSON.parse(text);
-        } catch {
-          parsed = null;
-        }
-        const msg = parsed?.error || parsed?.answer || text;
-        throw new Error(`AI search failed (${res.status}): ${String(msg).slice(0, 300)}`);
-      }
-
-      const json = await res.json();
-      setLastResponse(json);
-      setLastSearchQuery(input.trim());
-      setInput('');
-      if (user?.id) {
-        const key = storageKeyForUser(user.id);
-        if (key) {
-          cacheSet(
-            key,
-            {
-              query: input.trim(),
-              role,
-              response: json,
-            },
-            { ttlMs: ASSISTANT_CACHE_TTL_MS }
-          );
-          setRestoredAt(new Date().toISOString());
-        }
-
-        pushUserActivity(user.id, {
-          type: 'ai_search',
-          title: `AI search: ${input.trim().slice(0, 80)}${input.trim().length > 80 ? '…' : ''}`,
-        });
-      }
-    } catch (e) {
-      setError(e?.message || 'AI search failed');
-    } finally {
-      setSearchLoading(false);
-    }
   };
 
   const onPricing = async () => {
@@ -441,6 +331,12 @@ export function AIAssistantPanel() {
         county: pricingCounty.trim(),
         zip: pricingZip.trim(),
         market_type: pricingMarketType,
+        subject_details: {
+          beds: pricingBeds.trim() ? Number(pricingBeds) : null,
+          baths: pricingBaths.trim() ? Number(pricingBaths) : null,
+          sqft: pricingSqft.trim() ? Number(pricingSqft) : null,
+          garage: pricingGarage.trim() ? Number(pricingGarage) : null,
+        },
       };
 
       const retryableStatuses = new Set([408, 429, 500, 502, 503, 504]);
@@ -521,6 +417,10 @@ export function AIAssistantPanel() {
         county: pricingCounty.trim(),
         zip: pricingZip.trim(),
         marketType: pricingMarketType,
+        beds: pricingBeds.trim() || '',
+        baths: pricingBaths.trim() || '',
+        sqft: pricingSqft.trim() || '',
+        garage: pricingGarage.trim() || '',
         savedAt: new Date().toISOString(),
       };
       setPricingHistory((prev) => {
@@ -542,6 +442,10 @@ export function AIAssistantPanel() {
       setPricingStreet('');
       setPricingCounty('');
       setPricingZip('');
+      setPricingBeds('');
+      setPricingBaths('');
+      setPricingSqft('');
+      setPricingGarage('');
       if (user?.id) {
         const pricingKey = pricingStorageKeyForUser(user.id);
         if (pricingKey) {
@@ -552,6 +456,10 @@ export function AIAssistantPanel() {
               pricingCounty: pricingCounty.trim(),
               pricingZip: pricingZip.trim(),
               pricingMarketType,
+              pricingBeds: pricingBeds.trim(),
+              pricingBaths: pricingBaths.trim(),
+              pricingSqft: pricingSqft.trim(),
+              pricingGarage: pricingGarage.trim(),
               response: json,
             },
             { ttlMs: ASSISTANT_CACHE_TTL_MS }
@@ -566,6 +474,10 @@ export function AIAssistantPanel() {
             county: pricingCounty.trim(),
             zip: pricingZip.trim(),
             market_type: pricingMarketType,
+            beds: pricingBeds.trim() || null,
+            baths: pricingBaths.trim() || null,
+            sqft: pricingSqft.trim() || null,
+            garage: pricingGarage.trim() || null,
           },
         });
       }
@@ -579,111 +491,17 @@ export function AIAssistantPanel() {
   return (
     <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-sm">
       <div className="mb-4">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">AI Search</h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Pricing (CMA)</h2>
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Search using Trestle-backed retrieval + Easters AI reasoning.
+          Estimate value using real closed comps and internal CMA guidance.
         </p>
-      </div>
-
-      <div className="flex gap-2 mb-4">
-        <button
-          onClick={() => setTab('search')}
-          className={
-            tab === 'search'
-              ? 'px-3 py-1.5 rounded-md bg-teal-600 text-white text-sm'
-              : 'px-3 py-1.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm'
-          }
-        >
-          Search
-        </button>
-        <button
-          onClick={() => setTab('pricing')}
-          className={
-            tab === 'pricing'
-              ? 'px-3 py-1.5 rounded-md bg-teal-600 text-white text-sm'
-              : 'px-3 py-1.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm'
-          }
-        >
-          Pricing (CMA)
-        </button>
       </div>
 
       {!user?.id ? (
         <div className="text-sm text-gray-700 dark:text-gray-300">Log in to use the assistant.</div>
       ) : (
         <>
-          {tab === 'search' ? (
-            <>
-              <div className="mt-3 text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-                AI Assisted Search is coming soon. Pricing (CMA) is available now.
-              </div>
-              <div className="mt-3">
-                <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Role</label>
-                <select
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                  disabled={anyLoading || isSearchComingSoon}
-                  className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 text-sm"
-                >
-                  {ROLE_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {lastSearchQuery ? (
-                <div className="mt-3 flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
-                  <span>Last search:</span>
-                  <button
-                    type="button"
-                    onClick={() => setInput(lastSearchQuery)}
-                    className="px-2 py-1 rounded-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-900"
-                  >
-                    {lastSearchQuery}
-                  </button>
-                </div>
-              ) : null}
-
-              <div className="mt-3 flex gap-2">
-                <div className="relative flex-1">
-                  <input
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') onSearch();
-                    }}
-                    placeholder="AI Assisted Search coming soon"
-                    disabled={isSearchComingSoon}
-                    className="w-full pr-9 px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 text-sm"
-                  />
-                  {input.trim() ? (
-                    <button
-                      type="button"
-                      onClick={() => setInput('')}
-                      className="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-600"
-                      aria-label="Clear search input"
-                    >
-                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  ) : null}
-                </div>
-                <button
-                  onClick={onSearch}
-                  disabled={!canSearch}
-                  className="px-4 py-2 rounded-md bg-teal-600 text-white text-sm disabled:opacity-60"
-                >
-                  {searchLoading ? 'Searching…' : 'Search'}
-                </button>
-              </div>
-
-              {searchLoading ? <LoadingRow label="Thinking" /> : null}
-            </>
-          ) : (
-            <>
+          <>
               <div className="mt-3">
                 <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Street address</label>
                 {pricingHistory.length > 0 ? (
@@ -698,6 +516,10 @@ export function AIAssistantPanel() {
                           setPricingCounty(item.county || '');
                           setPricingZip(item.zip || '');
                           setPricingMarketType(item.marketType || 'residential');
+                          setPricingBeds(item.beds || '');
+                          setPricingBaths(item.baths || '');
+                          setPricingSqft(item.sqft || '');
+                          setPricingGarage(item.garage || '');
                         }}
                         className="px-2 py-1 rounded-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-900"
                       >
@@ -799,6 +621,49 @@ export function AIAssistantPanel() {
                 Pricing uses real closed comps and internal CMA guidance.
               </div>
 
+              <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div>
+                  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Beds</label>
+                  <input
+                    value={pricingBeds}
+                    onChange={(e) => setPricingBeds(e.target.value.replace(/[^0-9.]/g, ''))}
+                    inputMode="decimal"
+                    placeholder="e.g. 3"
+                    className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Baths</label>
+                  <input
+                    value={pricingBaths}
+                    onChange={(e) => setPricingBaths(e.target.value.replace(/[^0-9.]/g, ''))}
+                    inputMode="decimal"
+                    placeholder="e.g. 2.5"
+                    className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Sq Ft</label>
+                  <input
+                    value={pricingSqft}
+                    onChange={(e) => setPricingSqft(e.target.value.replace(/[^0-9]/g, ''))}
+                    inputMode="numeric"
+                    placeholder="e.g. 1850"
+                    className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Garage</label>
+                  <input
+                    value={pricingGarage}
+                    onChange={(e) => setPricingGarage(e.target.value.replace(/[^0-9]/g, ''))}
+                    inputMode="numeric"
+                    placeholder="e.g. 2"
+                    className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 text-sm"
+                  />
+                </div>
+              </div>
+
               <div className="mt-3 flex gap-2">
                 <button
                   onClick={onPricing}
@@ -818,8 +683,7 @@ export function AIAssistantPanel() {
                   )}
                 </button>
               </div>
-            </>
-          )}
+          </>
 
           {error ? (
             <div className="mt-3 text-sm text-red-600 dark:text-red-400">{error}</div>
@@ -909,7 +773,7 @@ export function AIAssistantPanel() {
                 </div>
               ) : null}
 
-              {tab === 'pricing' && pricingMapData ? (
+              {pricingMapData ? (
                 <div className="mt-2 grid grid-cols-1 xl:grid-cols-[1.35fr_0.9fr] gap-4 items-start">
                   <PricingCompsMap
                     subject={pricingMapData.subject}
