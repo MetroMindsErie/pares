@@ -236,13 +236,22 @@ const SearchBar = ({
     }
   };
 
-  // Suggestion selection
+  // Suggestion selection with animation feedback
   const selectSuggestion = (suggestion) => {
     setSearchParams(prev => ({ ...prev, location: suggestion.searchValue || suggestion.value }));
     setShowSuggestions(false);
     setSuggestions([]);
     setActiveSuggestion(-1);
     saveRecentSearch(suggestion.label);
+    
+    // Add visual pulse effect to input
+    if (inputRef.current) {
+      inputRef.current.classList.add('ring-2', 'ring-teal-400', 'ring-offset-1');
+      setTimeout(() => {
+        inputRef.current?.classList.remove('ring-2', 'ring-teal-400', 'ring-offset-1');
+      }, 300);
+    }
+    
     inputRef.current?.focus();
   };
 
@@ -383,16 +392,20 @@ const SearchBar = ({
       <form onSubmit={handleSubmit} className="space-y-3 relative">
         {/* Main Search Bar - Zillow-style */}
         <div className="relative">
-          <div className="flex items-stretch rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-visible focus-within:ring-2 focus-within:ring-teal-400 focus-within:border-teal-400 dark:focus-within:ring-teal-500 dark:focus-within:border-teal-500 transition-all duration-200">
+          <div className={`flex items-stretch rounded-xl shadow-lg border transition-all duration-200 ${
+            showSuggestions && allSuggestions.length > 0
+              ? 'border-teal-400 dark:border-teal-500 ring-2 ring-teal-200 dark:ring-teal-900/50'
+              : 'border-slate-200 dark:border-slate-700 focus-within:ring-2 focus-within:ring-teal-400 focus-within:border-teal-400 dark:focus-within:ring-teal-500 dark:focus-within:border-teal-500'
+          } bg-white dark:bg-slate-800 overflow-visible`}>
             {/* Search icon */}
             <div className="flex items-center pl-4 pr-2">
               {fetchingSuggestions ? (
-                <svg className="animate-spin h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24">
+                <svg className="animate-spin h-5 w-5 text-teal-500" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
               ) : (
-                <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className={`h-5 w-5 transition-colors ${searchParams.location ? 'text-teal-500' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               )}
@@ -411,13 +424,14 @@ const SearchBar = ({
               placeholder="Search address, city, county, or ZIP..."
               autoComplete="off"
               style={{fontFamily:'var(--font-poppins, Poppins), sans-serif'}}
-              className="flex-1 min-w-0 px-2 py-3.5 sm:py-4 text-sm sm:text-base bg-transparent border-0 focus:ring-0 focus:outline-none text-slate-800 dark:text-slate-100 placeholder-slate-400"
+              className="flex-1 min-w-0 px-2 py-3.5 sm:py-4 text-sm sm:text-base bg-transparent border-0 focus:ring-0 focus:outline-none text-slate-800 dark:text-slate-100 placeholder-slate-400 transition-colors"
             />
 
-            {/* Clear */}
+            {/* Clear with animation */}
             {searchParams.location && (
               <button type="button" onClick={() => { setSearchParams(prev => ({ ...prev, location: '' })); setSuggestions([]); setShowSuggestions(false); inputRef.current?.focus(); }}
-                className="px-2 flex items-center text-gray-400 hover:text-gray-600 transition-colors">
+                className="px-2 flex items-center text-gray-400 hover:text-red-500 transition-all duration-200 hover:scale-110"
+                title="Clear search">
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             )}
@@ -425,7 +439,7 @@ const SearchBar = ({
             {/* Search button */}
             <button type="submit" disabled={loading}
               style={{fontFamily:'var(--font-poppins, Poppins), sans-serif'}}
-              className="flex items-center gap-2 px-5 sm:px-7 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white font-semibold text-[0.72rem] sm:text-[0.8rem] tracking-[0.1em] uppercase transition-all duration-200 disabled:opacity-60 min-h-[48px] rounded-r-xl shadow-sm">
+              className="flex items-center gap-2 px-5 sm:px-7 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white font-semibold text-[0.72rem] sm:text-[0.8rem] tracking-[0.1em] uppercase transition-all duration-200 disabled:opacity-60 hover:shadow-lg min-h-[48px] rounded-r-xl shadow-sm">
               {loading ? (
                 <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -443,45 +457,114 @@ const SearchBar = ({
           {/* Autocomplete Dropdown */}
           {showSuggestions && allSuggestions.length > 0 && (
             <div ref={suggestionsRef}
-              className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl z-50 max-h-[min(400px,60vh)] overflow-y-auto">
+              className="absolute top-full left-0 right-0 mt-3 bg-white dark:bg-gray-850 border border-gray-300 dark:border-gray-600 rounded-lg shadow-2xl z-50 max-h-[400px] overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-150"
+              style={{
+                scrollBehavior: 'smooth',
+              }}>
               {searchParams.location.length < 2 && recentSearches.length > 0 && (
-                <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 dark:border-gray-700">
-                  <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Recent Searches</span>
+                <div className="sticky top-0 bg-white dark:bg-gray-850 border-b-2 border-gray-200 dark:border-gray-700 flex items-center justify-between px-4 py-3">
+                  <span className="text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-widest">🕐 Recent Searches</span>
                   <button type="button" onClick={() => { localStorage.removeItem('pares_recent_searches'); setRecentSearches([]); setShowSuggestions(false); }}
-                    className="text-xs text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400 transition-colors">Clear</button>
+                    className="text-xs text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400 transition-colors font-semibold">Clear</button>
                 </div>
               )}
               {(() => {
                 let lastType = '';
-                return allSuggestions.map((suggestion, index) => {
+                const addressSuggestions = allSuggestions.filter(s => s.type === 'address');
+                const otherSuggestions = allSuggestions.filter(s => s.type !== 'address');
+                const recentSearchSuggestions = allSuggestions.filter(s => s.type === 'recent');
+                
+                // Show addresses first with prominent styling, then other types
+                const orderedSuggestions = [
+                  ...addressSuggestions,
+                  ...otherSuggestions,
+                ];
+                
+                return orderedSuggestions.map((suggestion, index) => {
                   const showHeader = suggestion.type !== lastType && searchParams.location.length >= 2;
                   lastType = suggestion.type;
+                  const isActive = allSuggestions.findIndex(s => 
+                    s.type === suggestion.type && s.label === suggestion.label
+                  ) === activeSuggestion;
+                  
                   return (
                     <React.Fragment key={`${suggestion.type}-${suggestion.label}-${index}`}>
                       {showHeader && (
-                        <div className="px-4 py-1.5 bg-gray-50 dark:bg-gray-750 border-b border-gray-100 dark:border-gray-700">
-                          <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            {suggestion.type === 'address' ? 'Addresses' : suggestion.type === 'city' ? 'Cities' : suggestion.type === 'county' ? 'Counties' : suggestion.type === 'zip' ? 'ZIP Codes' : ''}
+                        <div className="px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-b-2 border-gray-200 dark:border-gray-600">
+                          <span className="text-xs font-bold text-gray-800 dark:text-gray-100 uppercase tracking-widest">
+                            {suggestion.type === 'address' ? '📍 Addresses' : suggestion.type === 'city' ? '🏙️ Cities' : suggestion.type === 'county' ? '🗺️ Counties' : suggestion.type === 'zip' ? '📧 ZIP Codes' : ''}
                           </span>
                         </div>
                       )}
-                      <button type="button" onClick={() => selectSuggestion(suggestion)}
-                        className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${index === activeSuggestion ? 'bg-teal-50 dark:bg-teal-900/30' : 'hover:bg-teal-50/60 dark:hover:bg-teal-900/20'}`}>
-                        <TypeIcon type={suggestion.type} />
-                        <div className="flex-1 min-w-0">
-                          <span className="text-sm text-gray-900 dark:text-gray-100 truncate block">{suggestion.label}</span>
-                          {suggestion.type === 'address' && suggestion.county && (
-                            <span className="text-xs text-gray-500 dark:text-gray-400">{suggestion.county} County</span>
+                      
+                      {suggestion.type === 'address' ? (
+                        /* Enhanced Address Suggestion */
+                        <button type="button" onClick={() => selectSuggestion(suggestion)}
+                          className={`w-full px-4 py-3.5 text-left transition-all duration-150 border-b border-gray-200 dark:border-gray-700 last:border-b-0 hover:no-underline ${
+                            isActive 
+                              ? 'bg-teal-500 dark:bg-teal-600' 
+                              : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                          }`}>
+                          <div className="flex items-start gap-3">
+                            <div className={`flex-shrink-0 mt-0.5 p-2.5 rounded-lg transition-all duration-150 ${
+                              isActive 
+                                ? 'bg-teal-600 dark:bg-teal-700 scale-110' 
+                                : 'bg-gray-200 dark:bg-gray-600'
+                            }`}>
+                              <svg className={`w-4 h-4 ${isActive ? 'text-white dark:text-white' : 'text-gray-700 dark:text-gray-200'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                              </svg>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className={`font-semibold text-sm truncate ${isActive ? 'text-white dark:text-white' : 'text-gray-900 dark:text-gray-100'}`}>
+                                {suggestion.label}
+                              </div>
+                              {suggestion.city || suggestion.county || suggestion.zip ? (
+                                <div className="flex items-center gap-1.5 mt-1.5 text-xs flex-wrap">
+                                  {suggestion.county && <span className="px-2 py-0.5 bg-purple-200 dark:bg-purple-700 text-purple-800 dark:text-purple-100 rounded-full font-semibold">{suggestion.county}</span>}
+                                  {suggestion.city && <span className="px-2 py-0.5 bg-blue-200 dark:bg-blue-700 text-blue-800 dark:text-blue-100 rounded-full font-semibold">{suggestion.city}</span>}
+                                  {suggestion.zip && <span className="px-2 py-0.5 bg-orange-200 dark:bg-orange-700 text-orange-800 dark:text-orange-100 rounded-full font-semibold">{suggestion.zip}</span>}
+                                </div>
+                              ) : null}
+                            </div>
+                            {isActive && (
+                              <div className="flex-shrink-0 animate-pulse">
+                                <div className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white dark:bg-gray-200">
+                                  <svg className="w-4 h-4 text-teal-600" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </button>
+                      ) : (
+                        /* Regular Suggestions (City, County, ZIP) */
+                        <button type="button" onClick={() => selectSuggestion(suggestion)}
+                          className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all duration-150 border-b border-gray-200 dark:border-gray-700 last:border-b-0 ${
+                            isActive 
+                              ? 'bg-teal-500 dark:bg-teal-600' 
+                              : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                          }`}>
+                          <TypeIcon type={suggestion.type} />
+                          <div className="flex-1 min-w-0">
+                            <span className={`text-sm truncate block font-medium ${isActive ? 'text-white dark:text-white' : 'text-gray-900 dark:text-gray-100'}`}>{suggestion.label}</span>
+                          </div>
+                          <span className={`text-xs px-2.5 py-1 rounded-full font-semibold whitespace-nowrap transition-all ${
+                            suggestion.type === 'city' ? (isActive ? 'bg-blue-300 text-blue-900 dark:bg-blue-400 dark:text-blue-950' : 'bg-blue-200 text-blue-800 dark:bg-blue-700 dark:text-blue-100') :
+                            suggestion.type === 'county' ? (isActive ? 'bg-purple-300 text-purple-900 dark:bg-purple-400 dark:text-purple-950' : 'bg-purple-200 text-purple-800 dark:bg-purple-700 dark:text-purple-100') :
+                            suggestion.type === 'zip' ? (isActive ? 'bg-orange-300 text-orange-900 dark:bg-orange-400 dark:text-orange-950' : 'bg-orange-200 text-orange-800 dark:bg-orange-700 dark:text-orange-100') :
+                            (isActive ? 'bg-gray-300 text-gray-900 dark:bg-gray-400 dark:text-gray-950' : 'bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200')
+                          }`}>{typeLabel(suggestion.type)}</span>
+                          {isActive && (
+                            <div className="text-white dark:text-white animate-pulse">
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </div>
                           )}
-                        </div>
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                          suggestion.type === 'address' ? 'bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200' :
-                          suggestion.type === 'city' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' :
-                          suggestion.type === 'county' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' :
-                          suggestion.type === 'zip' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300' :
-                          'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
-                        }`}>{typeLabel(suggestion.type)}</span>
-                      </button>
+                        </button>
+                      )}
                     </React.Fragment>
                   );
                 });

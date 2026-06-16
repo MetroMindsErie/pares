@@ -14,10 +14,12 @@ CREATE INDEX IF NOT EXISTS gc_created_idx ON public.geocode_cache (created_at DE
 -- RLS: anyone can read, only service role can write
 ALTER TABLE public.geocode_cache ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Allow read access for all" ON public.geocode_cache;
 CREATE POLICY "Allow read access for all"
   ON public.geocode_cache FOR SELECT
   USING (true);
 
+DROP POLICY IF EXISTS "Allow service role full access" ON public.geocode_cache;
 CREATE POLICY "Allow service role full access"
   ON public.geocode_cache FOR ALL
   USING (auth.role() = 'service_role');
