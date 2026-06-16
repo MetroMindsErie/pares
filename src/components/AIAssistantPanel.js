@@ -52,14 +52,6 @@ function pricingHistoryKeyForUser(userId) {
 
 const ASSISTANT_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
 
-function buildZipRange(start, end) {
-  const out = [];
-  for (let i = start; i <= end; i += 1) {
-    out.push(String(i));
-  }
-  return out;
-}
-
 const COUNTY_OPTIONS = [
   { value: 'Erie', label: 'Erie' },
   { value: 'Crawford', label: 'Crawford' },
@@ -76,47 +68,25 @@ const MARKET_TYPE_OPTIONS = [
 ];
 
 const COUNTY_ZIP_OPTIONS = {
-  // Erie County, PA - All zip codes
+  // Erie County, PA - All zip codes (matched to Zillow)
   Erie: [
-    ...buildZipRange(16501, 16515), // Erie City
-    '16411', // Albion
-    '16421', // Corry
-    '16423', // Cranesville
-    '16426', // East Springfield
-    '16427', // Edinboro
-    '16428', // Elgin
-    '16430', // Fairview
-    '16434', // Girard
-    '16438', // Harborcreek
-    '16440', // Lake City
-    '16441', // Lawrence Park
-    '16442', // McKean
-    '16444', // Mill Village
-    '16475', // Waterford
+    '16509', '16510', '16506', '16504', '16503', '16508', '16505', '16502', '16428', '16511',
+    '16412', '16441', '16407', '16507', '16417', '16415', '16438', '16533', '16401', '16532',
+    '16554', '16423', '16426', '16501', '16442', '16421', '16410', '16411', '16443', '16546',
+    '16430', '16565', '16563', '16427', '16534', '16413', '16444', '16475', '16512', '16514',
+    '16515', '16522', '16530', '16531', '16538', '16541', '16544', '16550', '16553',
   ],
-  // Crawford County, PA - All zip codes
+  // Crawford County, PA - All zip codes (matched to Zillow)
   Crawford: [
-    '16101', '16111', '16137', '16142', '16150', // Western area
-    '16311', '16314', '16316', '16319', '16327', // Northern area
-    '16331', '16335', '16341', '16342', '16353', // Central area
-    '16360', '16364', '16373', '16374', '16388', // Eastern area
-    '16401', '16403', '16404', '16407', '16410', // Southern area
-    '16412', '16415', '16417', '16424', '16433', // Meadville area
-    '16435', '16438', '16440', // Lake Erie border area
+    '16335', '16412', '16354', '16438', '16403', '16314', '16316', '16424', '16433', '16134',
+    '16404', '16406', '16434', '16327', '16435', '16111', '16360', '16131', '16440', '16110',
+    '16328', '16388', '16422', '16432',
   ],
-  // Warren County, PA - All zip codes
+  // Warren County, PA - All zip codes (matched to Zillow)
   Warren: [
-    '16301', // Warren city (main)
-    '16313', // Bear Lake
-    '16329', // Clarendon
-    '16340', // Grand Valley
-    '16345', // Irvine
-    '16347', // Pittsfield
-    '16350', // Russell
-    '16351', // Sheffield
-    '16352', // Spring Creek
-    '16365', // Tidioute
-    '16371', // Warren (west)
+    '16365', '16407', '16345', '16371', '16434', '16350', '16347', '16340', '16313', '16351',
+    '16405', '16436', '16402', '16420', '16329', '16312', '16352', '16366', '16367', '16368',
+    '16369', '16416',
   ],
 };
 
