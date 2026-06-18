@@ -189,7 +189,10 @@ export default function TermsOfService() {
         React.createElement(
           'p',
           { style: paragraphStyle },
-          'You may request deletion of your account and personal data at any time. We will process such requests within 30 days.'
+          'You may request deletion of your account and associated personal data by: ' +
+          '(1) Sending an email to support@pares.homes. ' +
+          '(2) Please include the email address associated with your account in your request. ' +
+          'We will process your request within 30 calendar days and confirm once your data has been deleted, by sending you a confirmation email to the address associated with your account.'
         ),
         React.createElement(
           'p',
