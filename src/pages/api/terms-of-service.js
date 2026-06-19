@@ -8,7 +8,7 @@ export default edgeHandler(function handler(req, res) {
       message: "Terms of Service for Pares",
       termsUrl: `${process.env.NEXT_PUBLIC_APP_URL || req.headers.origin}/terms-of-service`,
       lastUpdated: new Date().toISOString(),
-      contactEmail: "support@example.com" // Replace with your actual support email
+      contactEmail: "support@parealestatesolutions.com"
     });
   }
   

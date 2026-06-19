@@ -97,6 +97,41 @@ export default function PrivacyPolicy() {
               </div>
             </div>
 
+            <div className="bg-white shadow-md rounded-lg p-6 mb-8 border-l-4 border-red-600">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-4">Data Retention and Deletion</h2>
+              <p className="text-gray-700 mb-4">
+                We retain your personal data only for as long as your account is active or as
+                needed to provide you with our services. <strong>You can request that we delete
+                your personal data at any time, and we will delete it upon your request.</strong>
+              </p>
+              <p className="text-gray-700 mb-4">
+                <strong>How to request deletion of your data:</strong> To request that your personal
+                data be deleted, send an email to{' '}
+                <a href="mailto:support@parealestatesolutions.com" className="text-teal-600 hover:text-teal-800 font-medium">
+                  support@parealestatesolutions.com
+                </a>{' '}
+                with the subject line &quot;Data Deletion Request&quot; and include the email address
+                associated with your account. We will permanently delete your personal data from our
+                systems within 30 days of receiving your request and will confirm by email once the
+                deletion is complete.
+              </p>
+              <div className="p-4 bg-teal-50 rounded-md">
+                <h3 className="font-medium text-teal-800 mb-2">Deleting Data Obtained Through Facebook Login</h3>
+                <p className="text-sm text-teal-700">
+                  If you signed in using Facebook and would like to delete the data we received
+                  through Facebook (such as your public profile and email address), you may either
+                  email us at{' '}
+                  <a href="mailto:support@parealestatesolutions.com" className="underline font-medium">
+                    support@parealestatesolutions.com
+                  </a>{' '}
+                  as described above, or remove our app directly from your Facebook account by going
+                  to <strong>Settings &amp; Privacy &rarr; Settings &rarr; Apps and Websites</strong>,
+                  selecting our app, and choosing &quot;Remove.&quot; Upon removal or request, all
+                  personal data associated with your account will be permanently deleted.
+                </p>
+              </div>
+            </div>
+
             <div className="bg-white shadow-md rounded-lg p-6 mb-8 border-l-4 border-teal-600">
               <h2 className="text-2xl font-semibold text-gray-800 mb-4">Policy Updates</h2>
               <p className="text-gray-700">

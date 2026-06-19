@@ -177,43 +177,14 @@ export default function TermsOfService() {
         )
       ),
       
-      // Section 4: Data Deletion
+      // Section 4: Third-Party Authentication
       React.createElement(
         'div',
         { style: sectionStyle },
         React.createElement(
           'h2',
           { style: sectionTitleStyle },
-          '4. Data Deletion'
-        ),
-        React.createElement(
-          'p',
-          { style: paragraphStyle },
-          'You may request deletion of your account and associated personal data by: ' +
-          '(1) Sending an email to support@pares.homes. ' +
-          '(2) Please include the email address associated with your account in your request. ' +
-          'We will process your request within 30 calendar days and confirm once your data has been deleted, by sending you a confirmation email to the address associated with your account.'
-        ),
-        React.createElement(
-          'p',
-          { style: paragraphStyle },
-          'If you\'ve used Facebook to create or access your account, you may also request deletion of your data through Facebook\'s data deletion request process. When we receive such requests from Facebook, we will delete all information associated with the Facebook account.'
-        ),
-        React.createElement(
-          'p',
-          { style: paragraphStyle },
-          'Deletion may not remove data from our backup systems, which will be removed according to our backup rotation schedule.'
-        )
-      ),
-      
-      // Section 5: Third-Party Authentication
-      React.createElement(
-        'div',
-        { style: sectionStyle },
-        React.createElement(
-          'h2',
-          { style: sectionTitleStyle },
-          '5. Third-Party Authentication'
+          '4. Third-Party Authentication'
         ),
         React.createElement(
           'p',
@@ -222,14 +193,14 @@ export default function TermsOfService() {
         )
       ),
       
-      // Section 6: Prohibited Uses
+      // Section 5: Prohibited Uses
       React.createElement(
         'div',
         { style: sectionStyle },
         React.createElement(
           'h2',
           { style: sectionTitleStyle },
-          '6. Prohibited Uses'
+          '5. Prohibited Uses'
         ),
         React.createElement(
           'p',
@@ -246,14 +217,14 @@ export default function TermsOfService() {
         )
       ),
       
-      // Section 7: Termination
+      // Section 6: Termination
       React.createElement(
         'div',
         { style: sectionStyle },
         React.createElement(
           'h2',
           { style: sectionTitleStyle },
-          '7. Termination'
+          '6. Termination'
         ),
         React.createElement(
           'p',
@@ -267,14 +238,14 @@ export default function TermsOfService() {
         )
       ),
       
-      // Section 8: Limitation of Liability
+      // Section 7: Limitation of Liability
       React.createElement(
         'div',
         { style: sectionStyle },
         React.createElement(
           'h2',
           { style: sectionTitleStyle },
-          '8. Limitation of Liability'
+          '7. Limitation of Liability'
         ),
         React.createElement(
           'p',
@@ -283,14 +254,14 @@ export default function TermsOfService() {
         )
       ),
       
-      // Section 9: Changes to Terms
+      // Section 8: Changes to Terms
       React.createElement(
         'div',
         { style: sectionStyle },
         React.createElement(
           'h2',
           { style: sectionTitleStyle },
-          '9. Changes to Terms'
+          '8. Changes to Terms'
         ),
         React.createElement(
           'p',
@@ -304,19 +275,19 @@ export default function TermsOfService() {
         )
       ),
       
-      // Section 10: Contact Us
+      // Section 9: Contact Us
       React.createElement(
         'div',
         { style: sectionStyle },
         React.createElement(
           'h2',
           { style: sectionTitleStyle },
-          '10. Contact Us'
+          '9. Contact Us'
         ),
         React.createElement(
           'p',
           { style: paragraphStyle },
-          'If you have any questions about these Terms, please contact us at support@example.com.'
+          'If you have any questions about these Terms, please contact us at support@parealestatesolutions.com.'
         )
       ),
       
