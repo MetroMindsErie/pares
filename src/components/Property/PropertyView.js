@@ -2,7 +2,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/auth-context';
 import { ActiveProperty } from '../ActiveProperty';
-import CryptoProperty from './CryptoProperty';
+import dynamic from 'next/dynamic';
+// Chart.js-heavy template — loaded on demand so it stays out of the shared bundle
+const CryptoProperty = dynamic(() => import('./CryptoProperty'), { ssr: false });
 import { 
   checkCryptoInvestorRole, 
   getCryptoViewToggleState, 

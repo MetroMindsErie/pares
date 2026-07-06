@@ -13,6 +13,7 @@ import { TaxInformation, HistoryInformation, NeighborhoodCommunity, SchoolsEduca
 import PropertyFactsAndFeatures from './Property/PropertyFactsAndFeatures';
 import ComparablePropertiesWidget from './Property/ComparablePropertiesWidget';
 import ActiveNearbyPropertiesWidget from './Property/ActiveNearbyPropertiesWidget';
+import MortgageCalculator from './Property/MortgageCalculator';
 import { useAuth } from '../context/auth-context';
 import { logPropertyView } from '../services/userActivityService';
 
@@ -315,6 +316,12 @@ export const ActiveProperty = ({ property, contextLoading, taxData, historyData,
         
         {/* Pricing tool: nearby comparable properties */}
         <ComparablePropertiesWidget property={property} />
+
+        {/* Monthly payment + PA transfer tax estimator */}
+        <MortgageCalculator
+          listPrice={Number(property.ListPrice) || 0}
+          annualTax={Number(property.TaxAnnualAmount) || null}
+        />
 
         {/* Property Overview */}
         <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-8">

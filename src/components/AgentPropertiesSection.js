@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBed, faBath, faRuler, faCar, faBuilding } from '@fortawesome/free-solid-svg-icons';
+import { proxiedImageUrl, imageSrcSet } from '../utils/imageProxy';
 
 /**
  * Component to display agent's listed, pending, and sold properties
@@ -137,9 +138,13 @@ const AgentPropertiesSection = ({ agentName, properties = [] }) => {
                 <div className="relative w-full h-48 bg-gray-200 overflow-hidden">
                   {property.media && property.media !== '/fallback-property.jpg' ? (
                     <img
-                      src={property.media}
+                      src={proxiedImageUrl(property.media, 640)}
+                      srcSet={imageSrcSet(property.media)}
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                       alt={property.UnparsedAddress || 'Property'}
                       className="w-full h-full object-cover hover:scale-105 transition-transform"
+                      loading="lazy"
+                      decoding="async"
                       onError={(e) => {
                         e.target.src = '/fallback-property.jpg';
                       }}

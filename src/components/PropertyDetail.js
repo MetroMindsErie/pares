@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../context/auth-context';
 import ActiveProperty from './Property/ActiveProperty';
-import CryptoProperty from './Property/CryptoProperty';
+import dynamic from 'next/dynamic';
+// Chart.js-heavy template — loaded on demand so it stays out of the shared bundle
+const CryptoProperty = dynamic(() => import('./Property/CryptoProperty'), { ssr: false });
 import supabase from '../lib/supabase-setup';
 
 const PropertyDetail = ({ property, onClose }) => {

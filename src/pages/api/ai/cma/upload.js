@@ -98,7 +98,7 @@ export default edgeHandler(async function handler(req, res) {
     res.setHeader('Content-Type', upstream.headers.get('content-type') || 'application/json');
     return res.send(upstreamText);
   } catch (e) {
-    return json(res, 500, { error: 'CMA upload failed', details: e?.message || String(e) });
+    return json(res, 500, { error: 'CMA upload failed'});
   }
 }
 

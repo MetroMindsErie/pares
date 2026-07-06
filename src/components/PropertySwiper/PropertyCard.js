@@ -1,4 +1,6 @@
 import React, { useState, useMemo } from 'react';
+import { proxiedImageUrl, imageSrcSet } from '../../utils/imageProxy';
+import { AGENT } from '../../config/agent';
 import { motion, useMotionValue, useTransform } from 'framer-motion';import { getPrimaryPhotoUrl } from '../../utils/mediaHelpers';import { useRouter } from 'next/router';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
@@ -112,13 +114,13 @@ const PropertyCard = ({ property, onSwipe, isTop = false, isMobile = false }) =>
                       getPrimaryPhotoUrl(property.Media) || 
                       '/fallback-property.jpg';
 
-  // Static buyer agent information
+  // Shared agent config — /dad.jpg was a broken (case-mismatched) path before
   const buyerAgent = {
-    name: 'John Easter',
-    email: 'easterjo106@yahoo.com',
-    phone: '814-873-5810',
-    agency: 'Pennington Lines',
-    photo: '/dad.jpg' // You can add John's photo here
+    name: AGENT.shortName,
+    email: AGENT.email,
+    phone: AGENT.phone,
+    agency: AGENT.agency,
+    photo: AGENT.photo
   };
 
   return (
@@ -143,9 +145,12 @@ const PropertyCard = ({ property, onSwipe, isTop = false, isMobile = false }) =>
         {/* Property Image */}
         <div className="relative h-[45%] sm:h-1/2 overflow-hidden">
           <img
-            src={displayImage || '/properties.jpg'}
+            src={proxiedImageUrl(displayImage, 960) || '/properties.jpg'}
+            srcSet={imageSrcSet(displayImage, [640, 960, 1280])}
+            sizes="(max-width: 640px) 100vw, 480px"
             alt={property.UnparsedAddress || 'Property'}
             className="w-full h-full object-cover"
+            decoding="async"
             draggable={false}
           />
           

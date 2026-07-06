@@ -3,9 +3,9 @@ import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import MapWrapper from './MapWrapper';
 import Link from 'next/link';
-import Image from 'next/legacy/image';
 import { getNextProperties } from '../services/trestleServices';
 import { getPrimaryPhotoUrl, getMediaUrls } from '../utils/mediaHelpers';
+import { proxiedImageUrl, imageSrcSet } from '../utils/imageProxy';
 
 const normalizeListingMedia = (listing) => {
   const mediaFromExpand = Array.isArray(listing?.Media) ? listing.Media : [];
@@ -67,18 +67,6 @@ const getImageSrc = (listing) =>
   '/fallback-property.jpg';
 
 // Route external MLS image URLs through the local proxy so they are cached at
-// the browser and Cloudflare CDN, and optionally resized/converted to WebP.
-const proxyImageUrl = (src, width = 480) => {
-  if (!src || src.startsWith('/')) return src;
-  try {
-    const parsed = new URL(src);
-    if (parsed.protocol !== 'https:') return src;
-    return `/api/proxy-image?url=${encodeURIComponent(src)}&w=${width}`;
-  } catch {
-    return src;
-  }
-};
-
 const getStatus = (listing) => listing?.StandardStatus || listing?.Status || listing?.status;
 
 const extractSpecialListingConditions = (listing) =>
@@ -313,7 +301,7 @@ const SearchResults = ({
             <div className="transition-all duration-500 ease-in-out">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {visibleListings.map((listing, idx) => {
-               const imageSrc = proxyImageUrl(getImageSrc(listing));
+               const imageSrc = getImageSrc(listing); // raw URL — proxiedImageUrl/imageSrcSet handle proxying + widths
                const listingKey = getListingKey(listing);
                const status = getStatus(listing);
                const isReo = isReoLike(listing);
@@ -329,14 +317,15 @@ const SearchResults = ({
                 >
                   <div className="relative h-48 sm:h-60">
                     <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/20 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    <Image
-                      src={imageSrc}
-                      alt={getAddress(listing)}
-                      layout="fill"
-                      className="object-cover transition-transform duration-700 group-hover:scale-105"
+                    <img
+                      src={proxiedImageUrl(imageSrc, 640)}
+                      srcSet={imageSrcSet(imageSrc)}
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                      priority={idx < 3}
+                      alt={getAddress(listing)}
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                       loading={idx < 3 ? 'eager' : 'lazy'}
+                      decoding="async"
+                      onError={(e) => { e.target.onerror = null; e.target.src = '/fallback-property.jpg'; }}
                     />
                     {(specialBadge || isReo || isForeclosure) && (
                       <div className="absolute top-2 left-2 z-20 flex flex-wrap gap-2">

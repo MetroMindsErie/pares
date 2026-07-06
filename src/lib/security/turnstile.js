@@ -5,12 +5,17 @@ import { getClientIp } from './request';
 const VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 
 export async function verifyTurnstileToken({ token, ip }) {
+  const isProduction = process.env.NODE_ENV === 'production';
   const secret = process.env.TURNSTILE_SECRET_KEY;
   if (!secret) {
+    if (isProduction) {
+      console.warn('[security] TURNSTILE_SECRET_KEY not set in production — verification bypassed');
+    }
     return { success: true, bypassed: true };
   }
 
-  if (token === '__dev_bypass__') {
+  // Dev-only escape hatch; never honored in production.
+  if (!isProduction && token === '__dev_bypass__') {
     return { success: true, bypassed: true };
   }
 
@@ -62,7 +67,6 @@ export async function enforceRiskBasedTurnstile({ req, res, pathname, token }) {
       ok: false,
       response: res.status(429).json({
         error: 'Too many requests. Please slow down and try again shortly.',
-        riskScore: policy.risk.score,
       }),
       policy,
     };
@@ -91,9 +95,6 @@ export async function enforceRiskBasedTurnstile({ req, res, pathname, token }) {
       response: res.status(403).json({
         error: 'Turnstile challenge required or failed.',
         challengeRequired: true,
-        riskScore: policy.risk.score,
-        reasons: policy.risk.reasons,
-        codes: verification.codes,
       }),
       policy,
       turnstile: verification,

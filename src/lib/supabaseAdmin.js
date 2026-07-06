@@ -13,7 +13,7 @@ export function getSupabaseAdminClient() {
     process.env.SUPABASE_SERVICE_KEY ||
     process.env.SUPABASE_ADMIN_KEY ||
     // Back-compat with existing codebase env naming (already used in API routes)
-    process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY;
+    process.env.SUPABASE_SERVICE_KEY;
 
   if (!url || !key) {
     return null;

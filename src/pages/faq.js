@@ -48,10 +48,25 @@ export default function FAQPage() {
 	return (
 		<Layout>
 			<Head>
-				<title>FAQ — PARES (FAQ & Support)</title>
+				<title>FAQ — pares.homes | Erie PA MLS Search Help</title>
 				<meta
 					name="description"
-					content="Frequently asked questions about searching the MLS, BiggerPockets feed, and how the PARES site works."
+					content="Frequently asked questions about searching the MLS, BiggerPockets feed, and how the pares.homes site works."
+				/>
+				{/* FAQPage structured data for Google rich results */}
+				<script
+					type="application/ld+json"
+					dangerouslySetInnerHTML={{
+						__html: JSON.stringify({
+							'@context': 'https://schema.org',
+							'@type': 'FAQPage',
+							mainEntity: FAQ_ITEMS.map((item) => ({
+								'@type': 'Question',
+								name: item.q,
+								acceptedAnswer: { '@type': 'Answer', text: item.a },
+							})),
+						}),
+					}}
 				/>
 			</Head>
 

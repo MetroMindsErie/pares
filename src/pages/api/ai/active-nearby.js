@@ -211,7 +211,7 @@ export default edgeHandler(async function handler(req, res) {
 
     return res.json({ listings, radius: { miles: radiusResult.radiusUsed, density, expanded: radiusResult.expandedRadius } });
   } catch (e) {
-    return res.status(500).json({ error: 'Active nearby lookup failed', details: e?.message || String(e) });
+    return res.status(500).json({ error: 'Active nearby lookup failed'});
   }
 }
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronLeft, faChevronRight, faTimes, faExpand, faSearchPlus, faSearchMinus } from '@fortawesome/free-solid-svg-icons';
+import { proxiedImageUrl, imageSrcSet } from '../utils/imageProxy';
 
 const ImageGallery = ({ images = [], address = 'Property' }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -66,9 +67,12 @@ const ImageGallery = ({ images = [], address = 'Property' }) => {
         {/* Main Image */}
         <div className="relative rounded-lg overflow-hidden bg-gray-100" style={{ height: '500px' }}>
           <img
-            src={safeImages[currentImageIndex]}
+            src={proxiedImageUrl(safeImages[currentImageIndex], 1280)}
+            srcSet={imageSrcSet(safeImages[currentImageIndex])}
+            sizes="(max-width: 1024px) 100vw, 66vw"
             alt={`${address} - Image ${currentImageIndex + 1}`}
             className="w-full h-full object-contain cursor-pointer hover:opacity-95 transition-opacity"
+            decoding="async"
             onClick={() => openLightbox(currentImageIndex)}
             onError={(e) => {
               console.error('Image failed to load:', e.target.src);
@@ -129,9 +133,11 @@ const ImageGallery = ({ images = [], address = 'Property' }) => {
                 aria-label={`View image ${index + 1}`}
               >
                 <img
-                  src={image}
+                  src={proxiedImageUrl(image, 320)}
                   alt={`${address} thumbnail ${index + 1}`}
                   className="w-full h-full object-cover"
+                  loading="lazy"
+                  decoding="async"
                   onError={(e) => {
                     e.target.onerror = null;
                     e.target.src = '/fallback-property.jpg';
@@ -181,7 +187,7 @@ const ImageGallery = ({ images = [], address = 'Property' }) => {
             onClick={(e) => e.stopPropagation()}
           >
             <img
-              src={safeImages[currentImageIndex]}
+              src={proxiedImageUrl(safeImages[currentImageIndex])}
               alt={`${address} - Image ${currentImageIndex + 1}`}
               className={`max-w-full transition-all duration-300 ${
                 isZoomed ? 'max-h-none w-auto cursor-zoom-out' : 'max-h-screen object-contain cursor-zoom-in'
@@ -233,9 +239,11 @@ const ImageGallery = ({ images = [], address = 'Property' }) => {
                     }`}
                   >
                     <img
-                      src={image}
+                      src={proxiedImageUrl(image, 320)}
                       alt={`Thumbnail ${index + 1}`}
                       className="w-full h-full object-cover"
+                      loading="lazy"
+                      decoding="async"
                       onError={(e) => {
                         e.target.onerror = null;
                         e.target.src = '/fallback-property.jpg';

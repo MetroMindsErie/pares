@@ -32,8 +32,10 @@ const PRIVATE_PATTERNS = [
 
 function isAllowedHost(hostname) {
   if (PRIVATE_PATTERNS.some((r) => r.test(hostname))) return false;
-  return ALLOWED_SUFFIXES.some(
-    (suffix) => hostname === suffix.replace(/^\./, '') || hostname.endsWith(suffix)
+  return ALLOWED_SUFFIXES.some((suffix) =>
+    suffix.startsWith('.')
+      ? hostname === suffix.slice(1) || hostname.endsWith(suffix)
+      : hostname === suffix // exact-host entries never suffix-match
   );
 }
 

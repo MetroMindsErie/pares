@@ -27,7 +27,7 @@ export default edgeHandler(async function handler(req, res) {
     res.setHeader('Cache-Control', 'no-store');
     return res.status(upstream.status).send(text);
   } catch (e) {
-    return res.status(500).json({ error: 'AI suggestions fetch failed', details: e?.message || String(e) });
+    return res.status(500).json({ error: 'AI suggestions fetch failed'});
   }
 }
 

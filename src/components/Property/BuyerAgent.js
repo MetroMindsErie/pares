@@ -1,19 +1,26 @@
 import React from 'react';
+import { useRouter } from 'next/router';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPhone, faEnvelope, faBuilding } from '@fortawesome/free-solid-svg-icons';
+import { useAnalytics } from '../../hooks/useAnalytics';
+import { AGENT } from '../../config/agent';
 
 const BuyerAgent = ({ className = "" }) => {
+  const router = useRouter();
+  const { trackEvent } = useAnalytics();
+  const onAgentPage = router.pathname === AGENT.profileUrl;
   const buyerAgent = {
-    name: 'John Easter',
-    email: 'easterjo106@yahoo.com',
-    phone: '814-873-5810',
-    agency: 'Pennington Lines Real Estate',
-    agencyPhone: '814-833-3310',
-    photo: '/dad.PNG',
-    title: 'Real Estate Agent'
+    name: AGENT.shortName,
+    email: AGENT.email,
+    phone: AGENT.phone,
+    agency: AGENT.agency,
+    agencyPhone: AGENT.agencyPhone,
+    photo: AGENT.photo,
+    title: AGENT.title
   };
 
   const handleContact = (type, value) => {
+    trackEvent(type === 'phone' ? 'phone_call' : 'email_click', { page: 'buyer_agent_card' });
     if (type === 'phone') {
       window.location.href = `tel:${value}`;
     } else if (type === 'email') {
@@ -67,13 +74,21 @@ const BuyerAgent = ({ className = "" }) => {
           </div>
         </div>
         
-        <div className="w-full sm:w-auto flex-shrink-0">
+        <div className="w-full sm:w-auto flex-shrink-0 flex flex-col gap-2">
           <button
             onClick={() => handleContact('phone', buyerAgent.phone)}
             className="w-full sm:w-auto bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium"
           >
             Contact Now
           </button>
+          {!onAgentPage && (
+            <a
+              href={`${AGENT.profileUrl}?property=${encodeURIComponent(router.asPath)}`}
+              className="w-full sm:w-auto text-center border border-teal-600 text-teal-700 px-4 py-2 rounded-lg hover:bg-teal-50 transition-colors text-sm font-medium"
+            >
+              Ask John about this home
+            </a>
+          )}
         </div>
       </div>
     </div>

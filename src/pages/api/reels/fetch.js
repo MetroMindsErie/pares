@@ -10,7 +10,7 @@ export default edgeHandler(async function handler(req, res) {
   // Initialize Supabase client with the request context
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY,
+    process.env.SUPABASE_SERVICE_KEY,
     {
       global: { 
         headers: { cookie: req.headers.cookie } 
@@ -23,7 +23,7 @@ export default edgeHandler(async function handler(req, res) {
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     if (sessionError) {
       console.error("Session error:", sessionError);
-      return res.status(401).json({ error: 'Session error', details: sessionError.message });
+      return res.status(401).json({ error: 'Session error' });
     }
     
     let userId;
@@ -36,7 +36,7 @@ export default edgeHandler(async function handler(req, res) {
         // Create admin client to verify token
         const adminClient = createClient(
           process.env.NEXT_PUBLIC_SUPABASE_URL,
-          process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY
+          process.env.SUPABASE_SERVICE_KEY
         );
         const { data: userData, error: verifyError } = await adminClient.auth.getUser(token);
         if (verifyError || !userData?.user) {
@@ -129,7 +129,7 @@ export default edgeHandler(async function handler(req, res) {
     });
   } catch (error) {
     console.error('Error in reels fetch handler:', error);
-    return res.status(500).json({ error: 'Failed to fetch reels', details: error.message });
+    return res.status(500).json({ error: 'Failed to fetch reels' });
   }
 }
 

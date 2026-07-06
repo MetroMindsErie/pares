@@ -19,7 +19,6 @@ export default edgeHandler(async function handler(req, res) {
       return res.status(200).json({
         success: true,
         requireTurnstile: policy.requireTurnstile,
-        riskScore: policy.risk.score,
       });
     }
 
@@ -27,9 +26,6 @@ export default edgeHandler(async function handler(req, res) {
       success: false,
       error: 'Turnstile verification failed',
       requireTurnstile: policy.requireTurnstile,
-      riskScore: policy.risk.score,
-      reasons: policy.risk.reasons,
-      codes: result.codes || [],
     });
   } catch (err) {
     console.error('Turnstile verify error:', err);

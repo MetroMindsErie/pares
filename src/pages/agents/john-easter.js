@@ -5,20 +5,21 @@ import BuyerAgent from '../../components/Property/BuyerAgent';
 import AgentPropertiesSection from '../../components/AgentPropertiesSection';
 import { getAgentProperties } from '../../services/trestleServices';
 import RiskBasedTurnstile from '../../components/RiskBasedTurnstile';
-
-const AGENT = {
-  name: 'John D. Easter',
-  title: 'Buyer Agent',
-  agency: 'Pennington Lines',
-  phone: '814-873-5810',
-  email: 'easterjo106@yahoo.com',
-  photo: '/dad.PNG',
-  bio: `John D. Easter brings 15+ years of local market expertise to buyers in Erie and the surrounding region. He focuses on transparent communication, fast MLS search results, and finding properties that fit both lifestyle and investment goals. John's hands-on approach and deep local relationships help clients move confidently from search to close.`,
-  specialties: ['Lakefront & Waterfront', 'Downtown Condos', 'Investment Properties', 'First-time Buyers']
-};
+import { useAnalytics } from '../../hooks/useAnalytics';
+import { useRouter } from 'next/router';
+import { AGENT, agentJsonLd, SITE_NAME } from '../../config/agent';
 
 export default function JohnEasterAgent() {
+  const router = useRouter();
+  const { trackContact, trackEvent } = useAnalytics();
   const [form, setForm] = useState({ name: '', email: '', message: '', propertyUrl: '' });
+
+  // "Ask John about this home" links land here with ?property=<listing url>
+  useEffect(() => {
+    if (router.isReady && router.query.property) {
+      setForm(prev => ({ ...prev, propertyUrl: String(router.query.property) }));
+    }
+  }, [router.isReady, router.query.property]);
   const [turnstileToken, setTurnstileToken] = useState('');
   const [turnstileRequired, setTurnstileRequired] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null); // null | 'loading' | 'success' | 'error'
@@ -69,6 +70,7 @@ export default function JohnEasterAgent() {
       if (res.ok) {
         setSubmitStatus('success');
         setSubmitMessage('Message sent! John will be in touch soon.');
+        trackContact({ method: 'contact_form', page: 'agent_profile' });
         setForm({ name: '', email: '', message: '', propertyUrl: '' });
         setTurnstileToken('');
       } else {
@@ -84,8 +86,17 @@ export default function JohnEasterAgent() {
   return (
     <Layout>
       <Head>
-        <title>{AGENT.name} — Buyer Agent | Pares</title>
-        <meta name="description" content={`Contact ${AGENT.name}, ${AGENT.title} at ${AGENT.agency}.`} />
+        <title>{`${AGENT.name} — ${AGENT.title} in Erie PA | ${AGENT.agency}`}</title>
+        <meta name="description" content={`Contact ${AGENT.name}, ${AGENT.title} at ${AGENT.agency} serving Erie, Warren, and Crawford counties. Residential sales, first-time buyers, and institutional portfolios.`} />
+        <meta property="og:type" content="profile" />
+        <meta property="og:title" content={`${AGENT.name} — ${AGENT.title} | ${AGENT.agency}`} />
+        <meta property="og:description" content={`People-first real estate guidance across Erie, Warren, and Crawford counties.`} />
+        <meta property="og:image" content={AGENT.photo} />
+        <meta property="og:site_name" content={SITE_NAME} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(agentJsonLd()) }}
+        />
       </Head>
 
       <main className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
@@ -111,14 +122,19 @@ export default function JohnEasterAgent() {
                 <p className="text-sm text-teal-200 mt-1">{AGENT.title} • {AGENT.agency}</p>
 
                 <div className="mt-4 w-full lg:w-auto flex flex-col gap-3">
-                  <a href={`tel:${AGENT.phone}`} className="inline-flex items-center justify-center gap-3 px-4 py-2 rounded-md bg-white/10 text-white hover:bg-white/20 transition">
+                  <a href={`tel:${AGENT.phone}`} onClick={() => trackEvent('phone_call', { page: 'agent_profile' })} className="inline-flex items-center justify-center gap-3 px-4 py-2 rounded-md bg-white/10 text-white hover:bg-white/20 transition">
                     <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5h12M9 3v2m-6 8v6a2 2 0 002 2h6" /></svg>
                     Call {AGENT.phone}
                   </a>
 
-                  <a href={`mailto:${AGENT.email}`} className="inline-flex items-center justify-center gap-3 px-4 py-2 rounded-md bg-white/10 text-white hover:bg-white/20 transition">
+                  <a href={`mailto:${AGENT.email}`} onClick={() => trackEvent('email_click', { page: 'agent_profile' })} className="inline-flex items-center justify-center gap-3 px-4 py-2 rounded-md bg-white/10 text-white hover:bg-white/20 transition">
                     <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 12H8m8-4H8m2 8H8" /></svg>
                     Email {AGENT.name}
+                  </a>
+
+                  <a href={AGENT.facebook} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-3 px-4 py-2 rounded-md bg-white/10 text-white hover:bg-white/20 transition">
+                    <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" /></svg>
+                    Follow on Facebook
                   </a>
 
                   <a href="/saved-properties" className="inline-flex items-center justify-center gap-3 px-4 py-2 rounded-md border border-white/20 text-white hover:bg-white/5 transition">
@@ -159,10 +175,10 @@ export default function JohnEasterAgent() {
                   <form className="mt-6" onSubmit={handleSubmit}>
                     <h3 className="text-sm font-semibold text-teal-200">Contact {AGENT.name}</h3>
                     <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <input name="name" value={form.name} onChange={handleChange} placeholder="Your name" className="px-3 py-3 rounded-md bg-white/10 border border-white/6 text-white text-sm focus:outline-none" />
-                      <input name="email" value={form.email} onChange={handleChange} placeholder="Your email" className="px-3 py-3 rounded-md bg-white/10 border border-white/6 text-white text-sm focus:outline-none" />
-                      <input name="propertyUrl" value={form.propertyUrl} onChange={handleChange} placeholder="Property URL (optional)" className="col-span-1 sm:col-span-2 px-3 py-2 rounded-md bg-white/10 border border-white/6 text-white text-sm focus:outline-none" />
-                      <textarea name="message" value={form.message} onChange={handleChange} rows="4" placeholder="Write a short message..." className="col-span-1 sm:col-span-2 px-3 py-2 rounded-md bg-white/10 border border-white/6 text-white text-sm focus:outline-none" />
+                      <input name="name" value={form.name} onChange={handleChange} placeholder="Your name" aria-label="Your name" autoComplete="name" className="px-3 py-3 rounded-md bg-white/10 border border-white/6 text-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" />
+                      <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="Your email" aria-label="Your email" autoComplete="email" className="px-3 py-3 rounded-md bg-white/10 border border-white/6 text-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" />
+                      <input name="propertyUrl" value={form.propertyUrl} onChange={handleChange} placeholder="Property URL (optional)" aria-label="Property URL (optional)" className="col-span-1 sm:col-span-2 px-3 py-2 rounded-md bg-white/10 border border-white/6 text-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" />
+                      <textarea name="message" value={form.message} onChange={handleChange} rows="4" placeholder="Write a short message..." aria-label="Message" required className="col-span-1 sm:col-span-2 px-3 py-2 rounded-md bg-white/10 border border-white/6 text-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" />
                     </div>
 
                     <RiskBasedTurnstile

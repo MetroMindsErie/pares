@@ -7,16 +7,6 @@ import { getPrimaryPhotoUrl, getMediaUrls as getMediaUrlsFromArray } from '../ut
 // 2) client never sees OAuth client credentials or bearer tokens.
 const API_BASE_URL = '/api/trestle';
 
-export const fetchToken = async () => {
-  try {
-    const response = await axios.post('/api/token');
-    return response.data.access_token;
-  } catch (error) {
-    console.error('Error fetching token:', error);
-    throw new Error('Failed to fetch token');
-  }
-};
-
 export async function getPropertyById(listingKey) {
   try {
     const response = await axios.get(
@@ -44,15 +34,8 @@ export async function getPropertyDetails(listingKey) {
   const isNumericKey = /^\d+$/.test(rawKey);
   const escapedKey = rawKey.replace(/'/g, "''"); // OData single-quote escape
 
-  const token = await fetchToken().catch(err => {
-    console.warn('fetchToken failed in getPropertyDetails:', err);
-    return null;
-  });
-
-  const headers = {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    Accept: 'application/json'
-  };
+  // Auth is injected server-side by the /api/trestle proxy.
+  const headers = { Accept: 'application/json' };
 
   // Build entity-path request but URL-encode the quoted key to avoid malformed URLs
   const entityQuoted = `'${escapedKey}'`;
@@ -137,10 +120,32 @@ export async function getPropertyDetails(listingKey) {
   }
 }
 
+// List queries: only the fields the result cards actually render, and at most
+// 5 trimmed media records per listing instead of every photo with all fields.
+// This cut a typical county search from ~12 MB to ~0.14 MB (measured 2026-07-06).
+const LIST_SELECT_FIELDS = [
+  'ListingKey', 'ListingId', 'UnparsedAddress', 'City', 'StateOrProvince',
+  'PostalCode', 'PostalCity', 'CountyOrParish', 'ListPrice', 'ClosePrice',
+  'BedroomsTotal', 'BathroomsTotalInteger', 'LivingArea', 'LotSizeAcres',
+  'PropertyType', 'PropertySubType', 'StandardStatus', 'MlsStatus',
+  'SpecialListingConditions', 'YearBuilt', 'Latitude', 'Longitude',
+  'CloseDate', 'ModificationTimestamp', 'PublicRemarks',
+].join(',');
+const LIST_MEDIA_EXPAND = 'Media($select=MediaURL,Order,PreferredPhotoYN;$orderby=Order asc;$top=5)';
+
 // trestleServices.js
 export const getPropertiesByFilter = async (filterQuery, top = 9, skip = 0) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/odata/Property?${filterQuery}&$top=${top}&$skip=${skip}&$expand=Media`, {
+    const query = [
+      filterQuery,
+      `$top=${top}`,
+      `$skip=${skip}`,
+      `$select=${LIST_SELECT_FIELDS}`,
+      `$expand=${LIST_MEDIA_EXPAND}`,
+      '$count=true',
+    ].filter(Boolean).join('&');
+
+    const response = await fetch(`${API_BASE_URL}/odata/Property?${query}`, {
       headers: {
         Accept: 'application/json'
       }
@@ -161,7 +166,8 @@ export const getPropertiesByFilter = async (filterQuery, top = 9, skip = 0) => {
           mediaArray: getMediaUrlsFromArray(mediaArray).filter(url => url !== '/fallback-property.jpg')
         };
       }),
-      nextLink: data['@odata.nextLink'] || null
+      nextLink: data['@odata.nextLink'] || null,
+      total: Number.isFinite(data['@odata.count']) ? data['@odata.count'] : null
     };
   } catch (error) {
     console.error('Error in getPropertiesByFilter:', error);
@@ -600,8 +606,10 @@ export const searchProperties = async (searchParams) => {
       }
     }
 
-    const fullQuery = filterQuery + orderbyClause;
-    const response = await getPropertiesByFilter(fullQuery, 500, 0);
+    // Always order server-side — pagination is meaningless on an unordered set.
+    const fullQuery = filterQuery + (orderbyClause || '&$orderby=ListPrice asc');
+    // 60 per page: fast first paint; "load more" follows @odata.nextLink.
+    const response = await getPropertiesByFilter(fullQuery, 60, 0);
 
     // Format results (server already sorted if $orderby was provided)
     let formattedProperties = response.properties
@@ -611,18 +619,13 @@ export const searchProperties = async (searchParams) => {
         mediaArray: property.mediaArray
       }));
 
-    // Client-side fallback sort if no server sort was applied
-    if (!searchParams.sort) {
-      formattedProperties.sort((a, b) => (a.ListPrice || 0) - (b.ListPrice || 0));
-    }
-
     // Backfill the DB cache with fresh Trestle data
     backfillCache(formattedProperties);
 
     return {
       properties: formattedProperties,
       nextLink: response.nextLink,
-      total: formattedProperties.length
+      total: response.total ?? formattedProperties.length
     };
   } catch (error) {
     console.error('Error searching properties:', error);
@@ -765,7 +768,8 @@ export async function getAgentProperties(options = {}) {
       params: {
         $filter: filter,
         $top: limit,
-        $expand: 'Media',
+        $select: LIST_SELECT_FIELDS,
+        $expand: LIST_MEDIA_EXPAND,
         $orderby: 'ModificationTimestamp desc'
       },
       headers: {
@@ -790,4 +794,3 @@ export async function getAgentProperties(options = {}) {
   }
 }
 
-// (No change needed; localContextService uses fetchToken)

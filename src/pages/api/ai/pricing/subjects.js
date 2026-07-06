@@ -123,7 +123,7 @@ export default edgeHandler(async function handler(req, res) {
 
     return res.json({ subjects, ...(shouldDebug() ? { debug: { attempted_subject_filter: subjectFilter, parsed_address: parsed } } : {}) });
   } catch (e) {
-    return res.status(500).json({ error: 'Subject lookup failed', details: e?.message || String(e) });
+    return res.status(500).json({ error: 'Subject lookup failed'});
   }
 }
 

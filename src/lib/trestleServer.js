@@ -20,8 +20,9 @@ function getTrestleTokenUrl() {
 }
 
 function getTrestleCredentials() {
-  const clientId = process.env.TRESTLE_CLIENT_ID || process.env.NEXT_PUBLIC_TRESTLE_CLIENT_ID;
-  const clientSecret = process.env.TRESTLE_CLIENT_SECRET || process.env.NEXT_PUBLIC_TRESTLE_CLIENT_SECRET;
+  // Server-only vars — never NEXT_PUBLIC_* (those are inlined into the browser bundle).
+  const clientId = process.env.TRESTLE_CLIENT_ID;
+  const clientSecret = process.env.TRESTLE_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) {
     throw new Error('Trestle API credentials not configured (set TRESTLE_CLIENT_ID/TRESTLE_CLIENT_SECRET)');

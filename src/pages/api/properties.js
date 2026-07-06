@@ -1,35 +1,8 @@
 import { edgeHandler } from '../../lib/edgeHandler';
+import { getTrestleToken, buildTrestleODataUrl } from '../../lib/trestleServer';
 
-// Helper function to get Trestle OAuth token
-async function getTrestleToken() {
-  const tokenUrl = process.env.NEXT_PUBLIC_TRESTLE_TOKEN_URL;
-  const clientId = process.env.NEXT_PUBLIC_TRESTLE_CLIENT_ID;
-  const clientSecret = process.env.NEXT_PUBLIC_TRESTLE_CLIENT_SECRET;
-  
-  if (!tokenUrl || !clientId || !clientSecret) {
-    throw new Error('Trestle API credentials not configured properly');
-  }
-  
-  const params = new URLSearchParams();
-  params.append('grant_type', 'client_credentials');
-  params.append('client_id', clientId);
-  params.append('client_secret', clientSecret);
-  
-  const response = await fetch(tokenUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: params.toString(),
-  });
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Token request failed:', errorText);
-    throw new Error(`Failed to get Trestle token: ${response.status}`);
-  }
-  
-  const data = await response.json();
-  return data.access_token;
-}
+// Escape user input embedded in OData string literals ('' is the OData quote escape)
+const odataString = (value) => String(value).replace(/'/g, "''");
 
 export default edgeHandler(async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -38,13 +11,7 @@ export default edgeHandler(async function handler(req, res) {
 
   try {
     const isDevelopment = process.env.NODE_ENV === 'development';
-    const trestleBaseUrl = process.env.NEXT_PUBLIC_TRESTLE_BASE_URL;
-    
-    if (!trestleBaseUrl) {
-      console.error('Trestle API base URL not configured');
-      return res.status(500).json({ error: 'Trestle API credentials are missing or invalid.' });
-    }
-    
+
     const formattedParams = new URLSearchParams();
     let filters = [];
     const query = req.query;
@@ -58,14 +25,15 @@ export default edgeHandler(async function handler(req, res) {
         const countyName = locationTerm.charAt(0).toUpperCase() + locationTerm.slice(1).toLowerCase() + ' County';
         filters.push(`CountyOrParish eq '${countyName}'`);
       } else {
-        filters.push(`(contains(CountyOrParish,'${locationTerm}') or contains(PostalCity,'${locationTerm}') or contains(UnparsedAddress,'${locationTerm}'))`);
+        const safeTerm = odataString(locationTerm);
+        filters.push(`(contains(CountyOrParish,'${safeTerm}') or contains(PostalCity,'${safeTerm}') or contains(UnparsedAddress,'${safeTerm}'))`);
       }
     }
     
     // ZIP code specific search
     if (query.zipCode) {
       const zipCode = query.zipCode.trim();
-      if (zipCode) filters.push(`PostalCode eq '${zipCode}'`);
+      if (/^\d{5}(-\d{4})?$/.test(zipCode)) filters.push(`PostalCode eq '${zipCode}'`);
     }
     
     // Property type filter
@@ -76,7 +44,7 @@ export default edgeHandler(async function handler(req, res) {
       } else if (propertyType.toLowerCase() === 'commercial') {
         filters.push(`(PropertyType eq 'Commercial Sale' or PropertyType eq 'Commercial Lease')`);
       } else {
-        filters.push(`PropertyType eq '${propertyType}'`);
+        filters.push(`PropertyType eq '${odataString(propertyType)}'`);
       }
     }
     
@@ -118,7 +86,7 @@ export default edgeHandler(async function handler(req, res) {
     if (!query.status) {
       filters.push(`StandardStatus eq 'Active'`);
     } else {
-      filters.push(`StandardStatus eq '${query.status}'`);
+      filters.push(`StandardStatus eq '${odataString(query.status)}'`);
     }
     
     // Square footage filter
@@ -161,7 +129,7 @@ export default edgeHandler(async function handler(req, res) {
       formattedParams.append('$orderby', 'ListingKeyNumeric desc');
     }
     
-    const trestleUrl = `${trestleBaseUrl}/trestle/odata/Property?${formattedParams.toString()}`;
+    const trestleUrl = buildTrestleODataUrl('odata/Property', Object.fromEntries(formattedParams));
 
     try {
       const token = await getTrestleToken();
@@ -182,7 +150,7 @@ export default edgeHandler(async function handler(req, res) {
           return res.status(200).json({ value: getMockListings(query), '@odata.nextLink': null });
         }
         
-        return res.status(response.status).json({ error: `Trestle API error: ${response.status}`, details: errorText });
+        return res.status(response.status).json({ error: `Trestle API error: ${response.status}` });
       }
       
       const data = await response.json();

@@ -1,5 +1,9 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  // Class strategy: dark: variants only apply inside a `.dark` wrapper, which the
+  // site never sets — so OS dark-mode users get the designed (light) theme instead
+  // of the half-implemented dark variants (which had white-on-white bugs).
+  darkMode: 'class',
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",

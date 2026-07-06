@@ -51,6 +51,9 @@ export default edgeHandler(async function handler(req, res) {
   try {
     const q = (req.query.q || '').trim();
 
+    // Same prefix -> same suggestions; let Cloudflare serve repeats from the edge.
+    res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=3600');
+
     if (q.length < 2) {
       return res.status(200).json({ suggestions: [] });
     }

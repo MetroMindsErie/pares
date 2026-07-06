@@ -12,6 +12,43 @@ function isSkippablePath(pathname) {
   );
 }
 
+const IS_PROD = process.env.NODE_ENV === 'production';
+
+// Full CSP. 'unsafe-inline' for scripts is required by the GTM/GA bootstrap and
+// Next's inline runtime — migrating to nonces would tighten this further.
+// Dev additionally needs 'unsafe-eval' (react-refresh) and ws: (HMR).
+const CSP = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${IS_PROD ? '' : " 'unsafe-eval'"} https://www.googletagmanager.com https://www.google-analytics.com https://challenges.cloudflare.com`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https:",
+  "font-src 'self' data:",
+  `connect-src 'self'${IS_PROD ? '' : ' ws:'} https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://graph.facebook.com https://cdn.contentful.com https://api.coingecko.com`,
+  "frame-src https://challenges.cloudflare.com https://www.googletagmanager.com https://www.facebook.com",
+  "worker-src 'self' blob:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "frame-ancestors 'self'",
+  "form-action 'self'",
+].join('; ');
+
+// Baseline security headers applied to every response.
+const SECURITY_HEADERS = {
+  'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'SAMEORIGIN',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=(self)',
+  'Content-Security-Policy': CSP,
+};
+
+function withSecurityHeaders(res) {
+  for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
+    res.headers.set(k, v);
+  }
+  return res;
+}
+
 export function middleware(req) {
   const { pathname } = req.nextUrl;
   if (isSkippablePath(pathname)) return NextResponse.next();
@@ -23,21 +60,13 @@ export function middleware(req) {
   });
 
   if (policy.block && pathname.startsWith('/api/')) {
-    return NextResponse.json(
-      {
-        error: 'Rate limit exceeded',
-        riskScore: policy.risk.score,
-        reasons: policy.risk.reasons,
-      },
-      { status: 429 }
+    // Deliberately generic: never expose risk scores or reasons to callers.
+    return withSecurityHeaders(
+      NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
     );
   }
 
-  const res = NextResponse.next();
-  // Lightweight observability headers for debugging and tuning.
-  res.headers.set('x-risk-score', String(policy.risk.score));
-  res.headers.set('x-turnstile-required', policy.requireTurnstile ? '1' : '0');
-  return res;
+  return withSecurityHeaders(NextResponse.next());
 }
 
 export const config = {

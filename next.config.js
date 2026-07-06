@@ -1,17 +1,20 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: false,
+  reactStrictMode: true,
   experimental: {},
   compiler: {
     styledComponents: true,
+    // Strip console noise from production bundles (485+ call sites); keep signal.
+    removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
   },
   images: {
-    domains: ['cdnjs.cloudflare.com', 'tiles.stadiamaps.com', 'api-trestle.corelogic.com', 'via.placeholder.com'],
-    unoptimized: true,
+    // Cloudflare Pages has no Next image optimizer; this loader routes remote
+    // MLS photos through /api/proxy-image (CF resizing + cache) instead.
+    loader: 'custom',
+    loaderFile: './src/lib/imageLoader.js',
   },
   excludeDefaultMomentLocales: true,
   webpack: (config) => {
-    config.cache = false;
     config.module.rules.push({
       test: /\.(png|jpg|jpeg|gif|svg)$/i,
       type: 'asset',
@@ -27,32 +30,12 @@ const nextConfig = {
     });
     return config;
   },
-  env: {
-    NEXT_PUBLIC_TRESTLE_TOKEN_URL: process.env.NEXT_PUBLIC_TRESTLE_TOKEN_URL,
-    NEXT_PUBLIC_TRESTLE_CLIENT_ID: process.env.NEXT_PUBLIC_TRESTLE_CLIENT_ID,
-    NEXT_PUBLIC_TRESTLE_CLIENT_SECRET: process.env.NEXT_PUBLIC_TRESTLE_CLIENT_SECRET,
-  },
   eslint: {
     ignoreDuringBuilds: true
   },
-  // Fix missing fallback images with a redirect
-  async redirects() {
+  async rewrites() {
     return [
-      {
-        source: '/fallback-property.jpg',
-        destination: 'https://via.placeholder.com/800x600?text=Property+Image+Not+Available',
-        permanent: true,
-      },
-      {
-        source: '/properties.jpg', 
-        destination: 'https://via.placeholder.com/800x600?text=Property+Image+Not+Available',
-        permanent: true,
-      },
-      {
-        source: '/default-agent.jpg',
-        destination: 'https://via.placeholder.com/200x200?text=Agent',
-        permanent: true,
-      },
+      { source: '/sitemap.xml', destination: '/api/sitemap' },
     ];
   },
 };

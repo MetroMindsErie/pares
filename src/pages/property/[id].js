@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { AGENT, SITE_URL, SITE_NAME } from '../../config/agent';
 import Head from 'next/head';
 import { SoldProperty } from '../../components/SoldProperty';
 import PropertyView from '../../components/Property/PropertyView';
@@ -828,11 +829,11 @@ export async function getServerSideProps({ params }) {
       ].filter(Boolean),
       taxes: rawProperty.TaxAnnualAmount || 0,
       agent: {
-        name: 'John Easter',
-        brokerage: 'Pennington Lines', 
-        photo: '/default-agent.jpg',
-        phone: '814-873-5810',
-        email: 'easterjo106@yahoo.com'
+        name: AGENT.shortName,
+        brokerage: AGENT.agency,
+        photo: AGENT.photo,
+        phone: AGENT.phone,
+        email: AGENT.email
       },
       
       // Image arrays - both formats for compatibility
@@ -845,7 +846,7 @@ export async function getServerSideProps({ params }) {
         soldDate: rawProperty.CloseDate ?
           new Date(rawProperty.CloseDate).toLocaleDateString() :
           'Date not available',
-        buyerAgent: 'John Easter' // Override buyer agent too
+        buyerAgent: AGENT.shortName // Override buyer agent too
       })
     };
 
@@ -1010,11 +1011,11 @@ export async function getServerSideProps({ params }) {
           mediaUrls: ['/fallback-property.jpg'],
           // Add static agent info even for fallback
           agent: {
-            name: 'John Easter',
-            brokerage: 'Pennington Lines',
-            photo: '/default-agent.jpg', 
-            phone: '814-873-5810',
-            email: 'easterjo106@yahoo.com'
+            name: AGENT.shortName,
+            brokerage: AGENT.agency,
+            photo: AGENT.photo,
+            phone: AGENT.phone,
+            email: AGENT.email
           }
         },
         isSold: false,
@@ -1073,12 +1074,12 @@ export default function PropertyDetail({ property, isSold, taxData, historyData 
     const propertyPrice = property.soldPrice || property.ClosePrice || property.price || property.ListPrice || 0;
     const formattedPrice = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(propertyPrice);
     const propertyDescription = property.description || property.PublicRemarks || `Sold property at ${property.address || 'this location'}`;
-    const propertyUrl = `https://www.parealestatesolutions.com/property/${property.ListingKey || property.mlsNumber}`;
+    const propertyUrl = `${SITE_URL}/property/${property.ListingKey || property.mlsNumber}`;
     
     return (
       <>
         <Head>
-          <title>{property.address || 'Property Details'} | Erie Pennsylvania Real Estate</title>
+          <title>{`${property.address || 'Property Details'} — ${formattedPrice} | ${SITE_NAME}`}</title>
           <meta name="description" content={`View detailed information for ${property.address || 'this property'} including photos, features, and pricing.`} />
           
           {/* Open Graph / Facebook */}
@@ -1089,7 +1090,7 @@ export default function PropertyDetail({ property, isSold, taxData, historyData 
           <meta property="og:image" content={propertyImage} />
           <meta property="og:image:width" content="1200" />
           <meta property="og:image:height" content="630" />
-          <meta property="og:site_name" content="PA Real Estate Solutions" />
+          <meta property="og:site_name" content={SITE_NAME} />
           
           {/* Twitter */}
           <meta name="twitter:card" content="summary_large_image" />
@@ -1106,12 +1107,12 @@ export default function PropertyDetail({ property, isSold, taxData, historyData 
     const propertyPrice = property.price || property.ListPrice || 0;
     const formattedPrice = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(propertyPrice);
     const propertyDescription = property.description || property.PublicRemarks || `Special listing at ${property.address || 'this location'}`;
-    const propertyUrl = `https://www.parealestatesolutions.com/property/${property.ListingKey || property.mlsNumber}`;
+    const propertyUrl = `${SITE_URL}/property/${property.ListingKey || property.mlsNumber}`;
     
     return (
       <>
         <Head>
-          <title>{property.address || 'Property Details'} | Erie Pennsylvania Real Estate</title>
+          <title>{`${property.address || 'Property Details'} — ${formattedPrice} | ${SITE_NAME}`}</title>
           <meta name="description" content={`View detailed information for ${property.address || 'this property'} including photos, features, and pricing.`} />
           
           {/* Open Graph / Facebook */}
@@ -1122,7 +1123,7 @@ export default function PropertyDetail({ property, isSold, taxData, historyData 
           <meta property="og:image" content={propertyImage} />
           <meta property="og:image:width" content="1200" />
           <meta property="og:image:height" content="630" />
-          <meta property="og:site_name" content="PA Real Estate Solutions" />
+          <meta property="og:site_name" content={SITE_NAME} />
           
           {/* Twitter */}
           <meta name="twitter:card" content="summary_large_image" />
@@ -1139,12 +1140,12 @@ export default function PropertyDetail({ property, isSold, taxData, historyData 
     const propertyPrice = property.price || property.ListPrice || 0;
     const formattedPrice = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(propertyPrice);
     const propertyDescription = property.description || property.PublicRemarks || `Pending property at ${property.address || 'this location'}`;
-    const propertyUrl = `https://www.parealestatesolutions.com/property/${property.ListingKey || property.mlsNumber}`;
+    const propertyUrl = `${SITE_URL}/property/${property.ListingKey || property.mlsNumber}`;
     
     return (
       <>
         <Head>
-          <title>{property.address || 'Property Details'} | Erie Pennsylvania Real Estate</title>
+          <title>{`${property.address || 'Property Details'} — ${formattedPrice} | ${SITE_NAME}`}</title>
           <meta name="description" content={`View detailed information for ${property.address || 'this property'} including photos, features, and pricing.`} />
           
           {/* Open Graph / Facebook */}
@@ -1155,7 +1156,7 @@ export default function PropertyDetail({ property, isSold, taxData, historyData 
           <meta property="og:image" content={propertyImage} />
           <meta property="og:image:width" content="1200" />
           <meta property="og:image:height" content="630" />
-          <meta property="og:site_name" content="PA Real Estate Solutions" />
+          <meta property="og:site_name" content={SITE_NAME} />
           
           {/* Twitter */}
           <meta name="twitter:card" content="summary_large_image" />
@@ -1172,12 +1173,12 @@ export default function PropertyDetail({ property, isSold, taxData, historyData 
     const propertyPrice = property.price || property.ListPrice || 0;
     const formattedPrice = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(propertyPrice);
     const propertyDescription = property.description || property.PublicRemarks || `For sale at ${property.address || 'this location'}`;
-    const propertyUrl = `https://www.parealestatesolutions.com/property/${property.ListingKey || property.mlsNumber}`;
+    const propertyUrl = `${SITE_URL}/property/${property.ListingKey || property.mlsNumber}`;
     
     return (
       <>
         <Head>
-          <title>{property.address || 'Property Details'} | Erie Pennsylvania Real Estate</title>
+          <title>{`${property.address || 'Property Details'} — ${formattedPrice} | ${SITE_NAME}`}</title>
           <meta name="description" content={`View detailed information for ${property.address || 'this property'} including photos, features, and pricing.`} />
           
           {/* Open Graph / Facebook */}
@@ -1188,7 +1189,7 @@ export default function PropertyDetail({ property, isSold, taxData, historyData 
           <meta property="og:image" content={propertyImage} />
           <meta property="og:image:width" content="1200" />
           <meta property="og:image:height" content="630" />
-          <meta property="og:site_name" content="PA Real Estate Solutions" />
+          <meta property="og:site_name" content={SITE_NAME} />
           
           {/* Twitter */}
           <meta name="twitter:card" content="summary_large_image" />
@@ -1206,14 +1207,15 @@ export default function PropertyDetail({ property, isSold, taxData, historyData 
   const propertyPrice = property.price || property.ListPrice || 0;
   const formattedPrice = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(propertyPrice);
   const propertyDescription = property.description || property.PublicRemarks || `Property at ${property.address || 'this location'}`;
-  const propertyUrl = `https://www.parealestatesolutions.com/property/${property.ListingKey || property.mlsNumber}`;
+  const propertyUrl = `${SITE_URL}/property/${property.ListingKey || property.mlsNumber}`;
   
   return (
     <>
       <Head>
-        <title>{property.address || 'Property Details'} | Erie Pennsylvania Real Estate</title>
-        <meta name="description" content={`View detailed information for ${property.address || 'this property'} including photos, features, and pricing.`} />
-        
+        <title>{`${property.address || 'Property Details'} — ${formattedPrice} | ${SITE_NAME}`}</title>
+        <meta name="description" content={propertyDescription.substring(0, 160)} />
+        <link rel="canonical" href={propertyUrl} />
+
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
         <meta property="og:url" content={propertyUrl} />
@@ -1222,7 +1224,7 @@ export default function PropertyDetail({ property, isSold, taxData, historyData 
         <meta property="og:image" content={propertyImage} />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
-        <meta property="og:site_name" content="PA Real Estate Solutions" />
+        <meta property="og:site_name" content={SITE_NAME} />
         
         {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
@@ -1230,6 +1232,28 @@ export default function PropertyDetail({ property, isSold, taxData, historyData 
         <meta name="twitter:title" content={`${property.address || 'Property Details'} - ${formattedPrice}`} />
         <meta name="twitter:description" content={propertyDescription.substring(0, 200)} />
         <meta name="twitter:image" content={propertyImage} />
+
+        {/* Rich results: real-estate listing structured data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'RealEstateListing',
+              name: property.address || 'Property listing',
+              url: propertyUrl,
+              image: propertyImage,
+              description: propertyDescription.substring(0, 500),
+              offers: {
+                '@type': 'Offer',
+                price: propertyPrice || undefined,
+                priceCurrency: 'USD',
+                availability: 'https://schema.org/InStock',
+                offeredBy: { '@type': 'RealEstateAgent', name: AGENT.name, telephone: AGENT.phone },
+              },
+            }),
+          }}
+        />
       </Head>
       <ActiveProperty property={property} taxData={taxData} historyData={historyData} />
     </>

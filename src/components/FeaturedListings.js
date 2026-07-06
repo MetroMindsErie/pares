@@ -1,8 +1,8 @@
 // components/FeaturedListings.js
 import React, { useRef, useState, useEffect } from 'react';
+import { proxiedImageUrl, imageSrcSet } from '../utils/imageProxy';
 import PropTypes from 'prop-types'; // added import
 import Link from 'next/link';
-import Image from 'next/legacy/image';
 
 export function FeaturedListings({ listings, title }) {
   if (!Array.isArray(listings)) {
@@ -119,12 +119,15 @@ const PropertyCard = ({ listing, mobile }) => {
       } flex-shrink-0 group block rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 hover:-translate-y-0.5`}
     >
       <div className="relative h-60 bg-gray-100">
-        <Image
-          src={imageSrc}
-          alt={listing.UnparsedAddress}
-          fill
-          className="object-cover group-hover:scale-105 transition-transform duration-500"
+        <img
+          src={proxiedImageUrl(imageSrc, 640)}
+          srcSet={imageSrcSet(imageSrc)}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          alt={listing.UnparsedAddress}
+          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          loading="lazy"
+          decoding="async"
+          onError={(e) => { e.target.onerror = null; e.target.src = '/fallback-property.jpg'; }}
         />
         {listing.StandardStatus === 'Closed' && (
           <div className="absolute top-3 left-3 bg-red-600 text-white px-2.5 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.12em] rounded-sm">

@@ -1,30 +1,36 @@
 import { createClient } from '@supabase/supabase-js';
 import { edgeHandler } from '../../../lib/edgeHandler';
+import { getUserFromAuthHeader } from '../../../lib/apiAuth';
 
 
 // Initialize with service key for admin operations
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY
+  process.env.SUPABASE_SERVICE_KEY
 );
 
 export default edgeHandler(async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
-  
+
   try {
+    // Callers may only store tokens for their own account.
+    const caller = await getUserFromAuthHeader(req.headers['authorization']);
+    if (!caller) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
     const { user_id, access_token, provider_user_id } = req.body;
     if (!user_id || !access_token) {
       return res.status(400).json({ error: 'Missing required parameters' });
     }
-    
-    const { data: userData, error: userError } = await supabase.auth.admin.getUserById(user_id);
-    if (userError) {
-      console.error('Error fetching user:', userError);
-      return res.status(404).json({ error: 'User not found' });
+    if (user_id !== caller.id) {
+      return res.status(403).json({ error: 'Forbidden' });
     }
-    
+
+    const userData = { user: caller };
+
     let fbUserId = provider_user_id;
     if (!fbUserId) {
       try {

@@ -1365,7 +1365,7 @@ export default edgeHandler(async function handler(req, res) {
         : {}),
     });
   } catch (e) {
-    return res.status(500).json({ error: 'Pricing failed', details: e?.message || String(e) });
+    return res.status(500).json({ error: 'Pricing failed'});
   }
 }
 

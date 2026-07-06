@@ -71,7 +71,6 @@ export default edgeHandler(async function handler(req, res) {
     console.error('Error checking Facebook connection:', error);
     return res.status(500).json({ 
       error: 'Failed to check Facebook connection', 
-      details: error.message 
     });
   }
 }

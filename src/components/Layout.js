@@ -2,13 +2,18 @@ import React from 'react';
 import { useRouter } from 'next/router';
 import Navbar from './Navbar';
 import Footer from './Footer';
-import Head from 'next/head';
 import { useAuth } from '../context/auth-context';
+
+// Only these routes need the auth check to finish before content shows.
+// Public pages must render immediately — server-rendered HTML is what
+// search engines index (this used to gate EVERY page behind "Loading...").
+const AUTH_GATED_PREFIXES = ['/dashboard', '/profile', '/saved-properties', '/create-profile', '/admin'];
 
 const Layout = ({ children }) => {
   const router = useRouter();
 
   const { user, isAuthenticated, authChecked, logout } = useAuth();
+  const isAuthGated = AUTH_GATED_PREFIXES.some((p) => router.pathname.startsWith(p));
 
   const handleLogout = async () => {
     try {
@@ -32,14 +37,9 @@ const Layout = ({ children }) => {
 
   return (
     <div className="min-h-screen">
-      <Head>
-        <title>pares.homes – Real Estate Network</title>
-        <meta name="description" content="Modern real estate search, analytics, and professional tools" />
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-        <link rel="apple-touch-icon" href="/pares_homes.png" />
-      </Head>
-      
-      <Navbar 
+      {/* Default title/meta live in _app.js so page-level <Head> always wins.
+          (Layout renders inside some pages, so a <Head> here would override theirs.) */}
+      <Navbar
         isAuthenticated={!!isAuthenticated}
         user={user}
         onLogout={handleLogout}
@@ -47,7 +47,7 @@ const Layout = ({ children }) => {
         onRegister={handleRegister}
       />
       
-      {!authChecked ? <div>Loading...</div> : children}
+      {isAuthGated && !authChecked ? <div>Loading...</div> : children}
       
       <Footer />
     </div>

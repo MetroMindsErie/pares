@@ -12,7 +12,7 @@ export default edgeHandler(async function handler(req, res) {
     // Initialize Supabase client with auth context from request
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY,
+      process.env.SUPABASE_SERVICE_KEY,
       {
         global: { 
           headers: { cookie: req.headers.cookie } 
@@ -25,7 +25,7 @@ export default edgeHandler(async function handler(req, res) {
     
     if (error) {
       console.error('Session error:', error);
-      return res.status(401).json({ error: 'Authentication error', details: error.message });
+      return res.status(401).json({ error: 'Authentication error' });
     }
     
     if (!session) {

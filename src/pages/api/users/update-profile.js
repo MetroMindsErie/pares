@@ -8,7 +8,7 @@ export default edgeHandler(async function handler(req, res) {
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY;
+  const serviceKey = process.env.SUPABASE_SERVICE_KEY;
 
   if (!supabaseUrl || !serviceKey) {
     console.error('Missing Supabase env vars in API route');
@@ -54,7 +54,7 @@ export default edgeHandler(async function handler(req, res) {
 
     if (updateError) {
       console.error('Profile update error:', updateError);
-      return res.status(500).json({ error: 'Failed to update profile', details: updateError.message });
+      return res.status(500).json({ error: 'Failed to update profile' });
     }
 
     // Verify
@@ -72,7 +72,7 @@ export default edgeHandler(async function handler(req, res) {
     return res.status(200).json({ success: true, profile: updated });
   } catch (err) {
     console.error('Unexpected error in profile update API:', err);
-    return res.status(500).json({ error: 'Internal server error', details: err.message });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }
 

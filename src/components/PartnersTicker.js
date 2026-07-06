@@ -14,6 +14,7 @@ const PartnersTicker = ({ logos = null }) => {
     '/images/partners/partner4.png',
     '/images/partners/partner5.jpeg',
     '/images/partners/partner6.jpg',
+    '/images/partners/partner7-erie-real-estate-services.png',
   ];
 
   const items = Array.isArray(logos) && logos.length ? logos : defaultLogos;

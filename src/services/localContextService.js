@@ -1,7 +1,7 @@
 import axios from 'axios';
-import { fetchToken } from './trestleServices';
 
-const API_BASE_URL = 'https://api-trestle.corelogic.com';
+// Route through the server-side proxy — auth is injected there, the client never sees tokens.
+const API_BASE_URL = '/api/trestle';
 
 /**
  * Fetch extended neighborhood + school context for a listing.
@@ -10,12 +10,7 @@ const API_BASE_URL = 'https://api-trestle.corelogic.com';
 export async function fetchLocalContext(listingKey) {
   if (!listingKey) return null;
   const key = String(listingKey).replace(/'/g, "''");
-  const token = await fetchToken().catch(() => null);
-
-  const headers = {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    Accept: 'application/json'
-  };
+  const headers = { Accept: 'application/json' };
 
   // Request a slim projection
   const params = {
@@ -38,7 +33,7 @@ export async function fetchLocalContext(listingKey) {
   };
 
   try {
-    const res = await axios.get(`${API_BASE_URL}/trestle/odata/Property`, { params, headers });
+    const res = await axios.get(`${API_BASE_URL}/odata/Property`, { params, headers });
     const value = Array.isArray(res.data?.value) ? res.data.value[0] : null;
     if (!value) return null;
 

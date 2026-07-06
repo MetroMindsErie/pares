@@ -5,7 +5,7 @@ import { edgeHandler } from '../../../lib/edgeHandler';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY
+  process.env.SUPABASE_SERVICE_KEY
 );
 
 export default edgeHandler(async function handler(req, res) {
@@ -51,7 +51,6 @@ export default edgeHandler(async function handler(req, res) {
           console.error("Facebook token not found for user:", userError || "No token in user record");
           return res.status(404).json({ 
             error: 'Facebook token not found for user',
-            details: userError?.message || "No token available",
             action: "connect_facebook"
           });
         }
@@ -68,7 +67,6 @@ export default edgeHandler(async function handler(req, res) {
       console.error("Error retrieving Facebook token:", tokenErr);
       return res.status(500).json({ 
         error: 'Error retrieving Facebook token', 
-        details: tokenErr.message 
       });
     }
 
@@ -292,14 +290,12 @@ export default edgeHandler(async function handler(req, res) {
       console.error("Facebook fetch error:", fbError);
       return res.status(500).json({ 
         error: 'Error fetching from Facebook', 
-        details: fbError.message 
       });
     }
   } catch (error) {
     console.error('Error refreshing reels:', error);
     return res.status(500).json({ 
       error: 'Internal server error', 
-      details: error.message 
     });
   }
 }

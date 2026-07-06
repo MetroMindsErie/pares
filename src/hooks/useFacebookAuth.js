@@ -53,11 +53,13 @@ export default function useFacebookAuth() {
               if (session?.user?.id) {
 
                 
-                // Call API to store the token
+                // Call API to store the token (authenticated — the route only accepts the caller's own user_id)
                 await axios.post('/api/auth/store-facebook-token', {
                   user_id: session.user.id,
                   access_token: providerToken || accessToken,
                   provider_user_id: session.user.identities?.find(i => i.provider === 'facebook')?.id
+                }, {
+                  headers: { Authorization: `Bearer ${session.access_token}` }
                 });
                 
 

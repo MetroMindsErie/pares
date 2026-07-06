@@ -19,7 +19,6 @@ export default edgeHandler(async function handler(req, res) {
   return res.status(200).json({
     message: 'Protected request accepted',
     payload: payload || null,
-    riskScore: security.policy.risk.score,
     turnstileRequired: security.policy.requireTurnstile,
   });
 });

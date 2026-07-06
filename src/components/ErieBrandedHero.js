@@ -33,8 +33,10 @@ const ErieBrandedHero = ({ onSearchResults, onSearchStart }) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 1.2 }}
-      // allow overflow so large headings aren't clipped by overlays, and add mobile top padding
-      className="relative overflow-visible"
+      // allow overflow so large headings aren't clipped by overlays, and add mobile top padding.
+      // z-20: the motion animation creates a stacking context, so without an explicit z-index
+      // the search autocomplete dropdown paints UNDER the next section (CityFeatures has z-10).
+      className="relative overflow-visible z-20"
       style={{ minHeight: 'auto' }}
     >
       {/* Partners ticker (separate component) */}
@@ -147,7 +149,7 @@ const ErieBrandedHero = ({ onSearchResults, onSearchStart }) => {
               initial={{ x: 50, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               transition={{ delay: 0.8, duration: 1 }}
-              className="lg:pl-8"
+              className="lg:pl-8 relative z-30"
             >
               <div className="bg-white backdrop-blur-lg rounded-2xl p-4 sm:p-6 lg:p-8 shadow-2xl border border-slate-100">
                 <div className="mb-6">

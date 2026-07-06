@@ -271,7 +271,7 @@ function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key =
     process.env.SUPABASE_SERVICE_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY ||
+    process.env.SUPABASE_SERVICE_KEY ||
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !key) return null;
@@ -718,9 +718,7 @@ export default edgeHandler(async function handler(req, res) {
     return res.send(text);
   } catch (e) {
     return res.status(500).json({
-      error: 'AI search proxy failed',
-      details: e?.message || String(e)
-    });
+      error: 'AI search proxy failed'});
   }
 }
 

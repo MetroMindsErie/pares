@@ -18,8 +18,6 @@ export default edgeHandler(async function handler(req, res) {
 
   return res.status(200).json({
     requireTurnstile: policy.requireTurnstile,
-    riskScore: policy.risk.score,
-    reasons: policy.risk.reasons,
     rateLimited: policy.risk.rateLimited,
   });
 });

@@ -5,7 +5,7 @@ import { edgeHandler } from '../../../lib/edgeHandler';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY
+  process.env.SUPABASE_SERVICE_KEY
 );
 
 export default edgeHandler(async function handler(req, res) {
@@ -31,7 +31,6 @@ export default edgeHandler(async function handler(req, res) {
     if (authError) {
       return res.status(400).json({ 
         error: 'Authentication error', 
-        details: authError.message 
       });
     }
 
@@ -53,7 +52,6 @@ export default edgeHandler(async function handler(req, res) {
       await supabase.auth.admin.deleteUser(authData.user.id);
       return res.status(500).json({ 
         error: 'Failed to create user profile', 
-        details: userError.message 
       });
     }
 
@@ -65,7 +63,6 @@ export default edgeHandler(async function handler(req, res) {
     console.error('Error creating user:', error);
     return res.status(500).json({ 
       error: 'Internal server error', 
-      details: error.message 
     });
   }
 }

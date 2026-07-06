@@ -4,13 +4,7 @@ export default function Document() {
   return (
     <Html lang="en">
       <Head>
-        {/* Typography: Poppins — matches pares.homes logo */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
-          rel="stylesheet"
-        />
+        {/* Poppins is self-hosted via next/font in _app.js — no Google Fonts request needed */}
 
         {/* Google Tag Manager - Head Script */}
         {process.env.NEXT_PUBLIC_GTM_ID && (

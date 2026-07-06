@@ -457,12 +457,12 @@ const SearchBar = ({
           {/* Autocomplete Dropdown */}
           {showSuggestions && allSuggestions.length > 0 && (
             <div ref={suggestionsRef}
-              className="absolute top-full left-0 right-0 mt-3 bg-white dark:bg-gray-850 border border-gray-300 dark:border-gray-600 rounded-lg shadow-2xl z-50 max-h-[400px] overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-150"
+              className="absolute top-full left-0 right-0 mt-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-2xl z-50 max-h-[400px] overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-150"
               style={{
                 scrollBehavior: 'smooth',
               }}>
               {searchParams.location.length < 2 && recentSearches.length > 0 && (
-                <div className="sticky top-0 bg-white dark:bg-gray-850 border-b-2 border-gray-200 dark:border-gray-700 flex items-center justify-between px-4 py-3">
+                <div className="sticky top-0 bg-white dark:bg-gray-800 border-b-2 border-gray-200 dark:border-gray-700 flex items-center justify-between px-4 py-3">
                   <span className="text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-widest">🕐 Recent Searches</span>
                   <button type="button" onClick={() => { localStorage.removeItem('pares_recent_searches'); setRecentSearches([]); setShowSuggestions(false); }}
                     className="text-xs text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400 transition-colors font-semibold">Clear</button>
