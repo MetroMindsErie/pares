@@ -23,7 +23,7 @@ const CSP = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  `connect-src 'self'${IS_PROD ? '' : ' ws:'} https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://graph.facebook.com https://cdn.contentful.com https://api.coingecko.com`,
+  `connect-src 'self'${IS_PROD ? '' : ' ws:'} https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://graph.facebook.com https://cdn.contentful.com https://api.coingecko.com https://nominatim.openstreetmap.org`,
   "frame-src https://challenges.cloudflare.com https://www.googletagmanager.com https://www.facebook.com",
   "worker-src 'self' blob:",
   "object-src 'none'",

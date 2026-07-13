@@ -69,6 +69,25 @@ function makePinIcon({ fill, stroke }) {
   });
 }
 
+// Leaflet mis-sizes when it initializes inside a container that isn't at its
+// final size yet (the CMA results panel mounts/animates the map in). Without
+// invalidateSize(), fitBounds() measures a wrong viewport and zooms way out.
+function MapAutoResizer() {
+  const map = useMap();
+  useEffect(() => {
+    if (!map) return;
+    const fix = () => map.invalidateSize({ animate: false });
+    fix();
+    const timers = [80, 250, 600].map((ms) => setTimeout(fix, ms));
+    window.addEventListener('resize', fix);
+    return () => {
+      timers.forEach(clearTimeout);
+      window.removeEventListener('resize', fix);
+    };
+  }, [map]);
+  return null;
+}
+
 function FitBounds({ points, enabled, fittingRef }) {
   const map = useMap();
 
@@ -76,6 +95,9 @@ function FitBounds({ points, enabled, fittingRef }) {
     if (!map) return;
     if (!enabled) return;
     if (!Array.isArray(points) || points.length === 0) return;
+
+    // Ensure the map knows its real size before measuring bounds.
+    map.invalidateSize({ animate: false });
 
     if (points.length === 1) {
       if (fittingRef) fittingRef.current = true;
@@ -279,6 +301,8 @@ export default function PricingCompsMap({ subject, comps, onToggleComp, selected
             attribution="&copy; OpenStreetMap contributors"
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
+
+          <MapAutoResizer />
 
           <UserInteractionWatcher
             fittingRef={fittingRef}
