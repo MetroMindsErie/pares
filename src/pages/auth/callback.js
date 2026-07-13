@@ -10,33 +10,82 @@ export default function AuthCallback() {
   const [debugInfo, setDebugInfo] = useState({});
   const { refreshUserData, getRedirectPath } = useAuth(); // Use auth context
 
+    // Read OAuth error/code from BOTH the query string and the URL hash —
+    // Supabase uses either depending on flow/provider.
+    const readAuthParams = () => {
+      const out = {};
+      try {
+        const q = new URLSearchParams(window.location.search);
+        const h = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
+        for (const src of [q, h]) {
+          for (const k of ['error', 'error_code', 'error_description', 'code']) {
+            if (!out[k] && src.get(k)) out[k] = src.get(k);
+          }
+        }
+      } catch { /* ignore */ }
+      return out;
+    };
+
+    // Get the session, retrying briefly while detectSessionInUrl / PKCE exchange finishes.
+    const resolveSession = async (hasCode) => {
+      for (let attempt = 0; attempt < 4; attempt++) {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (session) return { session };
+        if (error) return { error };
+
+        // PKCE: if a code is present but no session yet, exchange it explicitly.
+        if (hasCode && attempt === 0) {
+          try {
+            const { data, error: exErr } = await supabase.auth.exchangeCodeForSession(window.location.href);
+            if (data?.session) return { session: data.session };
+            if (exErr && !/code verifier|already/i.test(exErr.message || '')) {
+              return { error: exErr };
+            }
+          } catch (e) {
+            // fall through to retry loop
+          }
+        }
+        await new Promise(r => setTimeout(r, 400));
+      }
+      return { session: null };
+    };
+
   useEffect(() => {
     const handleAuthCallback = async () => {
       setLoading(true);
 
-      
       try {
-        // IMPORTANT: First explicitly get the current session from supabase
-        // This helps ensure we have the latest session data
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
+        // 1) Surface a provider/Supabase error instead of silently bouncing to login.
+        const params = readAuthParams();
+        if (params.error) {
+          const friendly = decodeURIComponent(params.error_description || params.error).replace(/\+/g, ' ');
+          console.error('OAuth returned an error:', params);
+          setError(friendly);
+          setDebugInfo(prev => ({ ...prev, oauthError: params }));
+          setLoading(false);
+          return; // stay on this page and show the message + retry button
+        }
+
+        // 2) Resolve the session (with PKCE exchange + short retry).
+        const { session, error: sessionError } = await resolveSession(Boolean(params.code));
+
         if (sessionError) {
           console.error('Session error in callback:', sessionError);
           setDebugInfo(prev => ({...prev, sessionError: sessionError.message}));
           throw sessionError;
         }
-        
-        // If no session, try to extract it from URL parameters (for hash-based callbacks)
+
         if (!session) {
           console.error('No session found after all attempts');
-          router.replace('/login?error=no_session');
+          setError('We could not complete your sign-in. Please try again.');
+          setLoading(false);
           return;
         }
-        
+
         const { user } = session;
 
         await processAuthenticatedUser(user);
-        
+
       } catch (err) {
         console.error('Error in auth callback:', err);
         
@@ -67,14 +116,44 @@ export default function AuthCallback() {
       }
     };
     
+    // Make sure the new user has a row in `users` before we check their profile,
+    // so brand-new Google/Facebook accounts don't fall through to an error path.
+    const ensureUserRow = async (user) => {
+      try {
+        const { data: existing } = await supabase
+          .from('users')
+          .select('id')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (existing) return;
+
+        await supabase.from('users').insert({
+          id: user.id,
+          email: user.email,
+          first_name: user.user_metadata?.full_name?.split(' ')[0] || user.user_metadata?.name?.split(' ')[0] || null,
+          last_name: user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || null,
+          profile_picture_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
+          hasprofile: false,
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+      } catch (err) {
+        // A duplicate (row created concurrently) is fine; anything else we log and continue.
+        if (err?.code !== '23505') console.warn('ensureUserRow (callback):', err?.message || err);
+      }
+    };
+
     // Extracted the authenticated user processing to a separate function
     const processAuthenticatedUser = async (user) => {
       if (!user) {
         router.replace('/login');
         return;
       }
-      
+
       try {
+        await ensureUserRow(user);
+
         // Check if we have provider data
         const provider = user.app_metadata?.provider;
         if (provider) {
@@ -143,14 +222,14 @@ export default function AuthCallback() {
           .from('users')
           .select('hasprofile, first_name, last_name, city')
           .eq('id', userId)
-          .single();
-          
+          .maybeSingle();
+
         if (userError) {
           console.error('Error checking profile status:', userError);
           router.replace('/create-profile?setup=true&error=check');
           return;
         }
-        
+
         if (userData && userData.hasprofile === true) {
 
           router.replace('/dashboard');
@@ -317,19 +396,23 @@ export default function AuthCallback() {
             <p className="mt-4 text-gray-600">Processing your login...</p>
           </div>
         ) : error ? (
-          <div className="text-red-500 text-center">
-            <p>Error: {error}</p>
+          <div className="text-center">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-50">
+              <svg className="h-6 w-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </div>
+            <h2 className="text-lg font-semibold text-gray-900">We couldn&apos;t finish signing you in</h2>
+            <p className="mt-2 text-sm text-gray-600">{error}</p>
             {debugInfo.trestleTokenError && (
               <p className="mt-2 text-sm text-gray-600">
                 Note: There was an issue connecting to property services.
                 You can still proceed with basic account access.
               </p>
             )}
-            <button 
+            <button
               onClick={() => router.push('/login')}
-              className="mt-4 px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700"
+              className="mt-5 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
             >
-              Back to Login
+              Back to Sign In
             </button>
           </div>
         ) : (

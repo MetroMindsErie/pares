@@ -38,6 +38,27 @@ function formatUsdCompact(value) {
   }).format(n);
 }
 
+// supabase-js getSession() acquires a Web Locks lock; during the first seconds
+// after the dashboard mounts, auth init + token refresh hold that lock, so a
+// bare `await getSession()` can block for a long time (the CMA tool used to spin
+// forever on the first run and only work after a reload). The pricing endpoint
+// treats the token as optional, so we cap the wait and proceed either way.
+async function getAccessTokenSafely(client, timeoutMs = 3000) {
+  try {
+    const result = await Promise.race([
+      client.auth.getSession(),
+      new Promise((resolve) => setTimeout(() => resolve({ data: { session: null }, timedOut: true }), timeoutMs)),
+    ]);
+    if (result?.timedOut) {
+      console.warn('getSession() slow to resolve — continuing without a bearer token');
+    }
+    return result?.data?.session?.access_token || null;
+  } catch (err) {
+    console.warn('getSession() failed — continuing without a bearer token:', err?.message || err);
+    return null;
+  }
+}
+
 function storageKeyForUser(userId) {
   return userId ? `aiAssistant:lastSearch:v1:${userId}` : null;
 }
@@ -290,8 +311,7 @@ export function AIAssistantPanel() {
     setPricingLoading(true);
 
     try {
-      const { data } = await supabase.auth.getSession();
-      const token = data?.session?.access_token || null;
+      const token = await getAccessTokenSafely(supabase);
 
       const address = `${pricingStreet.trim()}, ${pricingCounty.trim()} County, PA ${pricingZip.trim()}`;
 

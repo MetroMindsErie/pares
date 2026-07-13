@@ -403,12 +403,13 @@ export const AuthProvider = ({ children }) => {
       // Skip excessive logging - only log once when refreshing
       const { default: supabaseClient } = await import('../utils/supabaseClient');
       
+      // maybeSingle: a brand-new OAuth user may not have a row yet — that's not an error.
       const { data, error } = await supabaseClient
         .from('users')
         .select('*')
         .eq('id', userId)
-        .single();
-        
+        .maybeSingle();
+
       if (error) {
         console.error('Error refreshing user data:', error);
         return;
